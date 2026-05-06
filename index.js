@@ -45,7 +45,6 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
     if (message.content === '!p2p' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        // 🌟 NAYA FOOTER UPDATE KIYA GAYA HAI 🌟
         const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Bot Automation' });
         const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
         await message.channel.send({ embeds: [setupEmbed], components: [startButton] });
