@@ -89,20 +89,54 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
+        
+        // 1. SABSE PEHLE TURANT REPLY (Taaki laal error na aaye)
+        await interaction.reply({ 
+            content: '✅ Your KYC details have been successfully submitted! Please wait for verification.', 
+            ephemeral: true 
+        });
+
+        // 2. DATA NIKALNA (Aapka form jaisa tha bilkul waisa hi hai)
         const name = interaction.fields.getTextInputValue('kyc_name');
         const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
         const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
         
-        await interaction.reply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.', ephemeral: true });
+        // 3. BACKGROUND TASKS (Admin ko alert aur Firebase save)
+        try {
+            let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
+            if (!reviewChannel) { 
+                reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
+            }
+            
+            const adminEmbed = new EmbedBuilder()
+                .setColor('#e67e22')
+                .setTitle('🚨 New KYC Request')
+                .addFields(
+                    { name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, 
+                    { name: 'Name/Alias', value: name, inline: true }, 
+                    { name: 'Discord ID/Name', value: discordContactVal, inline: true }, 
+                    { name: 'Payment Info', value: paymentDetails, inline: false }
+                );
+                
+            const actionButtons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), 
+                new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger)
+            );
+            await reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] });
 
-        let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
-        if (!reviewChannel) { reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); }
-        
-        const adminEmbed = new EmbedBuilder().setColor('#e67e22').setTitle('🚨 New KYC Request').addFields({ name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, { name: 'Name/Alias', value: name, inline: true }, { name: 'Discord ID/Name', value: discordContactVal, inline: true }, { name: 'Payment Info', value: paymentDetails, inline: false });
-        const actionButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger));
-        await reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] });
-
-        await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: name, discordContact: discordContactVal, paymentInfo: paymentDetails, status: 'Pending', createdAt: admin.firestore.FieldValue.serverTimestamp() });
+            // Yahi same data aapke firebase me store ho raha hai
+            await db.collection('users_kyc').doc(interaction.user.id).set({ 
+                discordId: interaction.user.id, 
+                username: interaction.user.username, 
+                name: name, 
+                discordContact: discordContactVal, 
+                paymentInfo: paymentDetails, 
+                status: 'Pending', 
+                createdAt: admin.firestore.FieldValue.serverTimestamp() 
+            });
+        } catch (error) {
+            console.error("KYC Background Task Error: ", error);
+        }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
