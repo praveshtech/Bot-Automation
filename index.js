@@ -89,6 +89,22 @@ client.on('interactionCreate', async interaction => {
     
     // --- 🛡️ 1. KYC SYSTEM ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
+        
+        // 🔒 PRO FIX: Pehle check karo ki user ne already form toh nahi bhara hai
+        try {
+            const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
+            if (existingKyc.exists) {
+                const status = existingKyc.data().status;
+                return interaction.reply({ 
+                    content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **${status}**.\n\nPlease wait for the Admin to review it.`, 
+                    ephemeral: true 
+                });
+            }
+        } catch (error) {
+            console.error("KYC Check Error: ", error);
+        }
+
+        // Agar user naya hai, toh usko form dikhao
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
         const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
         const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
