@@ -292,7 +292,7 @@ client.on('interactionCreate', async interaction => {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
                 botMessages.forEach(msg => msg.delete().catch(console.error));
-                const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Your Bot Automation' });
+                const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Bot Automation' });
                 const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [startButton] });
             }
