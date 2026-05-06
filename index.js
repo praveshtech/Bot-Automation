@@ -33,7 +33,7 @@ const client = new Client({
 
 const userSelections = new Map();
 
-client.once('clientReady', () => {
+client.once('Ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
 });
@@ -491,19 +491,15 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        // DYNAMIC CACHE SE PEHLE SERVER NIKALNE KI KOSHISH
-        let guild = client.guilds.cache.first(); 
-        
-        // AGAR CACHE KHALI HAI, TOH DIRECT ID SE FETCH KAREIN (SUPER SAFE!)
-        if (!guild) {
-            // Apne Discord Server ki ID se direct fetch karein
-            guild = await client.guilds.fetch('1456297708892586057').catch(() => null);
-        }
+        // Direct guild/server ID se fetch karein taaki cache empty hone par bhi crash na ho
+        const guildId = '1456297708892586057'; // <--- Yahan apna asli Discord Server ID daalein (Bina brackets ke)
+        const guild = await client.guilds.fetch(guildId).catch(() => null);
 
         if (guild) {
             await approveUserKYC(userId, guild);
             res.json({ success: true });
         } else {
+            console.error("Guild fetch failed for ID:", guildId);
             res.json({ success: false, error: "Discord server connection lost or Guild ID invalid." });
         }
     } catch (e) { 
