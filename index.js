@@ -33,7 +33,8 @@ const client = new Client({
 
 const userSelections = new Map();
 
-client.once('clientReady', () => {
+// 🟢 PRO FIX 1: Correct Event Name 'ready'
+client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
 });
@@ -88,21 +89,34 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(kycModal);
     }
 
+    // 🟢 PRO FIX 2: Instant Reply & Parallel Execution for KYC Submit
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
+        // 1. Instant Reply to stop Discord 3-second Timeout "Something went wrong" Error
+        await interaction.reply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.', ephemeral: true });
+
+        // 2. Extract Data
         const name = interaction.fields.getTextInputValue('kyc_name');
         const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
         const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
         
-        await interaction.reply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.', ephemeral: true });
-
-        let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
-        if (!reviewChannel) { reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); }
-        
-        const adminEmbed = new EmbedBuilder().setColor('#e67e22').setTitle('🚨 New KYC Request').addFields({ name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, { name: 'Name/Alias', value: name, inline: true }, { name: 'Discord ID/Name', value: discordContactVal, inline: true }, { name: 'Payment Info', value: paymentDetails, inline: false });
-        const actionButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger));
-        await reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] });
-
-        await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: name, discordContact: discordContactVal, paymentInfo: paymentDetails, status: 'Pending', createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        // 3. Background Processing (Parallel execution for speed)
+        try {
+            let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
+            if (!reviewChannel) { 
+                reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
+            }
+            
+            const adminEmbed = new EmbedBuilder().setColor('#e67e22').setTitle('🚨 New KYC Request').addFields({ name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, { name: 'Name/Alias', value: name, inline: true }, { name: 'Discord ID/Name', value: discordContactVal, inline: true }, { name: 'Payment Info', value: paymentDetails, inline: false });
+            const actionButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger));
+            
+            // Execute Database save AND Discord message simultaneously for zero lag
+            await Promise.all([
+                reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] }),
+                db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: name, discordContact: discordContactVal, paymentInfo: paymentDetails, status: 'Pending', createdAt: admin.firestore.FieldValue.serverTimestamp() })
+            ]);
+        } catch (error) {
+            console.error("KYC Background Processing Error:", error);
+        }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
@@ -454,17 +468,25 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     } catch(e) { res.send("Export Error"); }
 });
 
+// 🟢 PRO FIX 3: Bulletproof Dashboard API Routes
+const GUILD_ID = '1456297708892586057'; // Ensure this matches your server ID
+
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        const guild = client.guilds.cache.first(); 
-        if (guild) {
-            await approveUserKYC(userId, guild);
-            res.json({ success: true });
-        } else {
-            res.json({ success: false, error: "Discord server connection lost." });
+        const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
+
+        if (!guild) {
+            return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." });
         }
-    } catch (e) { res.json({ success: false, error: e.message }); }
+
+        await approveUserKYC(userId, guild);
+        res.json({ success: true });
+
+    } catch (e) { 
+        console.error("KYC Approve API Error:", e);
+        res.json({ success: false, error: e.message }); 
+    }
 });
 
 app.post('/api/kyc-reject', requireLogin, async (req, res) => {
@@ -472,7 +494,10 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     try {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         res.json({ success: true });
-    } catch (e) { res.json({ success: false, error: e.message }); }
+    } catch (e) { 
+        console.error("KYC Reject API Error:", e);
+        res.json({ success: false, error: e.message }); 
+    }
 });
 
 app.get('/', requireLogin, async (req, res) => {
