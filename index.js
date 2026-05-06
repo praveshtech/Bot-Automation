@@ -1,4 +1,7 @@
 require('dotenv').config();
+const express = require('express');
+const session = require('express-session');
+const cors = require('cors');
 const { 
     Client, 
     GatewayIntentBits, 
@@ -17,11 +20,17 @@ const {
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
 
+// ==========================================
+// 1. FIREBASE SETUP
+// ==========================================
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 const db = admin.firestore(); 
 
+// ==========================================
+// 2. DISCORD BOT INIT
+// ==========================================
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -33,7 +42,7 @@ const client = new Client({
 
 const userSelections = new Map();
 
-// 🟢 PRO FIX 1: Correct Event Name 'ready'
+// 🟢 PRO FIX 1: Correct Event Name 'ready' (Fixed from clientReady)
 client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
@@ -89,34 +98,59 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(kycModal);
     }
 
-    // 🟢 PRO FIX 2: Instant Reply & Parallel Execution for KYC Submit
+    // 🟢 PRO FIX 2: THE ULTIMATE TIMEOUT FIX (Detached execution)
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        // 1. Instant Reply to stop Discord 3-second Timeout "Something went wrong" Error
-        await interaction.reply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.', ephemeral: true });
+        
+        // 1. Instant Reply & Form Close (This triggers in 1 millisecond)
+        await interaction.reply({ 
+            content: '✅ Your KYC details have been submitted securely. Please wait for approval.', 
+            ephemeral: true 
+        }).catch(console.error);
 
         // 2. Extract Data
         const name = interaction.fields.getTextInputValue('kyc_name');
         const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
         const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
         
-        // 3. Background Processing (Parallel execution for speed)
-        try {
-            let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
-            if (!reviewChannel) { 
-                reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
+        // 3. Background Database execution (Totally detached from the form)
+        setTimeout(async () => {
+            try {
+                let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
+                if (!reviewChannel) { 
+                    reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
+                }
+                
+                const adminEmbed = new EmbedBuilder()
+                    .setColor('#e67e22')
+                    .setTitle('🚨 New KYC Request')
+                    .addFields(
+                        { name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, 
+                        { name: 'Name/Alias', value: name, inline: true }, 
+                        { name: 'Discord ID/Name', value: discordContactVal, inline: true }, 
+                        { name: 'Payment Info', value: paymentDetails, inline: false }
+                    );
+                    
+                const actionButtons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), 
+                    new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger)
+                );
+
+                await Promise.all([
+                    reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] }),
+                    db.collection('users_kyc').doc(interaction.user.id).set({ 
+                        discordId: interaction.user.id, 
+                        username: interaction.user.username, 
+                        name: name, 
+                        discordContact: discordContactVal, 
+                        paymentInfo: paymentDetails, 
+                        status: 'Pending', 
+                        createdAt: admin.firestore.FieldValue.serverTimestamp() 
+                    })
+                ]);
+            } catch (error) {
+                console.error("KYC Background Processing Error:", error);
             }
-            
-            const adminEmbed = new EmbedBuilder().setColor('#e67e22').setTitle('🚨 New KYC Request').addFields({ name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, { name: 'Name/Alias', value: name, inline: true }, { name: 'Discord ID/Name', value: discordContactVal, inline: true }, { name: 'Payment Info', value: paymentDetails, inline: false });
-            const actionButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger));
-            
-            // Execute Database save AND Discord message simultaneously for zero lag
-            await Promise.all([
-                reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] }),
-                db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: name, discordContact: discordContactVal, paymentInfo: paymentDetails, status: 'Pending', createdAt: admin.firestore.FieldValue.serverTimestamp() })
-            ]);
-        } catch (error) {
-            console.error("KYC Background Processing Error:", error);
-        }
+        }, 100); 
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
@@ -390,21 +424,21 @@ async function approveUserKYC(userId, guild) {
 // ==========================================
 // 🌐 WEB DASHBOARD (EXPRESS SERVER)
 // ==========================================
-const express = require('express');
-const session = require('express-session');
 const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(cors());
 
-// 🌟 FIX: SESSION COCHIE AND RESAVE OPTIONS SET TO STOP SUDDEN LOGOUTS 🌟
+// Session Configuration
 app.use(session({
     secret: 'professor-vault-secret-key-2026',
-    resave: true, // Forces session to be saved back to the session store
-    saveUninitialized: true, // Forces uninitialized session to be saved
+    resave: true, 
+    saveUninitialized: true, 
     cookie: { 
-        secure: false, // Set to true if using HTTPS
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days long session persistence
+        secure: false, 
+        maxAge: 7 * 24 * 60 * 60 * 1000 
     }
 }));
 
@@ -567,6 +601,6 @@ app.get('/', requireLogin, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port 3000`); });
+app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
 
 client.login(process.env.DISCORD_TOKEN);
