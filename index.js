@@ -507,6 +507,16 @@ app.post('/api/kyc-approve', requireLogin, async (req, res) => {
         res.json({ success: false, error: e.message }); 
     }
 });
+app.post('/api/kyc-reject', requireLogin, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
+        res.json({ success: true });
+    } catch (e) { 
+        console.error("KYC Reject Error:", e);
+        res.json({ success: false, error: e.message }); 
+    }
+});
 
 app.get('/', requireLogin, async (req, res) => {
     try {
