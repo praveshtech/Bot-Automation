@@ -491,22 +491,25 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        const guild = client.guilds.cache.first(); 
+        // DYNAMIC CACHE SE PEHLE SERVER NIKALNE KI KOSHISH
+        let guild = client.guilds.cache.first(); 
+        
+        // AGAR CACHE KHALI HAI, TOH DIRECT ID SE FETCH KAREIN (SUPER SAFE!)
+        if (!guild) {
+            // Apne Discord Server ki ID se direct fetch karein
+            guild = await client.guilds.fetch('1456297708892586057').catch(() => null);
+        }
+
         if (guild) {
             await approveUserKYC(userId, guild);
             res.json({ success: true });
         } else {
-            res.json({ success: false, error: "Discord server connection lost." });
+            res.json({ success: false, error: "Discord server connection lost or Guild ID invalid." });
         }
-    } catch (e) { res.json({ success: false, error: e.message }); }
-});
-
-app.post('/api/kyc-reject', requireLogin, async (req, res) => {
-    const { userId } = req.body;
-    try {
-        await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
-        res.json({ success: true });
-    } catch (e) { res.json({ success: false, error: e.message }); }
+    } catch (e) { 
+        console.error("KYC Approve API Error:", e);
+        res.json({ success: false, error: e.message }); 
+    }
 });
 
 app.get('/', requireLogin, async (req, res) => {
