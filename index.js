@@ -107,18 +107,12 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
         const userId = interaction.customId.replace('approve_kyc_', '');
-        let verifiedRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
-        if (!verifiedRole) { verifiedRole = await interaction.guild.roles.create({ name: 'Verified', color: '#2ecc71', reason: 'Auto-created for KYC verified members' }); }
-        try {
-            const member = await interaction.guild.members.fetch(userId);
-            await member.roles.add(verifiedRole);
-            await db.collection('users_kyc').doc(userId).update({ status: 'Approved' });
-            await interaction.reply({ content: `✅ Successfully verified <@${userId}>!` });
-            const oldEmbed = interaction.message.embeds[0];
-            const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#2ecc71').setTitle('✅ KYC Approved');
-            await interaction.message.edit({ embeds: [updatedEmbed], components: [] });
-            await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved. You can now access the Exchange Desk and start trading.').catch(()=> console.log("User DM closed"));
-        } catch (error) { await interaction.reply({ content: `Error: User might have left the server.`, ephemeral: true }); }
+        await approveUserKYC(userId, interaction.guild);
+        
+        await interaction.reply({ content: `✅ Successfully verified <@${userId}>!` });
+        const oldEmbed = interaction.message.embeds[0];
+        const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#2ecc71').setTitle('✅ KYC Approved');
+        await interaction.message.edit({ embeds: [updatedEmbed], components: [] });
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('reject_kyc_')) {
@@ -290,7 +284,6 @@ client.on('interactionCreate', async interaction => {
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
                 botMessages.forEach(msg => msg.delete().catch(console.error));
                 
-                // 🌟 TICKET CLOSE HONE KE BAAD WALA MESSAGE BHI UPDATE KIYA HAI 🌟
                 const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Professor Network' });
                 const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [startButton] });
@@ -369,26 +362,150 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
+async function approveUserKYC(userId, guild) {
+    let verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
+    if (!verifiedRole) { verifiedRole = await guild.roles.create({ name: 'Verified', color: '#2ecc71' }); }
+    try {
+        const member = await guild.members.fetch(userId);
+        await member.roles.add(verifiedRole);
+        await db.collection('users_kyc').doc(userId).update({ status: 'Approved' });
+        await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved from dashboard.').catch(() => {});
+    } catch (e) { console.log("External KYC approve error", e); }
+}
+
 // ==========================================
 // 🌐 WEB DASHBOARD (EXPRESS SERVER)
 // ==========================================
 const express = require('express');
+const session = require('express-session');
 const app = express();
-app.set('view engine', 'ejs');
 
-app.get('/', async (req, res) => {
+app.set('view engine', 'ejs');
+app.use(express.urlencoded({ extended: true }));
+
+// 🌟 FIX: SESSION COCHIE AND RESAVE OPTIONS SET TO STOP SUDDEN LOGOUTS 🌟
+app.use(session({
+    secret: 'professor-vault-secret-key-2026',
+    resave: true, // Forces session to be saved back to the session store
+    saveUninitialized: true, // Forces uninitialized session to be saved
+    cookie: { 
+        secure: false, // Set to true if using HTTPS
+        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days long session persistence
+    }
+}));
+
+const requireLogin = (req, res, next) => {
+    if (req.session.loggedIn) return next();
+    res.redirect('/login');
+};
+
+app.get('/login', (req, res) => {
+    if (req.session.loggedIn) return res.redirect('/');
+    res.render('login', { error: null });
+});
+
+app.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const authDoc = await db.collection('settings').doc('admin_auth').get();
+        let validUser = 'professor', validPass = 'heist2026';
+        if (authDoc.exists) {
+            validUser = authDoc.data().username;
+            validPass = authDoc.data().password;
+        } else {
+            await db.collection('settings').doc('admin_auth').set({ username: validUser, password: validPass });
+        }
+
+        if (username === validUser && password === validPass) {
+            req.session.loggedIn = true;
+            res.redirect('/');
+        } else {
+            res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
+        }
+    } catch (error) { res.render('login', { error: 'Database Connection Error.' }); }
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/login');
+});
+
+app.post('/update-credentials', requireLogin, async (req, res) => {
+    const { new_username, new_password } = req.body;
+    if (new_username && new_password) {
+        await db.collection('settings').doc('admin_auth').set({ username: new_username, password: new_password });
+        req.session.destroy();
+        res.redirect('/login');
+    } else { res.redirect('/'); }
+});
+
+app.get('/export-ledger', requireLogin, async (req, res) => {
+    try {
+        const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
+        let csv = 'Date,User,Action,Method,Amount(USD),Closed By\n';
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const date = d.closedAt ? d.closedAt.toDate().toLocaleString() : 'N/A';
+            csv += `"${date}","${d.username}","${d.tradeType}","${d.networkOrMethod}","${d.amountUsd}","${d.closedBy || 'Admin'}"\n`;
+        });
+        res.header('Content-Type', 'text/csv');
+        res.attachment('The_Vault_Ledger.csv');
+        res.send(csv);
+    } catch(e) { res.send("Export Error"); }
+});
+
+app.post('/api/kyc-approve', requireLogin, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const guild = client.guilds.cache.first(); 
+        if (guild) {
+            await approveUserKYC(userId, guild);
+            res.json({ success: true });
+        } else {
+            res.json({ success: false, error: "Discord server connection lost." });
+        }
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.post('/api/kyc-reject', requireLogin, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
+        res.json({ success: true });
+    } catch (e) { res.json({ success: false, error: e.message }); }
+});
+
+app.get('/', requireLogin, async (req, res) => {
     try {
         const guild = client.guilds.cache.first(); 
         const liveMembers = guild ? guild.memberCount : 0;
+        
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
+        const pendingTicketsSnap = await db.collection('p2p_tickets').where('status', '==', 'Open').get();
+        
+        const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
+        const pendingKycList = [];
+        pendingKycSnap.forEach(doc => {
+            pendingKycList.push(doc.data());
+        });
+
         let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
+        let buyVol = 0, sellVol = 0;
         const now = new Date();
         const userVolumes = {}; 
+        const allCompleted = [];
 
         snapshot.forEach(doc => {
             const data = doc.data();
             const amount = data.amountUsd || 0;
             const username = data.username || 'Unknown';
+            const type = data.tradeType || 'Unknown';
+            
+            allCompleted.push(data);
+            
+            if (type === 'Buy') buyVol += amount;
+            if (type === 'Sell') sellVol += amount;
+
             if (userVolumes[username]) { userVolumes[username] += amount; } 
             else { userVolumes[username] = amount; }
 
@@ -402,20 +519,29 @@ app.get('/', async (req, res) => {
             }
         });
 
+        allCompleted.sort((a, b) => {
+            const dateA = a.closedAt ? a.closedAt.toDate() : 0;
+            const dateB = b.closedAt ? b.closedAt.toDate() : 0;
+            return dateB - dateA;
+        });
+        const recentFeed = allCompleted.slice(0, 10); 
+
         const topTraders = Object.keys(userVolumes)
             .map(username => ({ username, totalVolume: userVolumes[username] }))
             .sort((a, b) => b.totalVolume - a.totalVolume)
             .slice(0, 5);
 
-        res.render('dashboard', { liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders });
-    } catch (error) {
-        console.error(error);
-        res.send("Dashboard Loading Error!");
-    }
+        res.render('dashboard', { 
+            liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders,
+            pendingTickets: pendingTicketsSnap.size,
+            pendingKyc: pendingKycSnap.size,
+            pendingKycList, 
+            buyVol, sellVol, recentFeed
+        });
+    } catch (error) { res.send("Dashboard Loading Error!"); }
 });
 
-app.listen(3000, () => {
-    console.log('📊 Admin Vault Dashboard is LIVE on Port 3000');
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port 3000`); });
 
 client.login(process.env.DISCORD_TOKEN);

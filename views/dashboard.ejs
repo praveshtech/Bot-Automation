@@ -3,181 +3,649 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault | Executive Dashboard</title>
+    <title>The Vault | Premium Executive Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    
     <style>
-        /* Premium Glass Effect */
+        body { 
+            font-family: 'Outfit', sans-serif; 
+            background-color: #0b1120;
+            background-image: radial-gradient(circle at top right, #1e293b, #0b1120);
+            color: #f8fafc;
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; border: 2px solid #0f172a; }
+        ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
+
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-            border-radius: 1rem;
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
-        .text-gradient {
-            background: linear-gradient(135deg, #f87171, #dc2626);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .sidebar-link { transition: all 0.3s ease; border-right: 4px solid transparent; }
+        .sidebar-link:hover { background: rgba(255, 255, 255, 0.03); transform: translateX(4px); }
+        .sidebar-link.active {
+            background: linear-gradient(90deg, rgba(220,38,38,0.0) 0%, rgba(220,38,38,0.15) 100%);
+            border-right: 4px solid #ef4444;
+            color: #ef4444;
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+        }
+
+        .text-glow { text-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
+        .text-glow-green { text-shadow: 0 0 15px rgba(34, 197, 94, 0.5); }
+
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden-section { display: none; }
+        tbody tr { transition: all 0.2s ease; }
+        tbody tr:hover { background: rgba(239, 68, 68, 0.1) !important; transform: scale(1.01); }
+
+        #sidebar-overlay {
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        #sidebar-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-white font-sans min-h-screen p-4 md:p-8" style="background-image: radial-gradient(circle at top right, #1e293b, #0f172a);">
+<body class="min-h-screen flex overflow-x-hidden">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="flex flex-col md:flex-row items-center justify-between mb-8 pb-4 border-b border-gray-800">
-            <div class="mb-4 md:mb-0 text-center md:text-left">
-                <h1 class="text-3xl md:text-4xl font-black uppercase tracking-widest text-gradient">
-                    <i class="fa-solid fa-building-columns mr-2 text-red-500"></i> The Vault
-                </h1>
-                <p class="text-gray-400 mt-1 text-sm font-medium tracking-wide">Live Transaction Monitoring System</p>
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 opacity-0 lg:hidden" onclick="toggleSidebar()"></div>
+
+    <aside id="sidebar" class="w-64 bg-slate-900/95 border-r border-slate-800/50 flex flex-col fixed h-full z-50 shadow-[5px_0_30px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 transform -translate-x-full lg:translate-x-0">
+        <div class="p-8 relative">
+            <h1 class="text-3xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-700 flex items-center text-glow">
+                <i class="fa-solid fa-building-columns mr-3 text-red-600"></i> Vault
+            </h1>
+            <div class="mt-2 text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold ml-10">Admin Control</div>
+            <button onclick="toggleSidebar()" class="lg:hidden absolute top-8 right-6 text-slate-400 hover:text-red-500 transition duration-300">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <nav class="flex-1 mt-6 px-4 space-y-3">
+            <button onclick="showTab('dashboard-view', this)" class="sidebar-link active w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
+                <i class="fa-solid fa-chart-line mr-4 text-lg"></i> Dashboard
+            </button>
+            <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
+                <i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-slate-800/50">
+            <a href="/logout" onclick="return confirm('🔒 ALERT: Are you sure you want to lock the vault and logout?');" class="flex items-center justify-center px-4 py-3 text-sm font-bold uppercase tracking-widest text-red-400 hover:text-white bg-red-950/30 hover:bg-red-600/80 rounded-xl transition-all duration-300 shadow-[0_0_10px_rgba(220,38,38,0.1)] hover:shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-red-900/50">
+                <i class="fa-solid fa-power-off mr-3"></i> Lock Vault
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 w-full lg:ml-64 p-4 sm:p-6 md:p-10 min-h-screen">
+        
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 fade-in">
+            <div class="flex items-center gap-4">
+                <button id="menu-toggle-btn" onclick="toggleSidebar()" class="lg:hidden w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300">
+                    <i id="menu-arrow-icon" class="fa-solid fa-chevron-right text-lg"></i>
+                </button>
+                <div>
+                    <h2 id="page-title" class="text-2xl sm:text-3xl font-black text-gray-100 tracking-tight">Executive Analytics</h2>
+                    <p class="text-slate-400 text-xs sm:text-sm font-medium mt-1">Real-time Professor Network Monitoring</p>
+                </div>
             </div>
-            <div class="glass-panel px-5 py-2 flex items-center space-x-3">
-                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
-                <span class="font-bold text-gray-200 tracking-wider text-sm uppercase">Network Online</span>
+            
+            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                <div class="glass-panel px-4 py-2 flex items-center space-x-3 border-slate-700/50 text-xs font-bold uppercase tracking-wider">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="toggleAutoRefresh()" id="refresh-toggle-btn" class="text-red-500 hover:text-red-400 transition">
+                            <i id="refresh-icon" class="fa-solid fa-pause"></i>
+                        </button>
+                        <span>Auto Sync: <span id="refresh-timer" class="text-red-400">10s</span></span>
+                    </div>
+                </div>
+
+                <a href="/export-ledger" class="glass-panel justify-center px-4 py-2.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/20 hover:border-emerald-500/50 transition flex items-center text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                    <i class="fa-solid fa-file-excel mr-2 text-base"></i> Export
+                </a>
+                <div class="glass-panel px-4 py-2.5 flex items-center justify-center space-x-3 border-slate-700/50">
+                    <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
+                    <span class="text-xs font-black uppercase tracking-widest text-slate-300">Live DB</span>
+                </div>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="glass-panel p-6 border-t-4 border-blue-500 hover:-translate-y-1 transition duration-300">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest">Live Members</h3>
-                    <i class="fa-solid fa-users text-blue-500 bg-blue-500/10 p-2 rounded-lg"></i>
+        <section id="dashboard-view" class="fade-in">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="glass-panel p-6 border-l-4 border-blue-500">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Network Strength</h3>
+                        <i class="fa-solid fa-users text-blue-500/50"></i>
+                    </div>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 text-white"><%= liveMembers %></p>
                 </div>
-                <p class="text-3xl font-black mt-4"><%= liveMembers %></p>
-            </div>
-            <div class="glass-panel p-6 border-t-4 border-green-500 hover:-translate-y-1 transition duration-300">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest">Daily (24h)</h3>
-                    <i class="fa-solid fa-bolt text-green-500 bg-green-500/10 p-2 rounded-lg"></i>
+                <div class="glass-panel p-6 border-l-4 border-green-500">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Daily Vol (24h)</h3>
+                        <i class="fa-solid fa-chart-bar text-green-500/50"></i>
+                    </div>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green">$<%= dailyVol.toLocaleString() %></p>
                 </div>
-                <p class="text-3xl font-black text-green-400 mt-4">$<%= dailyVol.toLocaleString() %></p>
-            </div>
-            <div class="glass-panel p-6 border-t-4 border-yellow-500 hover:-translate-y-1 transition duration-300">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest">Weekly (7D)</h3>
-                    <i class="fa-solid fa-calendar-week text-yellow-500 bg-yellow-500/10 p-2 rounded-lg"></i>
+                <div class="glass-panel p-6 border-l-4 border-red-500 <%= pendingTickets > 0 ? 'shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/50' : '' %>">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Tickets</h3>
+                        <i class="fa-solid fa-ticket text-red-500/50"></i>
+                    </div>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingTickets > 0 ? 'text-red-500 text-glow animate-pulse' : 'text-gray-300' %>"><%= pendingTickets %></p>
                 </div>
-                <p class="text-3xl font-black text-yellow-400 mt-4">$<%= weeklyVol.toLocaleString() %></p>
-            </div>
-            <div class="glass-panel p-6 border-t-4 border-purple-500 hover:-translate-y-1 transition duration-300">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-gray-400 text-xs font-bold uppercase tracking-widest">Monthly (30D)</h3>
-                    <i class="fa-solid fa-chart-pie text-purple-500 bg-purple-500/10 p-2 rounded-lg"></i>
-                </div>
-                <p class="text-3xl font-black text-purple-400 mt-4">$<%= monthlyVol.toLocaleString() %></p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <div class="glass-panel p-6 lg:col-span-2">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-lg font-bold text-gray-200 tracking-wide uppercase"><i class="fa-solid fa-chart-line mr-2 text-blue-400"></i> Revenue Trajectory</h2>
-                </div>
-                <div class="relative h-72 w-full">
-                    <canvas id="volumeChart"></canvas>
+                <div onclick="openKycModal()" class="glass-panel p-6 border-l-4 border-yellow-500 cursor-pointer <%= pendingKyc > 0 ? 'shadow-[0_0_20px_rgba(234,179,8,0.25)] border-yellow-500/50 hover:bg-yellow-500/5' : '' %>">
+                    <div class="flex justify-between items-start">
+                        <div class="flex flex-col">
+                            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Pending KYC</h3>
+                            <span class="text-[10px] text-yellow-500/60 font-black tracking-widest mt-0.5"><i class="fa-solid fa-hand-pointer"></i> Click to review</span>
+                        </div>
+                        <i class="fa-solid fa-id-card text-yellow-500/50"></i>
+                    </div>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingKyc > 0 ? 'text-yellow-500 animate-pulse text-shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'text-gray-300' %>"><%= pendingKyc %></p>
                 </div>
             </div>
 
-            <div class="glass-panel p-6">
-                <h2 class="text-lg font-bold text-gray-200 mb-6 tracking-wide uppercase"><i class="fa-solid fa-crown mr-2 text-yellow-400"></i> Top Network Whales</h2>
-                
-                <div class="space-y-3">
-                    <% if (topTraders.length === 0) { %>
-                        <p class="text-gray-500 text-center py-8 italic">No completed trades yet.</p>
-                    <% } else { %>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="glass-panel p-4 sm:p-6 lg:col-span-2">
+                    <div class="flex items-center mb-6">
+                        <div class="p-2 bg-blue-500/10 rounded-lg mr-3"><i class="fa-solid fa-chart-area text-blue-400"></i></div>
+                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Revenue Trajectory</h4>
+                    </div>
+                    <div class="h-64 sm:h-72"><canvas id="volumeChart"></canvas></div>
+                </div>
+                <div class="glass-panel p-4 sm:p-6 flex flex-col items-center relative overflow-hidden">
+                    <div class="w-full flex items-center mb-4 relative z-10">
+                        <div class="p-2 bg-purple-500/10 rounded-lg mr-3"><i class="fa-solid fa-scale-balanced text-purple-400"></i></div>
+                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Buy vs Sell Ratio</h4>
+                    </div>
+                    <div class="relative h-56 sm:h-60 w-full flex justify-center z-10"><canvas id="ratioChart"></canvas></div>
+                    <i class="fa-solid fa-chart-pie absolute -right-10 -bottom-10 text-9xl text-slate-800/30 z-0"></i>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
+                <div class="glass-panel p-0 lg:col-span-2 overflow-hidden">
+                    <div class="p-6 border-b border-slate-700/50 flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="p-2 bg-red-500/10 rounded-lg mr-3"><i class="fa-solid fa-bolt text-red-400"></i></div>
+                            <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Live Feed</h4>
+                        </div>
+                        <span class="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-widest"><i class="fa-solid fa-hand-pointer mr-1"></i> Tap to view</span>
+                    </div>
+                    <div class="overflow-x-auto w-full">
+                        <table class="w-full text-left whitespace-nowrap min-w-[500px] lg:min-w-0">
+                            <thead class="bg-slate-800/30">
+                                <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                    <th class="py-4 px-6">User</th>
+                                    <th class="py-4 px-6">Action</th>
+                                    <th class="py-4 px-6">Method</th>
+                                    <th class="py-4 px-6 text-right">Amount (USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm font-medium">
+                                <% if (recentFeed.length === 0) { %>
+                                    <tr><td colspan="4" class="text-center py-8 text-slate-500 italic">No recent transactions</td></tr>
+                                <% } else { %>
+                                    <% recentFeed.forEach((trade, index) => { %>
+                                        <tr class="border-b border-slate-800/50 cursor-pointer group" onclick="openTxModal(<%= index %>)">
+                                            <td class="py-4 px-6 text-gray-200 flex items-center group-hover:text-white transition">
+                                                <div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center mr-3 text-xs font-black text-slate-400 group-hover:bg-red-600 group-hover:text-white transition"><%= trade.username.charAt(0).toUpperCase() %></div>
+                                                <%= trade.username %>
+                                            </td>
+                                            <td class="py-4 px-6">
+                                                <% if (trade.tradeType === 'Buy') { %>
+                                                    <span class="bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span>
+                                                <% } else { %>
+                                                    <span class="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span>
+                                                <% } %>
+                                            </td>
+                                            <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
+                                            <td class="py-4 px-6 text-right font-black text-gray-100 text-base group-hover:text-red-400 transition">$<%= trade.amountUsd.toLocaleString() %></td>
+                                        </tr>
+                                    <% }) %>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6">
+                    <div class="flex items-center mb-6">
+                        <div class="p-2 bg-yellow-500/10 rounded-lg mr-3"><i class="fa-solid fa-crown text-yellow-400"></i></div>
+                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Top Whales</h4>
+                    </div>
+                    <div class="space-y-3">
+                        <% if (topTraders.length === 0) { %>
+                            <p class="text-slate-500 italic text-center text-sm py-4">Awaiting volume...</p>
+                        <% } %>
                         <% topTraders.forEach((trader, index) => { %>
-                            <div class="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 hover:bg-slate-700/50 transition">
+                            <div class="flex justify-between items-center p-4 bg-slate-800/40 hover:bg-slate-700/50 rounded-xl border border-white/5 transition duration-300 group">
                                 <div class="flex items-center space-x-3">
                                     <% if (index === 0) { %>
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center font-bold text-black shadow-[0_0_10px_rgba(234,179,8,0.4)]">1</div>
+                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center font-black text-black shadow-[0_0_10px_rgba(234,179,8,0.5)] text-xs">1</div>
                                     <% } else if (index === 1) { %>
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center font-bold text-black">2</div>
+                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center font-black text-black text-xs">2</div>
                                     <% } else if (index === 2) { %>
-                                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center font-bold text-white">3</div>
+                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center font-black text-white text-xs">3</div>
                                     <% } else { %>
-                                        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-gray-400"><%= index + 1 %></div>
+                                        <div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-bold text-gray-400 text-xs"><%= index + 1 %></div>
                                     <% } %>
-                                    
-                                    <div class="font-bold text-gray-200 tracking-wide truncate max-w-[100px]" title="<%= trader.username %>"><%= trader.username %></div>
+                                    <span class="font-bold text-slate-300 group-hover:text-white transition"><%= trader.username %></span>
                                 </div>
-                                <div class="font-black text-green-400 bg-green-500/10 px-3 py-1 rounded-lg">
-                                    $<%= trader.totalVolume.toLocaleString() %>
-                                </div>
+                                <span class="font-black text-green-400 bg-green-500/10 px-2 py-1 rounded text-sm">$<%= trader.totalVolume.toLocaleString() %></span>
                             </div>
                         <% }) %>
-                    <% } %>
+                    </div>
                 </div>
             </div>
+        </section>
 
+        <section id="settings-view" class="hidden-section fade-in">
+            <div class="max-w-4xl grid grid-cols-1 gap-8">
+                <div class="glass-panel p-5 sm:p-8 border-t-4 border-red-600 relative overflow-hidden">
+                    <i class="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[12rem] text-slate-800/40 z-0"></i>
+                    
+                    <div class="relative z-10">
+                        <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-red-500 text-glow">Vault Security Control</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Update your administrative credentials to maintain operational security.</p>
+                        
+                        <form action="/update-credentials" method="POST" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                                <div>
+                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Admin ID</label>
+                                    <div class="relative">
+                                        <i class="fa-solid fa-user-astronaut absolute left-4 top-4 text-slate-500"></i>
+                                        <input type="text" name="new_username" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New Username" required>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Passcode</label>
+                                    <div class="relative">
+                                        <i class="fa-solid fa-key absolute left-4 top-4 text-slate-500"></i>
+                                        <input type="password" name="new_password" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New passcode" required>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-6 mt-4">
+                                <p class="text-xs text-slate-400 font-medium flex items-center bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20">
+                                    <i class="fa-solid fa-circle-exclamation mr-2 text-red-500"></i> Note: You will be logged out immediately after updating.
+                                </p>
+                                <button type="submit" class="w-full md:w-auto bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+                                    <i class="fa-solid fa-lock mr-2"></i> Save & Lock Vault
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="txModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity" onclick="closeTxModal()"></div>
+        <div class="glass-panel relative z-10 w-full max-w-lg p-5 sm:p-8 border-t-4 border-red-600 transform scale-95 opacity-0 transition-all duration-300" id="txModalContent">
+            <button onclick="closeTxModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex justify-center items-center mr-4 text-lg font-black text-white shadow-inner border border-slate-600" id="modal-avatar">U</div>
+                <div>
+                    <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="modal-username">Username</h3>
+                    <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1" id="modal-date">Date & Time</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                    <p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Action & Method</p>
+                    <p class="font-black text-sm sm:text-lg" id="modal-action">BUY / UPI</p>
+                </div>
+                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                    <p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Amount</p>
+                    <p class="font-black text-lg sm:text-2xl text-white text-glow" id="modal-amount">$0.00</p>
+                </div>
+            </div>
+            <div>
+                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center"><i class="fa-solid fa-file-invoice mr-2"></i> User Provided Details</p>
+                <div class="bg-[#050b14] p-4 sm:p-5 rounded-xl border border-slate-700 text-xs sm:text-sm font-medium text-green-400 whitespace-pre-wrap font-mono shadow-inner max-h-40 overflow-y-auto" id="modal-details">Loading...</div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
+                <span>Closed By: <span id="modal-closedBy" class="text-slate-300">Admin</span></span>
+                <span class="text-red-500"><i class="fa-solid fa-shield-check mr-1"></i> Vault Secured</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="kycModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeKycModal()"></div>
+        <div class="glass-panel relative z-10 w-full max-w-2xl p-5 sm:p-8 border-t-4 border-yellow-500 transform scale-95 opacity-0 transition-all duration-300" id="kycModalContent">
+            
+            <button onclick="closeKycModal()" class="absolute top-5 right-5 text-slate-400 hover:text-yellow-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <div class="mb-6 border-b border-slate-700/50 pb-4">
+                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center">
+                    <i class="fa-solid fa-user-shield text-yellow-500 mr-3"></i> Pending KYC Reviews
+                </h3>
+                <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Review and action the verification requests.</p>
+            </div>
+            
+            <div class="space-y-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1" id="kyc-list-wrapper">
+                <% if (pendingKycList.length === 0) { %>
+                    <div class="text-center py-10 text-slate-500 italic">
+                        <i class="fa-solid fa-circle-check text-4xl text-green-500/20 mb-3 block"></i>
+                        No pending KYC requests. All clear!
+                    </div>
+                <% } else { %>
+                    <% pendingKycList.forEach(kyc => { %>
+                        <div class="bg-slate-900/60 p-4 sm:p-5 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition duration-300 hover:border-slate-700" id="kyc-row-<%= kyc.discordId %>">
+                            <div class="flex-1 w-full">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="bg-yellow-500/10 text-yellow-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pending</span>
+                                    <span class="text-xs font-black text-slate-400">ID: <%= kyc.discordContact %></span>
+                                </div>
+                                <h4 class="font-bold text-white text-sm sm:text-base">Alias: <span class="text-yellow-400"><%= kyc.name %></span></h4>
+                                <p class="text-xs text-slate-400 mt-1">Tag: @<%= kyc.username %></p>
+                                <div class="bg-[#050b14]/50 border border-slate-800/80 p-2.5 rounded-lg mt-3 text-xs text-slate-300 font-mono overflow-x-auto">
+                                    <span class="text-slate-500 font-bold block mb-1">Details:</span>
+                                    <%= kyc.paymentInfo %>
+                                </div>
+                            </div>
+                            <div class="flex md:flex-col gap-2 w-full md:w-auto">
+                                <button onclick="actionKyc('<%= kyc.discordId %>', 'approve')" class="flex-1 md:flex-initial w-full md:w-28 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg transition-all shadow-[0_0_10px_rgba(34,197,94,0.1)]">
+                                    Approve
+                                </button>
+                                <button onclick="actionKyc('<%= kyc.discordId %>', 'reject')" class="flex-1 md:flex-initial w-full md:w-28 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg border border-red-500/10 transition-all">
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    <% }) %>
+                <% } %>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-slate-700/50 text-right text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Waiting Queue: <%= pendingKyc %>
+            </div>
         </div>
     </div>
 
     <script>
-        const ctx = document.getElementById('volumeChart').getContext('2d');
-        
-        // Gradients for bars
-        const greenGradient = ctx.createLinearGradient(0, 0, 0, 400);
-        greenGradient.addColorStop(0, 'rgba(34, 197, 94, 0.9)');
-        greenGradient.addColorStop(1, 'rgba(34, 197, 94, 0.1)');
+        const recentTrades = <%- JSON.stringify(recentFeed || []) %>;
+    </script>
 
-        const yellowGradient = ctx.createLinearGradient(0, 0, 0, 400);
-        yellowGradient.addColorStop(0, 'rgba(234, 179, 8, 0.9)');
-        yellowGradient.addColorStop(1, 'rgba(234, 179, 8, 0.1)');
+    <script>
+        // --- 🌟 NAYA AUTO REFRESH SYSTEM LOGIC (10 SECONDS COUNTDOWN) 🌟 ---
+        let refreshSeconds = 10;
+        let isRefreshPaused = false;
+        let refreshInterval;
 
-        const purpleGradient = ctx.createLinearGradient(0, 0, 0, 400);
-        purpleGradient.addColorStop(0, 'rgba(168, 85, 247, 0.9)');
-        purpleGradient.addColorStop(1, 'rgba(168, 85, 247, 0.1)');
+        function startAutoRefreshTimer() {
+            refreshInterval = setInterval(() => {
+                if (!isRefreshPaused) {
+                    refreshSeconds--;
+                    document.getElementById('refresh-timer').innerText = `${refreshSeconds}s`;
 
-        const volumeChart = new Chart(ctx, {
-            type: 'bar',
+                    if (refreshSeconds <= 0) {
+                        clearInterval(refreshInterval);
+                        // Refresh the page
+                        window.location.reload();
+                    }
+                }
+            }, 1000);
+        }
+
+        function toggleAutoRefresh() {
+            const icon = document.getElementById('refresh-icon');
+            const timerText = document.getElementById('refresh-timer');
+            isRefreshPaused = !isRefreshPaused;
+
+            if (isRefreshPaused) {
+                icon.className = 'fa-solid fa-play text-green-400';
+                timerText.innerText = 'Paused';
+                timerText.classList.remove('text-red-400');
+                timerText.classList.add('text-slate-500');
+            } else {
+                icon.className = 'fa-solid fa-pause text-red-500';
+                timerText.innerText = `${refreshSeconds}s`;
+                timerText.classList.remove('text-slate-500');
+                timerText.classList.add('text-red-400');
+            }
+        }
+
+        // Start countdown timer on page load
+        startAutoRefreshTimer();
+
+        // Pause countdown automatically when modal/popups are open (taaki admin review karte waqt page refresh na ho)
+        function pauseOnModalOpen() {
+            isRefreshPaused = true;
+            document.getElementById('refresh-icon').className = 'fa-solid fa-play text-green-400';
+            document.getElementById('refresh-timer').innerText = 'Paused';
+        }
+
+        function resumeOnModalClose() {
+            isRefreshPaused = false;
+            document.getElementById('refresh-icon').className = 'fa-solid fa-pause text-red-500';
+            document.getElementById('refresh-timer').innerText = `${refreshSeconds}s`;
+        }
+
+
+        // --- SIDEBAR TOGGLE ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            const arrowIcon = document.getElementById('menu-arrow-icon');
+            const toggleBtn = document.getElementById('menu-toggle-btn');
+            const isOpen = !sidebar.classList.contains('-translate-x-full');
+
+            if (isOpen) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.remove('active');
+                overlay.classList.add('opacity-0');
+                arrowIcon.className = 'fa-solid fa-chevron-right text-lg';
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.add('active');
+                overlay.classList.remove('opacity-0');
+                arrowIcon.className = 'fa-solid fa-chevron-left text-lg';
+            }
+        }
+
+        function showTab(tabId, btn) {
+            document.getElementById('dashboard-view').classList.add('hidden-section');
+            document.getElementById('settings-view').classList.add('hidden-section');
+            
+            const selectedTab = document.getElementById(tabId);
+            selectedTab.classList.remove('hidden-section');
+            selectedTab.classList.remove('fade-in');
+            void selectedTab.offsetWidth; 
+            selectedTab.classList.add('fade-in');
+            
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            btn.classList.add('active');
+
+            const titles = { 'dashboard-view': 'Executive Analytics', 'settings-view': 'Vault Settings' };
+            document.getElementById('page-title').innerText = titles[tabId];
+
+            if (window.innerWidth < 1024) {
+                toggleSidebar();
+            }
+        }
+
+        // --- TRANSACTION DETAIL MODAL LOGIC ---
+        function openTxModal(index) {
+            pauseOnModalOpen(); // Pause timer
+            const trade = recentTrades[index];
+            if(!trade) return;
+
+            document.getElementById('modal-avatar').innerText = trade.username.charAt(0).toUpperCase();
+            document.getElementById('modal-username').innerText = trade.username;
+            
+            let dateStr = "Date Not Available";
+            if (trade.closedAt && trade.closedAt._seconds) {
+                dateStr = new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
+            }
+            document.getElementById('modal-date').innerText = dateStr;
+
+            const actionEl = document.getElementById('modal-action');
+            if(trade.tradeType === 'Buy') {
+                actionEl.innerHTML = `<span class="text-green-400"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
+            } else {
+                actionEl.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
+            }
+
+            document.getElementById('modal-amount').innerText = '$' + (trade.amountUsd ? trade.amountUsd.toLocaleString() : '0');
+            document.getElementById('modal-details').innerText = trade.userReceivingDetails || "No details provided by the user.";
+            document.getElementById('modal-closedBy').innerText = trade.closedBy || "Admin";
+
+            const modal = document.getElementById('txModal');
+            const content = document.getElementById('txModalContent');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeTxModal() {
+            resumeOnModalClose(); // Resume timer
+            const modal = document.getElementById('txModal');
+            const content = document.getElementById('txModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // --- PENDING KYC MODAL POPUP LOGIC ---
+        function openKycModal() {
+            pauseOnModalOpen(); // Pause timer
+            const modal = document.getElementById('kycModal');
+            const content = document.getElementById('kycModalContent');
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeKycModal() {
+            resumeOnModalClose(); // Resume timer
+            const modal = document.getElementById('kycModal');
+            const content = document.getElementById('kycModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // --- API INTERACTION ---
+        async function actionKyc(userId, action) {
+            const endpoint = action === 'approve' ? '/api/kyc-approve' : '/api/kyc-reject';
+            const confirmationMsg = `Are you sure you want to ${action} this user's KYC verification request?`;
+            
+            if(!confirm(confirmationMsg)) return;
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ User KYC successfully ${action}d!`);
+                    const row = document.getElementById(`kyc-row-${userId}`);
+                    if(row) {
+                        row.style.transition = 'all 0.5s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateY(15px)';
+                        setTimeout(() => {
+                            row.remove();
+                            const wrapper = document.getElementById('kyc-list-wrapper');
+                            if(wrapper && wrapper.children.length === 0) {
+                                wrapper.innerHTML = `<div class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-circle-check text-4xl text-green-500/20 mb-3 block"></i>No pending KYC requests. All clear!</div>`;
+                            }
+                        }, 500);
+                    }
+                    setTimeout(() => { window.location.reload(); }, 1000);
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (e) { alert("API Connection Error!"); }
+        }
+
+        // --- CHARTS LOGIC ---
+        const ctxBar = document.getElementById('volumeChart').getContext('2d');
+        const gradientLine = ctxBar.createLinearGradient(0, 0, 0, 300);
+        gradientLine.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); 
+        gradientLine.addColorStop(1, 'rgba(239, 68, 68, 0.0)'); 
+
+        new Chart(ctxBar, {
+            type: 'line', 
             data: {
-                labels: ['Daily (24h)', 'Weekly (7D)', 'Monthly (30D)'],
+                labels: ['Daily (24h)', 'Weekly (7d)', 'Monthly (30d)'],
                 datasets: [{
+                    label: 'Revenue ($)',
                     data: [Number('<%= dailyVol %>'), Number('<%= weeklyVol %>'), Number('<%= monthlyVol %>')],
-                    backgroundColor: [greenGradient, yellowGradient, purpleGradient],
-                    borderColor: ['#22c55e', '#eab308', '#a855f7'],
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    barPercentage: 0.5
+                    borderColor: '#ef4444', 
+                    backgroundColor: gradientLine, 
+                    borderWidth: 3, fill: true, tension: 0.4, 
+                    pointBackgroundColor: '#0f172a', pointBorderColor: '#ef4444',
+                    pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7
+                }]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { 
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } }, border: { display: false } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } }
+                }
+            }
+        });
+
+        const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
+        const buyV = Number('<%= buyVol %>');
+        const sellV = Number('<%= sellVol %>');
+        
+        new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['Buy (INR in)', 'Sell (Crypto out)'],
+                datasets: [{
+                    data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV],
+                    backgroundColor: ['#22c55e', '#ef4444'], borderColor: '#0f172a', borderWidth: 5
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { 
-                        beginAtZero: true, 
-                        grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false }, 
-                        ticks: { color: '#94a3b8', font: { family: 'sans-serif', size: 12 } },
-                        border: { display: false }
-                    },
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: '#e2e8f0', font: { weight: 'bold', size: 13 } },
-                        border: { display: false }
-                    }
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                        titleColor: '#cbd5e1',
-                        bodyColor: '#22c55e',
-                        bodyFont: { weight: 'bold', size: 16 },
-                        padding: 14,
-                        cornerRadius: 10,
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                return 'Volume: $' + context.raw.toLocaleString();
-                            }
-                        }
-                    }
-                }
+                responsive: true, maintainAspectRatio: false, cutout: '75%',
+                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family:'Outfit', weight:'600', size: 12 }, padding: 20 } } }
             }
         });
     </script>
