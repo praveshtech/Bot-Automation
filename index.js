@@ -90,21 +90,35 @@ client.on('interactionCreate', async interaction => {
     // --- 🛡️ 1. KYC SYSTEM ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         
-        // 🔒 PRO FIX: Pehle check karo ki user ne already form toh nahi bhara hai
+        // 🔒 PRO FIX: Dynamic KYC Check (Allow resubmission if Rejected)
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists) {
                 const status = existingKyc.data().status;
-                return interaction.reply({ 
-                    content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **${status}**.\n\nPlease wait for the Admin to review it.`, 
-                    ephemeral: true 
-                });
+                
+                // 🛑 Condition 1: Agar check chal raha hai, toh form mat do
+                if (status === 'Pending') {
+                    return interaction.reply({ 
+                        content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.`, 
+                        ephemeral: true 
+                    });
+                }
+                
+                // 🛑 Condition 2: Agar pass ho gaya hai, toh wapas form kyu bharna?
+                if (status === 'Approved') {
+                    return interaction.reply({ 
+                        content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!`, 
+                        ephemeral: true 
+                    });
+                }
+                
+                // 🟢 Condition 3: Agar 'Rejected' hai, toh yeh if block skip ho jayega aur niche naya form khul jayega!
             }
         } catch (error) {
             console.error("KYC Check Error: ", error);
         }
 
-        // Agar user naya hai, toh usko form dikhao
+        // Agar user naya hai ya uska pehla form 'Rejected' ho chuka hai, toh usko form dikhao
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
         const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
         const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
