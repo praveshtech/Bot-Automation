@@ -89,54 +89,20 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        
-        // 1. SABSE PEHLE TURANT REPLY (Taaki laal error na aaye)
-        await interaction.reply({ 
-            content: '✅ Your KYC details have been successfully submitted! Please wait for verification.', 
-            ephemeral: true 
-        });
-
-        // 2. DATA NIKALNA (Aapka form jaisa tha bilkul waisa hi hai)
         const name = interaction.fields.getTextInputValue('kyc_name');
         const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
         const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
         
-        // 3. BACKGROUND TASKS (Admin ko alert aur Firebase save)
-        try {
-            let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
-            if (!reviewChannel) { 
-                reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
-            }
-            
-            const adminEmbed = new EmbedBuilder()
-                .setColor('#e67e22')
-                .setTitle('🚨 New KYC Request')
-                .addFields(
-                    { name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, 
-                    { name: 'Name/Alias', value: name, inline: true }, 
-                    { name: 'Discord ID/Name', value: discordContactVal, inline: true }, 
-                    { name: 'Payment Info', value: paymentDetails, inline: false }
-                );
-                
-            const actionButtons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), 
-                new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger)
-            );
-            await reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] });
+        await interaction.reply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.', ephemeral: true });
 
-            // Yahi same data aapke firebase me store ho raha hai
-            await db.collection('users_kyc').doc(interaction.user.id).set({ 
-                discordId: interaction.user.id, 
-                username: interaction.user.username, 
-                name: name, 
-                discordContact: discordContactVal, 
-                paymentInfo: paymentDetails, 
-                status: 'Pending', 
-                createdAt: admin.firestore.FieldValue.serverTimestamp() 
-            });
-        } catch (error) {
-            console.error("KYC Background Task Error: ", error);
-        }
+        let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
+        if (!reviewChannel) { reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); }
+        
+        const adminEmbed = new EmbedBuilder().setColor('#e67e22').setTitle('🚨 New KYC Request').addFields({ name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, { name: 'Name/Alias', value: name, inline: true }, { name: 'Discord ID/Name', value: discordContactVal, inline: true }, { name: 'Payment Info', value: paymentDetails, inline: false });
+        const actionButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger));
+        await reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] });
+
+        await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: name, discordContact: discordContactVal, paymentInfo: paymentDetails, status: 'Pending', createdAt: admin.firestore.FieldValue.serverTimestamp() });
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
@@ -576,10 +542,6 @@ app.get('/', requireLogin, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-
-// '0.0.0.0' daalne se dashboard aapke laptop ke IP se bhi khulega
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 DASHBOARD READY: http://192.168.31.183:${PORT}`);
-});;
+app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port 3000`); });
 
 client.login(process.env.DISCORD_TOKEN);
