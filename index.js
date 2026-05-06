@@ -33,7 +33,7 @@ const client = new Client({
 
 const userSelections = new Map();
 
-client.once('Ready', () => {
+client.once('clientReady', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
 });
@@ -491,31 +491,22 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        // Direct guild/server ID se fetch karein taaki cache empty hone par bhi crash na ho
-        const guildId = '1456297708892586057'; // <--- Yahan apna asli Discord Server ID daalein (Bina brackets ke)
-        const guild = await client.guilds.fetch(guildId).catch(() => null);
-
+        const guild = client.guilds.cache.first(); 
         if (guild) {
             await approveUserKYC(userId, guild);
             res.json({ success: true });
         } else {
-            console.error("Guild fetch failed for ID:", guildId);
-            res.json({ success: false, error: "Discord server connection lost or Guild ID invalid." });
+            res.json({ success: false, error: "Discord server connection lost." });
         }
-    } catch (e) { 
-        console.error("KYC Approve API Error:", e);
-        res.json({ success: false, error: e.message }); 
-    }
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
+
 app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         res.json({ success: true });
-    } catch (e) { 
-        console.error("KYC Reject Error:", e);
-        res.json({ success: false, error: e.message }); 
-    }
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.get('/', requireLogin, async (req, res) => {
