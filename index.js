@@ -237,14 +237,20 @@ client.on('interactionCreate', async interaction => {
 
         const ticketEmbed = new EmbedBuilder().setColor('#ff0000').setTitle(`🏦 Secure P2P Room: ${interaction.user.username}`).setDescription(`Welcome, ${interaction.user.toString()}! Below are your transaction details.\n\n${actionDescription}`).addFields({ name: 'Action', value: userState.type, inline: true }, { name: 'Amount', value: `$${tradeAmount}`, inline: true }, { name: 'Method', value: userState.step2, inline: true }, { name: 'Your Provided Details', value: `\`\`\`${userDetails}\`\`\``, inline: false }, { name: '🏦 Transfer Details', value: adminProvides, inline: false }).setFooter({ text: 'Share your payment screenshot here after successful transfer.' });
         const closeButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger));
-        await ticketChannel.send({ embeds: [ticketEmbed], components: [closeButtonRow] });
-        await ticketChannel.send(`👇 **Long press below to copy details easily:** 👇`);
-        await ticketChannel.send(easyCopyText);
+       await ticketChannel.send({ embeds: [ticketEmbed], components: [closeButtonRow] });
+        
+        // 🌟 NAYA DYNAMIC COPY-PASTE SYSTEM 🌟
+        await ticketChannel.send(`👤 **[ FOR USER ]** Long press below to copy Admin's Transfer Details:`);
+        await ticketChannel.send(`**${easyCopyText}**`);
+        
+        await ticketChannel.send(`👨‍💼 **[ FOR ADMIN ]** Long press below to copy User's Receiving Details:`);
+        await ticketChannel.send(`**${userDetails}**`);
+        
         if (palermoRole) await ticketChannel.send(`🔔 <@&${palermoRole.id}> A new transaction ticket has been opened.`).then(msg => setTimeout(() => msg.delete(), 5000));
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
     }
-
+    
     // --- 🏦 4. TICKET CLOSE & LOGGING ---
     if (interaction.isButton() && interaction.customId === 'close_p2p_ticket') {
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
