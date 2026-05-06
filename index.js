@@ -45,7 +45,8 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
     if (message.content === '!p2p' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Your SaaS Name' });
+        // 🌟 NAYA FOOTER UPDATE KIYA GAYA HAI 🌟
+        const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Bot Automation' });
         const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
         await message.channel.send({ embeds: [setupEmbed], components: [startButton] });
         await message.delete();
@@ -63,7 +64,6 @@ client.on('messageCreate', async message => {
             .setColor('#2b2d31')
             .setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD')
             .setDescription('**[ 🔴 SYSTEM STATUS: STANDBY ]**\n\nClick the **Sync Network Data** button below to securely fetch the latest real-time analytics from the central database.')
-            
             .setFooter({ text: 'Professor Network - Secure Terminal' });
             
         const refreshBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('refresh_dashboard').setLabel('🔄 Sync Network Data').setStyle(ButtonStyle.Primary));
@@ -237,12 +237,10 @@ client.on('interactionCreate', async interaction => {
 
         const ticketEmbed = new EmbedBuilder().setColor('#ff0000').setTitle(`🏦 Secure P2P Room: ${interaction.user.username}`).setDescription(`Welcome, ${interaction.user.toString()}! Below are your transaction details.\n\n${actionDescription}`).addFields({ name: 'Action', value: userState.type, inline: true }, { name: 'Amount', value: `$${tradeAmount}`, inline: true }, { name: 'Method', value: userState.step2, inline: true }, { name: 'Your Provided Details', value: `\`\`\`${userDetails}\`\`\``, inline: false }, { name: '🏦 Transfer Details', value: adminProvides, inline: false }).setFooter({ text: 'Share your payment screenshot here after successful transfer.' });
         const closeButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger));
-       await ticketChannel.send({ embeds: [ticketEmbed], components: [closeButtonRow] });
         
-        // 🌟 NAYA DYNAMIC COPY-PASTE SYSTEM 🌟
+        await ticketChannel.send({ embeds: [ticketEmbed], components: [closeButtonRow] });
         await ticketChannel.send(`👤 **[ FOR USER ]** Long press below to copy Admin's Transfer Details:`);
         await ticketChannel.send(`**${easyCopyText}**`);
-        
         await ticketChannel.send(`👨‍💼 **[ FOR ADMIN ]** Long press below to copy User's Receiving Details:`);
         await ticketChannel.send(`**${userDetails}**`);
         
@@ -292,7 +290,9 @@ client.on('interactionCreate', async interaction => {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
                 botMessages.forEach(msg => msg.delete().catch(console.error));
-                const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Bot Automation' });
+                
+                // 🌟 TICKET CLOSE HONE KE BAAD WALA MESSAGE BHI UPDATE KIYA HAI 🌟
+                const setupEmbed = new EmbedBuilder().setColor('#ff0000').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nOnly verified members can start a transaction. Click below to begin.').setFooter({ text: 'Automated by Professor Network' });
                 const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [startButton] });
             }
@@ -301,7 +301,7 @@ client.on('interactionCreate', async interaction => {
         setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
     }
 
-    // --- 📊 5. DISCORD DASHBOARD REFRESH (UI UPGRADED) ---
+    // --- 📊 5. DISCORD DASHBOARD REFRESH ---
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: '❌ Access Denied. Only The Professor can view the vault stats.', ephemeral: true });
@@ -315,7 +315,6 @@ client.on('interactionCreate', async interaction => {
             const now = new Date();
             const userVolumes = {}; 
 
-            // 🌟 LOGIC UPDATE: Discord ID ke basis par Whales track karna
             snapshot.forEach(doc => {
                 const data = doc.data();
                 const amount = data.amountUsd || 0;
@@ -339,16 +338,14 @@ client.on('interactionCreate', async interaction => {
                 }
             });
 
-            // Top 5 Whales Calculate Karna
             const topTraders = Object.values(userVolumes)
                 .sort((a, b) => b.volume - a.volume)
-                .slice(0, 5); // Sirf top 5
+                .slice(0, 5); 
             
             let whaleText = "";
             if (topTraders.length > 0) {
                 const medals = ['🥇', '🥈', '🥉', '🏅', '🏅'];
                 topTraders.forEach((trader, index) => {
-                    // <@id> use kiya hai taaki wo clickable (pingable) ban jaye
                     whaleText += `${medals[index]} <@${trader.id}> ⸻ \`$${trader.volume.toLocaleString()}\`\n`;
                 });
             } else {
