@@ -316,8 +316,26 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-        const ticketEmbed = new EmbedBuilder().setColor('#ff0000').setTitle(`🏦 Secure P2P Room: ${interaction.user.username}`).setDescription(`Welcome, ${interaction.user.toString()}! Below are your transaction details.\n\n${actionDescription}`).addFields({ name: 'Action', value: userState.type, inline: true }, { name: 'Amount', value: `$${tradeAmount}`, inline: true }, { name: 'Method', value: userState.step2, inline: true }, { name: 'Your Provided Details', value: `\`\`\`${userDetails}\`\`\``, inline: false }, { name: '🏦 Transfer Details', value: adminProvides, inline: false }).setFooter({ text: 'Share your payment screenshot here after successful transfer.' });
-        const closeButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger));
+         const cinematicDescription = 
+         `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
+         `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
+         `**1. What is the action?**\n` +
+         `> ${userState.type} Crypto\n\n` +
+         `**2. How much amount ($)?**\n` +
+         `> ${tradeAmount}\n\n` +
+         `**3. Which Method?**\n` +
+         `> ${userState.step2}\n\n` +
+         `**4. Your Provided Details:**\n` +
+         `> ${userDetails}\n\n` +
+         `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
+        `${adminProvides}`;
+
+            const ticketEmbed = new EmbedBuilder()
+             .setColor('#2b2d31') 
+             .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
+             .setDescription(cinematicDescription)
+             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
+            const closeButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger));
         
         await ticketChannel.send({ embeds: [ticketEmbed], components: [closeButtonRow] });
         await ticketChannel.send(`👤 **[ FOR USER ]** Long press below to copy Admin's Transfer Details:`);
