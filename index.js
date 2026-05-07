@@ -600,6 +600,49 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     }
 });
 
+// ==========================================
+// 📈 MARKET PRICE BROADCAST API
+// ==========================================
+app.post('/api/broadcast-price', requireLogin, async (req, res) => {
+    const { buyPrice, sellPrice } = req.body;
+    
+    try {
+        const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
+        if (!guild) {
+            return res.json({ success: false, error: "Discord server not found." });
+        }
+
+        // Discord mein channel dhundhna
+        let priceChannel = guild.channels.cache.find(c => c.name === 'daily-price-update');
+        
+        // Agar channel nahi hai toh error bhej do
+        if (!priceChannel) {
+            return res.json({ success: false, error: "Channel #daily-price-update not found in Discord!" });
+        }
+
+        // Premium Cinematic Embed Design
+        const priceEmbed = new EmbedBuilder()
+            .setColor('#f1c40f') // Gold color for Money/Market
+            .setTitle('📈 USDT Market Price Update')
+            .setDescription('**The Vault** has updated the real-time P2P exchange rates. Current market prices are active immediately.')
+            .addFields(
+                { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true },
+                { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
+
+        // Channel mein message bhejna
+        await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
+        
+        res.json({ success: true });
+
+    } catch (error) {
+        console.error("Price Broadcast Error:", error);
+        res.json({ success: false, error: error.message });
+    }
+});
+
 app.get('/', requireLogin, async (req, res) => {
     try {
         const guild = client.guilds.cache.first(); 
