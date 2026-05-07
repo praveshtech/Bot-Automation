@@ -87,16 +87,37 @@ client.on('messageCreate', async message => {
 client.on('interactionCreate', async interaction => {
     
     // --- 🛡️ 1. KYC SYSTEM ---
+    
+    // 1️⃣ BUTTON CLICK (Instant Modal Open - No Database Check Here)
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
+        const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
+        const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
+        const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
+        const paymentInfoField = new TextInputBuilder().setCustomId('kyc_payment').setLabel('Default Payment Info (UPI/Wallet)').setStyle(TextInputStyle.Paragraph).setRequired(true);
+        
+        kycModal.addComponents(
+            new ActionRowBuilder().addComponents(realName), 
+            new ActionRowBuilder().addComponents(discordContactField), 
+            new ActionRowBuilder().addComponents(paymentInfoField)
+        );
+        
+        await interaction.showModal(kycModal);
+    }
+
+    // 2️⃣ FORM SUBMIT (Database Check yahan hoga)
+    if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
+        
+        // Modal instant band karne ka magic signal
+        await interaction.deferReply({ ephemeral: true });
+
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists) {
                 const status = existingKyc.data().status;
                 
                 if (status === 'Pending') {
-                    return interaction.reply({ 
-                        content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.`, 
-                        ephemeral: true 
+                    return interaction.editReply({ 
+                        content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.` 
                     });
                 }
                 
@@ -104,32 +125,15 @@ client.on('interactionCreate', async interaction => {
                     const hasVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
 
                     if (hasVerifiedRole) {
-                        return interaction.reply({ 
-                            content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!`, 
-                            ephemeral: true 
+                        return interaction.editReply({ 
+                            content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!` 
                         });
                     } else {
                         await db.collection('users_kyc').doc(interaction.user.id).delete();
                     }
                 }
             }
-        } catch (error) {
-            console.error("KYC Check Error: ", error);
-        }
 
-        const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
-        const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
-        const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
-        const paymentInfoField = new TextInputBuilder().setCustomId('kyc_payment').setLabel('Default Payment Info (UPI/Wallet)').setStyle(TextInputStyle.Paragraph).setRequired(true);
-        
-        kycModal.addComponents(new ActionRowBuilder().addComponents(realName), new ActionRowBuilder().addComponents(discordContactField), new ActionRowBuilder().addComponents(paymentInfoField));
-        await interaction.showModal(kycModal);
-    }
-
-    if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        await interaction.deferReply({ ephemeral: true });
-
-        try {
             const name = interaction.fields.getTextInputValue('kyc_name');
             const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
             const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
@@ -330,7 +334,6 @@ client.on('interactionCreate', async interaction => {
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
-        // 🔥 COMPLETE OR CANCEL BUTTONS
         const actionButtonRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade (Admin)').setStyle(ButtonStyle.Danger)
