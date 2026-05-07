@@ -28,6 +28,9 @@ admin.initializeApp({
 });
 const db = admin.firestore(); 
 
+// 🔥 NAYA UPDATE: Global Smart Tracker for Dashboard Refresh (0 Firebase Reads)
+let globalLastUpdate = Date.now();
+
 // ==========================================
 // 2. DISCORD BOT INIT
 // ==========================================
@@ -87,8 +90,6 @@ client.on('messageCreate', async message => {
 client.on('interactionCreate', async interaction => {
     
     // --- 🛡️ 1. KYC SYSTEM ---
-    
-    // 1️⃣ BUTTON CLICK (Instant Modal Open - No Database Check Here)
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
         const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
@@ -104,30 +105,20 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(kycModal);
     }
 
-    // 2️⃣ FORM SUBMIT (Database Check yahan hoga)
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        
-        // Modal instant band karne ka magic signal
         await interaction.deferReply({ ephemeral: true });
 
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists) {
                 const status = existingKyc.data().status;
-                
                 if (status === 'Pending') {
-                    return interaction.editReply({ 
-                        content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.` 
-                    });
+                    return interaction.editReply({ content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.` });
                 }
-                
                 if (status === 'Approved') {
                     const hasVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
-
                     if (hasVerifiedRole) {
-                        return interaction.editReply({ 
-                            content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!` 
-                        });
+                        return interaction.editReply({ content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!` });
                     } else {
                         await db.collection('users_kyc').doc(interaction.user.id).delete();
                     }
@@ -171,6 +162,7 @@ client.on('interactionCreate', async interaction => {
                 })
             ]);
 
+            globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
             await interaction.editReply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.' });
 
         } catch (error) {
@@ -198,6 +190,8 @@ client.on('interactionCreate', async interaction => {
 
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         
+        globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+
         const oldEmbed = interaction.message.embeds[0];
         const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#e74c3c').setTitle('❌ KYC Rejected');
         
@@ -315,6 +309,7 @@ client.on('interactionCreate', async interaction => {
                 status: 'Open', 
                 createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
+            globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
         } catch (error) { console.error("Firebase Error: ", error); }
 
         const cinematicDescription = 
@@ -446,7 +441,6 @@ client.on('interactionCreate', async interaction => {
                     logChannel = await interaction.guild.channels.create({ name: 'transaction-logs', type: ChannelType.GuildText, permissionOverwrites: logPerms });
                 }
 
-                // 🔥 CRASH-PROOF EMBED FIELDS
                 const vaultEmbed = new EmbedBuilder()
                     .setColor(isSuccess ? '#f1c40f' : '#e74c3c') 
                     .setTitle(`🏦 Vault Record: Transaction ${finalStatus}`)
@@ -468,6 +462,8 @@ client.on('interactionCreate', async interaction => {
                 closedAt: admin.firestore.FieldValue.serverTimestamp() 
             });
 
+            globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name === 'tickets' || c.name === 'exchange-desk');
             if (mainTicketChannel) {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
@@ -482,74 +478,6 @@ client.on('interactionCreate', async interaction => {
 
         setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
     }
-
-    // --- 📊 6. DISCORD DASHBOARD REFRESH ---
-    if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return interaction.reply({ content: '❌ Access Denied. Only The Professor can view the vault stats.', ephemeral: true });
-        }
-        await interaction.deferUpdate();
-        try {
-            const liveMembers = interaction.guild.memberCount;
-            const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
-            
-            let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
-            const now = new Date();
-            const userVolumes = {}; 
-
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const amount = data.amountUsd || 0;
-                const userId = data.discordUserId; 
-                
-                if (userId) {
-                    if (userVolumes[userId]) { 
-                        userVolumes[userId].volume += amount; 
-                    } else { 
-                        userVolumes[userId] = { id: userId, volume: amount }; 
-                    }
-                }
-
-                if (data.closedAt && typeof data.closedAt.toDate === 'function') {
-                    const tradeDate = data.closedAt.toDate();
-                    const diffTime = Math.abs(now - tradeDate);
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    if (diffDays <= 1) dailyVol += amount;
-                    if (diffDays <= 7) weeklyVol += amount;
-                    if (diffDays <= 30) monthlyVol += amount;
-                }
-            });
-
-            const topTraders = Object.values(userVolumes)
-                .sort((a, b) => b.volume - a.volume)
-                .slice(0, 5); 
-            
-            let whaleText = "";
-            if (topTraders.length > 0) {
-                const medals = ['🥇', '🥈', '🥉', '🏅', '🏅'];
-                topTraders.forEach((trader, index) => {
-                    whaleText += `${medals[index]} <@${trader.id}> ⸻ \`$${trader.volume.toLocaleString()}\`\n`;
-                });
-            } else {
-                whaleText = "No trades yet.";
-            }
-
-            const updatedEmbed = new EmbedBuilder()
-                .setColor('#f1c40f') 
-                .setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD')
-                .setDescription('**[ 🟢 SYSTEM STATUS: ONLINE ]**\nReal-time network analytics securely fetched from the central database.')
-                .addFields(
-                    { name: '👥 Network Strength', value: `\`\`\`yaml\nTotal Live Members : ${liveMembers}\n\`\`\``, inline: false },
-                    { name: '📈 Transaction Analytics', value: `\`\`\`yaml\nDaily (24h)   : $${dailyVol.toLocaleString()}\nWeekly (7d)   : $${weeklyVol.toLocaleString()}\nMonthly (30d) : $${monthlyVol.toLocaleString()}\n\`\`\``, inline: false },
-                    { name: '🏆 Top 5 Network Whales', value: whaleText, inline: false }
-                )
-                .setThumbnail('https://cdn-icons-png.flaticon.com/512/3252/3252654.png') 
-                .setTimestamp()
-                .setFooter({ text: 'Professor Network - Secure Terminal' });
-
-            await interaction.editReply({ embeds: [updatedEmbed] });
-        } catch (error) { console.error(error); }
-    }
 });
 
 async function approveUserKYC(userId, guild) {
@@ -559,6 +487,7 @@ async function approveUserKYC(userId, guild) {
         const member = await guild.members.fetch(userId);
         await member.roles.add(verifiedRole);
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' });
+        globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
         await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved from dashboard.').catch(() => {});
     } catch (e) { console.log("External KYC approve error", e); }
 }
@@ -671,6 +600,7 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
+        globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
         res.json({ success: true });
     } catch (e) { 
         console.error("KYC Reject API Error:", e);
@@ -717,6 +647,11 @@ app.post('/update-price', requireLogin, async (req, res) => {
     }
 });
 
+// 🔥 NAYA API: Dashboard is route se poochega ki koi naya data aaya hai kya
+app.get('/api/check-updates', requireLogin, (req, res) => {
+    res.json({ timestamp: globalLastUpdate });
+});
+
 app.get('/', requireLogin, async (req, res) => {
     try {
         const guild = client.guilds.cache.first(); 
@@ -751,7 +686,6 @@ app.get('/', requireLogin, async (req, res) => {
             if (userVolumes[username]) { userVolumes[username] += amount; } 
             else { userVolumes[username] = amount; }
 
-            // 🔥 CRASH-PROOF DATE CHECK
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
                 const diffTime = Math.abs(now - tradeDate);
@@ -762,7 +696,6 @@ app.get('/', requireLogin, async (req, res) => {
             }
         });
 
-        // 🔥 CRASH-PROOF SORTING
         allCompleted.sort((a, b) => {
             const dateA = (a.closedAt && typeof a.closedAt.toDate === 'function') ? a.closedAt.toDate() : new Date(0);
             const dateB = (b.closedAt && typeof b.closedAt.toDate === 'function') ? b.closedAt.toDate() : new Date(0);

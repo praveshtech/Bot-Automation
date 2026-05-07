@@ -120,10 +120,10 @@
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div class="glass-panel px-4 py-2 flex items-center space-x-3 border-slate-700/50 text-xs font-bold uppercase tracking-wider">
                     <div class="flex items-center space-x-2">
-                        <button onclick="toggleAutoRefresh()" id="refresh-toggle-btn" class="text-red-500 hover:text-red-400 transition">
-                            <i id="refresh-icon" class="fa-solid fa-pause"></i>
+                        <button onclick="toggleSmartSync()" id="refresh-toggle-btn" class="text-green-500 hover:text-green-400 transition">
+                            <i id="refresh-icon" class="fa-solid fa-bolt animate-pulse"></i>
                         </button>
-                        <span>Auto Sync: <span id="refresh-timer" class="text-red-400">10s</span></span>
+                        <span>Smart Sync: <span id="sync-status" class="text-green-400">Active</span></span>
                     </div>
                 </div>
 
@@ -432,55 +432,62 @@
     </script>
 
     <script>
-        // --- 🌟 NAYA AUTO REFRESH SYSTEM LOGIC (10 SECONDS COUNTDOWN) 🌟 ---
-        let refreshSeconds = 10;
-        let isRefreshPaused = false;
-        let refreshInterval;
+        // --- 🔥 ZERO-READ SMART REFRESH SYSTEM 🔥 ---
+        let currentServerTime = Date.now();
+        let isSyncPaused = false;
+        let syncInterval;
 
-        function startAutoRefreshTimer() {
-            refreshInterval = setInterval(() => {
-                if (!isRefreshPaused) {
-                    refreshSeconds--;
-                    document.getElementById('refresh-timer').innerText = `${refreshSeconds}s`;
-
-                    if (refreshSeconds <= 0) {
-                        clearInterval(refreshInterval);
-                        window.location.reload();
+        function startSmartSync() {
+            syncInterval = setInterval(async () => {
+                if (!isSyncPaused) {
+                    try {
+                        const response = await fetch('/api/check-updates');
+                        const data = await response.json();
+                        
+                        if (data.timestamp > currentServerTime) {
+                            console.log("New data detected! Refreshing dashboard...");
+                            window.location.reload();
+                        }
+                    } catch (error) {
+                        console.log("Update check paused/failed.");
                     }
                 }
-            }, 1000);
+            }, 5000); // Har 5 second check karega
         }
 
-        function toggleAutoRefresh() {
+        function toggleSmartSync() {
             const icon = document.getElementById('refresh-icon');
-            const timerText = document.getElementById('refresh-timer');
-            isRefreshPaused = !isRefreshPaused;
+            const statusText = document.getElementById('sync-status');
+            isSyncPaused = !isSyncPaused;
 
-            if (isRefreshPaused) {
-                icon.className = 'fa-solid fa-play text-green-400';
-                timerText.innerText = 'Paused';
-                timerText.classList.remove('text-red-400');
-                timerText.classList.add('text-slate-500');
+            if (isSyncPaused) {
+                icon.className = 'fa-solid fa-pause text-slate-500';
+                statusText.innerText = 'Paused';
+                statusText.className = 'text-slate-500';
             } else {
-                icon.className = 'fa-solid fa-pause text-red-500';
-                timerText.innerText = `${refreshSeconds}s`;
-                timerText.classList.remove('text-slate-500');
-                timerText.classList.add('text-red-400');
+                icon.className = 'fa-solid fa-bolt text-green-500 animate-pulse';
+                statusText.innerText = 'Active';
+                statusText.className = 'text-green-400';
+                currentServerTime = Date.now(); 
             }
         }
 
-        startAutoRefreshTimer();
         function pauseOnModalOpen() {
-            isRefreshPaused = true;
-            document.getElementById('refresh-icon').className = 'fa-solid fa-play text-green-400';
-            document.getElementById('refresh-timer').innerText = 'Paused';
+            isSyncPaused = true;
+            document.getElementById('refresh-icon').className = 'fa-solid fa-pause text-slate-500';
+            document.getElementById('sync-status').innerText = 'Paused';
+            document.getElementById('sync-status').className = 'text-slate-500';
         }
 
         function resumeOnModalClose() {
-            isRefreshPaused = false;
-            document.getElementById('refresh-icon').className = 'fa-solid fa-pause text-red-500';
-            document.getElementById('refresh-timer').innerText = `${refreshSeconds}s`;
+            isSyncPaused = false;
+            document.getElementById('refresh-icon').className = 'fa-solid fa-bolt text-green-500 animate-pulse';
+            document.getElementById('sync-status').innerText = 'Active';
+            document.getElementById('sync-status').className = 'text-green-400';
+            currentServerTime = Date.now();
         }
+
+        startSmartSync(); // Sync start karo page load hone par
 
         // --- SIDEBAR TOGGLE ---
         function toggleSidebar() {
