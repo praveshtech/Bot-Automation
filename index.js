@@ -623,7 +623,7 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
         // Premium Cinematic Embed Design
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f') // Gold color for Money/Market
-            .setTitle('📈 USDT Market Price Update')
+            .setTitle('📢Today\'s USDT Market Rate')
             .setDescription('**The Vault** has updated the real-time P2P exchange rates. Current market prices are active immediately.')
             .addFields(
                 { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true },
