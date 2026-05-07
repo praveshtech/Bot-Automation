@@ -127,59 +127,61 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        await interaction.reply({ 
-            content: '✅ Your KYC details have been submitted securely. Please wait for approval.', 
-            ephemeral: true 
-        }).catch(console.error);
-
-        const name = interaction.fields.getTextInputValue('kyc_name');
-        const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
-        const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
         
-        setTimeout(async () => {
-            try {
-                let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
-                if (!reviewChannel) { 
-                    reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
-                }
-                
-                const adminEmbed = new EmbedBuilder()
-                    .setColor('#e67e22')
-                    .setTitle('🚨 New KYC Request')
-                    .addFields(
-                        { name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, 
-                        { name: 'Name/Alias', value: name, inline: true }, 
-                        { name: 'Discord ID/Name', value: discordContactVal, inline: true }, 
-                        { name: 'Payment Info', value: paymentDetails, inline: false }
-                    );
-                    
-                const actionButtons = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), 
-                    new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger)
-                );
+        // 🔥 MODAL TIMEOUT BUG FIX: Discord ko signal do taaki form turant close ho jaye
+        await interaction.deferReply({ ephemeral: true });
 
-                await Promise.all([
-                    reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] }),
-                    db.collection('users_kyc').doc(interaction.user.id).set({ 
-                        discordId: interaction.user.id, 
-                        username: interaction.user.username, 
-                        name: name, 
-                        discordContact: discordContactVal, 
-                        paymentInfo: paymentDetails, 
-                        status: 'Pending', 
-                        createdAt: admin.firestore.FieldValue.serverTimestamp() 
-                    })
-                ]);
-            } catch (error) {
-                console.error("KYC Background Processing Error:", error);
+        try {
+            const name = interaction.fields.getTextInputValue('kyc_name');
+            const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
+            const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
+            
+            let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
+            if (!reviewChannel) { 
+                reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
             }
-        }, 100); 
+            
+            const adminEmbed = new EmbedBuilder()
+                .setColor('#e67e22')
+                .setTitle('🚨 New KYC Request')
+                .addFields(
+                    { name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, 
+                    { name: 'Name/Alias', value: name, inline: true }, 
+                    { name: 'Discord ID/Name', value: discordContactVal, inline: true }, 
+                    { name: 'Payment Info', value: paymentDetails, inline: false }
+                );
+                
+            const actionButtons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), 
+                new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger)
+            );
+
+            await Promise.all([
+                reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] }),
+                db.collection('users_kyc').doc(interaction.user.id).set({ 
+                    discordId: interaction.user.id, 
+                    username: interaction.user.username, 
+                    name: name, 
+                    discordContact: discordContactVal, 
+                    paymentInfo: paymentDetails, 
+                    status: 'Pending', 
+                    createdAt: admin.firestore.FieldValue.serverTimestamp() 
+                })
+            ]);
+
+            // Background process pura hone ke baad message bhejo
+            await interaction.editReply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.' });
+
+        } catch (error) {
+            console.error("KYC Submit Error:", error);
+            await interaction.editReply({ content: '❌ Something went wrong while saving your data. Please contact support.' });
+        }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
         const userId = interaction.customId.replace('approve_kyc_', '');
         
-        // 🔥 MAGIC LINE: Discord ko instant signal do taaki error na aaye
+        // 🔥 ADMIN BUTTON FIX
         await interaction.deferUpdate(); 
 
         await approveUserKYC(userId, interaction.guild);
@@ -194,7 +196,7 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isButton() && interaction.customId.startsWith('reject_kyc_')) {
         const userId = interaction.customId.replace('reject_kyc_', '');
         
-        // 🔥 MAGIC LINE: Discord ko instant signal do
+        // 🔥 ADMIN BUTTON FIX
         await interaction.deferUpdate();
 
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
