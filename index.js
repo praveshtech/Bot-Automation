@@ -5,6 +5,7 @@ const cors = require('cors');
 const { 
     Client, 
     GatewayIntentBits, 
+    EmbedBuilder,
     EmbedBuilder, 
     ActionRowBuilder, 
     ButtonBuilder, 
@@ -516,6 +517,55 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
         res.redirect('/login');
     } else { res.redirect('/'); }
 });
+
+app.post('/update-credentials', requireLogin, async (req, res) => {
+    const { new_username, new_password } = req.body;
+    if (new_username && new_password) {
+        await db.collection('settings').doc('admin_auth').set({ username: new_username, password: new_password });
+        req.session.destroy();
+        res.redirect('/login');
+    } else { res.redirect('/'); }
+});
+
+// ==========================================
+// 📈 DAILY PRICE UPDATE ROUTE (NAYA CODE)
+// ==========================================
+app.post('/update-price', requireLogin, async (req, res) => {
+    const { buyPrice, sellPrice } = req.body;
+
+    try {
+        const channel = client.channels.cache.find(c => c.name === 'daily-price-update');
+        
+        if (channel) {
+            const priceEmbed = new EmbedBuilder()
+                .setTitle('📢 Today\'s USDT Market Rate')
+                .setDescription('The latest USDT P2P prices have been updated by the Admin.')
+                .setColor('#22c55e')
+                .addFields(
+                    { name: '🟢 BUY USDT', value: `**₹${buyPrice}**`, inline: true },
+                    { name: '🔴 SELL USDT', value: `**₹${sellPrice}**`, inline: true }
+                )
+                .setTimestamp()
+                .setFooter({ text: 'The Vault Executive System', iconURL: client.user.displayAvatarURL() });
+
+            await channel.send({ embeds: [priceEmbed] });
+            
+            // Success alert send karke wapas dashboard par redirect kar raha hai
+            res.send(`<script>alert("✅ Price successfully updated on Discord!"); window.location.href="/";</script>`);
+        } else {
+            console.log("Error: #daily-price-update channel nahi mila!");
+            res.send(`<script>alert("❌ Error: Discord par 'daily-price-update' naam ka channel nahi mila!"); window.location.href="/";</script>`);
+        }
+    } catch (error) {
+        console.error("Price update error: ", error);
+        res.send(`<script>alert("❌ Kuch gadbad ho gayi bhai!"); window.location.href="/";</script>`);
+    }
+});
+// ==========================================
+
+
+app.get('/export-ledger', requireLogin, async (req, res) => {
+    // ... ledger export ka code ...
 
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
