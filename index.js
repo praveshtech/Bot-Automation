@@ -88,7 +88,6 @@ client.on('interactionCreate', async interaction => {
     
     // --- 🛡️ 1. KYC SYSTEM ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
-        
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists) {
@@ -101,7 +100,6 @@ client.on('interactionCreate', async interaction => {
                     });
                 }
                 
-                // 🔥 NAYA UPDATE: KYC Leave/Rejoin Bug Fix 🔥
                 if (status === 'Approved') {
                     const hasVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
 
@@ -111,7 +109,6 @@ client.on('interactionCreate', async interaction => {
                             ephemeral: true 
                         });
                     } else {
-                        // User leave karke aaya hai, database se delete karo taaki naya form khule
                         await db.collection('users_kyc').doc(interaction.user.id).delete();
                     }
                 }
@@ -300,7 +297,6 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-        // 🔥 NAYA UPDATE: Premium Cinematic Embed Design 🔥
         const cinematicDescription = 
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
@@ -316,7 +312,7 @@ client.on('interactionCreate', async interaction => {
             `${adminProvides}`;
 
         const ticketEmbed = new EmbedBuilder()
-            .setColor('#e50914') // Professor Red Theme
+            .setColor('#e50914')
             .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
@@ -325,7 +321,6 @@ client.on('interactionCreate', async interaction => {
             new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger)
         );
 
-        // Ping msg (Only if palermoRole exists, otherwise normal ping)
         let pingMsg = palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`;
 
         await ticketChannel.send({ 
@@ -334,9 +329,8 @@ client.on('interactionCreate', async interaction => {
             components: [closeButtonRow] 
         });
 
-        // 🔥 NAYA UPDATE: Mini Embeds for easy Mobile Copy 🔥
         const adminCopyEmbed = new EmbedBuilder()
-            .setColor('#2ecc71') // 🟢 Cyber Green color Admin details ke liye
+            .setColor('#2ecc71')
             .setDescription(easyCopyText);
             
         await ticketChannel.send({ 
@@ -345,7 +339,7 @@ client.on('interactionCreate', async interaction => {
         });
         
         const userCopyEmbed = new EmbedBuilder()
-            .setColor('#e50914') // 🔴 Professor Red color User details ke liye
+            .setColor('#e50914')
             .setDescription(userDetails);
             
         await ticketChannel.send({ 
@@ -603,27 +597,24 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
 // ==========================================
 // 📈 MARKET PRICE BROADCAST API
 // ==========================================
- app.post('/update-price', requireLogin, async (req, res) => {
-    const { buyPrice, sellPrice } = req.body;
+app.post('/update-price', requireLogin, async (req, res) => {
+    const { buyPrice, sellPrice } = req.body; 
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) {
-            return res.json({ success: false, error: "Discord server not found." });
+            return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
         }
 
-        // Discord mein channel dhundhna
         let priceChannel = guild.channels.cache.find(c => c.name === 'daily-price-update');
         
-        // Agar channel nahi hai toh error bhej do
         if (!priceChannel) {
-            return res.json({ success: false, error: "Channel #daily-price-update not found in Discord!" });
+            return res.send(`<script>alert("❌ Error: Channel #daily-price-update not found in Discord!"); window.location.href="/";</script>`);
         }
 
-        // Premium Cinematic Embed Design
         const priceEmbed = new EmbedBuilder()
-            .setColor('#f1c40f') // Gold color for Money/Market
-            .setTitle('📢Today\'s USDT Market Rate')
+            .setColor('#f1c40f') 
+            .setTitle('📈 USDT Market Price Update')
             .setDescription('**The Vault** has updated the real-time P2P exchange rates. Current market prices are active immediately.')
             .addFields(
                 { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true },
@@ -632,14 +623,14 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
             .setTimestamp()
             .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
-        // Channel mein message bhejna
         await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
         
-        res.json({ success: true });
+        // Pop-up Alert then redirect to dashboard seamlessly
+        res.send(`<script>alert("✅ Market Price Broadcasted Successfully to Discord!"); window.location.href="/";</script>`);
 
     } catch (error) {
         console.error("Price Broadcast Error:", error);
-        res.json({ success: false, error: error.message });
+        res.send(`<script>alert("❌ Error: ${error.message}"); window.location.href="/";</script>`);
     }
 });
 
