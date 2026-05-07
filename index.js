@@ -331,7 +331,7 @@ client.on('interactionCreate', async interaction => {
         `${adminProvides}`;
 
             const ticketEmbed = new EmbedBuilder()
-             .setColor('#e50914') 
+             .setColor('#5977da') 
              .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
              .setDescription(cinematicDescription)
              .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
