@@ -42,7 +42,6 @@ const client = new Client({
 
 const userSelections = new Map();
 
-// 🟢 PRO FIX 1: Correct Event Name 'ready' (Fixed from clientReady)
 client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
@@ -90,13 +89,11 @@ client.on('interactionCreate', async interaction => {
     // --- 🛡️ 1. KYC SYSTEM ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         
-        // 🔒 PRO FIX: Dynamic KYC Check (Allow resubmission if Rejected)
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists) {
                 const status = existingKyc.data().status;
                 
-                // 🛑 Condition 1: Agar check chal raha hai, toh form mat do
                 if (status === 'Pending') {
                     return interaction.reply({ 
                         content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.`, 
@@ -104,31 +101,25 @@ client.on('interactionCreate', async interaction => {
                     });
                 }
                 
-                // 🛑 Condition 2: Agar pass ho gaya hai, toh wapas form kyu bharna?
+                // 🔥 NAYA UPDATE: KYC Leave/Rejoin Bug Fix 🔥
                 if (status === 'Approved') {
-                    // NAYA LOGIC: Check karo ki kya user ke paas sach mein 'Verified' role hai?
                     const hasVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
 
                     if (hasVerifiedRole) {
-                        // Agar role hai, tabhi block karo
                         return interaction.reply({ 
                             content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!`, 
                             ephemeral: true 
                         });
                     } else {
-                        // Agar role nahi hai (matlab leave karke wapas aaya hai), toh purana data reset karo
-                        // Iske baad niche wala form apne aap khul jayega
+                        // User leave karke aaya hai, database se delete karo taaki naya form khule
                         await db.collection('users_kyc').doc(interaction.user.id).delete();
                     }
                 }
-                
-                // 🟢 Condition 3: Agar 'Rejected' hai, toh yeh if block skip ho jayega aur niche naya form khul jayega!
             }
         } catch (error) {
             console.error("KYC Check Error: ", error);
         }
 
-        // Agar user naya hai ya uska pehla form 'Rejected' ho chuka hai, toh usko form dikhao
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
         const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
         const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
@@ -138,21 +129,16 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(kycModal);
     }
 
-    // 🟢 PRO FIX 2: THE ULTIMATE TIMEOUT FIX (Detached execution)
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        
-        // 1. Instant Reply & Form Close (This triggers in 1 millisecond)
         await interaction.reply({ 
             content: '✅ Your KYC details have been submitted securely. Please wait for approval.', 
             ephemeral: true 
         }).catch(console.error);
 
-        // 2. Extract Data
         const name = interaction.fields.getTextInputValue('kyc_name');
         const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
         const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
         
-        // 3. Background Database execution (Totally detached from the form)
         setTimeout(async () => {
             try {
                 let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
@@ -300,7 +286,6 @@ client.on('interactionCreate', async interaction => {
 
         let adminProvides = ""; let actionDescription = ""; let easyCopyText = ""; 
         if (userState.type === 'Sell') {
-            actionDescription = `You are **Selling Crypto**. Please transfer the crypto via **${userState.step2}** to the admin's address below.`;
             let walletAddress = "Waiting for Admin to provide address.";
             if (userState.step2 === 'TRC20') walletAddress = "TABCDEF1234567890YOURTRC20WALLETADDRESS";
             if (userState.step2 === 'ERC20') walletAddress = "0xABCDEF1234567890YOURERC20WALLETADDRESS";
@@ -308,7 +293,6 @@ client.on('interactionCreate', async interaction => {
             if (userState.step2 === 'BTC') walletAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
             adminProvides = `**Admin's Crypto Address:**\n\`\`\`${walletAddress}\`\`\``; easyCopyText = walletAddress; 
         } else {
-            actionDescription = `You are **Buying Crypto**. Please transfer INR via **${userState.step2}** to the admin's details below.`;
             let paymentDetails = "Waiting for Admin to provide bank details.";
             if (userState.step2 === 'UPI') paymentDetails = "admin@upi";
             if (userState.step2 === 'IMPS') paymentDetails = "Bank: SBI\nAcc: 123456789\nIFSC: SBIN0001234";
@@ -316,7 +300,7 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-       // 1. UPAR WALA PAGE (Main Cinematic Ticket)
+        // 🔥 NAYA UPDATE: Premium Cinematic Embed Design 🔥
         const cinematicDescription = 
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
@@ -332,21 +316,25 @@ client.on('interactionCreate', async interaction => {
             `${adminProvides}`;
 
         const ticketEmbed = new EmbedBuilder()
-            .setColor('#0052ff') 
+            .setColor('#e50914') // Professor Red Theme
             .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
-        // 👇 YEH LINE MISSING THI! (Main ticket send karne wali)
+        const closeButtonRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger)
+        );
+
+        // Ping msg (Only if palermoRole exists, otherwise normal ping)
+        let pingMsg = palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`;
+
         await ticketChannel.send({ 
-            content: `Ping: ${interaction.user.toString()}`, // Aapne jo bhi ping lagaya ho
+            content: pingMsg, 
             embeds: [ticketEmbed], 
-            components: [new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('close_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger)
-            )]
+            components: [closeButtonRow] 
         });
 
-        // 2. NICHE WALE MINI-EMBEDS (Copy Details)
+        // 🔥 NAYA UPDATE: Mini Embeds for easy Mobile Copy 🔥
         const adminCopyEmbed = new EmbedBuilder()
             .setColor('#2ecc71') // 🟢 Cyber Green color Admin details ke liye
             .setDescription(easyCopyText);
@@ -364,17 +352,7 @@ client.on('interactionCreate', async interaction => {
             content: `👨‍💼 **[ FOR ADMIN ]** Tap & hold the text below to copy User's Details:`, 
             embeds: [userCopyEmbed] 
         });
-        
-        const userCopyEmbed = new EmbedBuilder()
-            .setColor('#e50914') // 🔴 Professor Red color User details ke liye
-            .setDescription(userDetails);
-            
-        await ticketChannel.send({ 
-            content: `👨‍💼 **[ FOR ADMIN ]** Tap & hold the text below to copy User's Details:`, 
-            embeds: [userCopyEmbed] 
-        });
-        
-        if (palermoRole) await ticketChannel.send(`🔔 <@&${palermoRole.id}> A new transaction ticket has been opened.`).then(msg => setTimeout(() => msg.delete(), 5000));
+
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
     }
@@ -576,41 +554,6 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
     } else { res.redirect('/'); }
 });
 
-// ==========================================
-// 📈 DAILY PRICE UPDATE ROUTE (NAYA CODE)
-// ==========================================
-app.post('/update-price', requireLogin, async (req, res) => {
-    const { buyPrice, sellPrice } = req.body;
-
-    try {
-        const channel = client.channels.cache.find(c => c.name === 'daily-price-update');
-        
-        if (channel) {
-            const priceEmbed = new EmbedBuilder()
-                .setTitle('📢 Today\'s USDT Market Rate')
-                .setDescription('The latest USDT P2P prices have been updated by the Admin.')
-                .setColor('#22c55e')
-                .addFields(
-                    { name: '🟢 BUY USDT', value: `**₹${buyPrice}**`, inline: true },
-                    { name: '🔴 SELL USDT', value: `**₹${sellPrice}**`, inline: true }
-                )
-                .setTimestamp()
-                .setFooter({ text: 'The Vault Executive System', iconURL: client.user.displayAvatarURL() });
-
-            await channel.send({ embeds: [priceEmbed] });
-            
-            res.send(`<script>alert("✅ Price successfully updated on Discord!"); window.location.href="/";</script>`);
-        } else {
-            console.log("Error: #daily-price-update channel nahi mila!");
-            res.send(`<script>alert("❌ Error: Discord par 'daily-price-update' naam ka channel nahi mila!"); window.location.href="/";</script>`);
-        }
-    } catch (error) {
-        console.error("Price update error: ", error);
-        res.send(`<script>alert("❌ Kuch gadbad ho gayi bhai!"); window.location.href="/";</script>`);
-    }
-});
-// ==========================================
-
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
@@ -626,7 +569,6 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     } catch(e) { res.send("Export Error"); }
 });
 
-// 🟢 PRO FIX 3: Bulletproof Dashboard API Routes
 const GUILD_ID = '1456297708892586057'; // Ensure this matches your server ID
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
