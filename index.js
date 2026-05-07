@@ -338,15 +338,11 @@ client.on('interactionCreate', async interaction => {
             const closeButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket').setStyle(ButtonStyle.Danger));
         
         await ticketChannel.send({ embeds: [ticketEmbed], components: [closeButtonRow] });
-       await ticketChannel.send(
-            `👤 **[ FOR USER ]** Tap & hold the box below to copy Transfer Details:\n` +
-            `\`\`\`yaml\n${easyCopyText}\n\`\`\``
-        );
+       await ticketChannel.send(`👤 **[ FOR USER ]** Tap & hold the box below to copy Transfer Details:`);
+        await ticketChannel.send(`\`\`\`yaml\n${easyCopyText}\n\`\`\``);
         
-        await ticketChannel.send(
-            `👨‍💼 **[ FOR ADMIN ]** Tap & hold the box below to copy User's Details:\n` +
-            `\`\`\`yaml\n${userDetails}\n\`\`\``
-        );
+        await ticketChannel.send(`👨‍💼 **[ FOR ADMIN ]** Tap & hold the box below to copy User's Details:`);
+        await ticketChannel.send(`\`\`\`yaml\n${userDetails}\n\`\`\``);
         
         if (palermoRole) await ticketChannel.send(`🔔 <@&${palermoRole.id}> A new transaction ticket has been opened.`).then(msg => setTimeout(() => msg.delete(), 5000));
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
