@@ -178,21 +178,32 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
         const userId = interaction.customId.replace('approve_kyc_', '');
+        
+        // 🔥 MAGIC LINE: Discord ko instant signal do taaki error na aaye
+        await interaction.deferUpdate(); 
+
         await approveUserKYC(userId, interaction.guild);
         
-        await interaction.reply({ content: `✅ Successfully verified <@${userId}>!` });
         const oldEmbed = interaction.message.embeds[0];
         const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#2ecc71').setTitle('✅ KYC Approved');
-        await interaction.message.edit({ embeds: [updatedEmbed], components: [] });
+        
+        await interaction.editReply({ embeds: [updatedEmbed], components: [] });
+        await interaction.followUp({ content: `✅ Successfully verified <@${userId}>!`, ephemeral: true });
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('reject_kyc_')) {
         const userId = interaction.customId.replace('reject_kyc_', '');
+        
+        // 🔥 MAGIC LINE: Discord ko instant signal do
+        await interaction.deferUpdate();
+
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
-        await interaction.reply({ content: `❌ KYC Rejected for <@${userId}>.` });
+        
         const oldEmbed = interaction.message.embeds[0];
         const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#e74c3c').setTitle('❌ KYC Rejected');
-        await interaction.message.edit({ embeds: [updatedEmbed], components: [] });
+        
+        await interaction.editReply({ embeds: [updatedEmbed], components: [] });
+        await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>.`, ephemeral: true });
     }
 
     // --- 💸 2. P2P TICKET SYSTEM ---
