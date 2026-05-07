@@ -128,7 +128,6 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
         
-        // 🔥 MODAL TIMEOUT BUG FIX: Discord ko signal do taaki form turant close ho jaye
         await interaction.deferReply({ ephemeral: true });
 
         try {
@@ -169,7 +168,6 @@ client.on('interactionCreate', async interaction => {
                 })
             ]);
 
-            // Background process pura hone ke baad message bhejo
             await interaction.editReply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.' });
 
         } catch (error) {
@@ -180,8 +178,6 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
         const userId = interaction.customId.replace('approve_kyc_', '');
-        
-        // 🔥 ADMIN BUTTON FIX
         await interaction.deferUpdate(); 
 
         await approveUserKYC(userId, interaction.guild);
@@ -195,8 +191,6 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isButton() && interaction.customId.startsWith('reject_kyc_')) {
         const userId = interaction.customId.replace('reject_kyc_', '');
-        
-        // 🔥 ADMIN BUTTON FIX
         await interaction.deferUpdate();
 
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
@@ -290,11 +284,7 @@ client.on('interactionCreate', async interaction => {
 
         const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${interaction.user.username}`, type: ChannelType.GuildText, permissionOverwrites: channelPermissions });
 
-        try {
-            await db.collection('p2p_tickets').doc(ticketChannel.id).set({ discordUserId: interaction.user.id, username: interaction.user.username, tradeType: userState.type, networkOrMethod: userState.step2, amountUsd: Number(tradeAmount), userReceivingDetails: userDetails, status: 'Open', createdAt: admin.firestore.FieldValue.serverTimestamp() });
-        } catch (error) { console.error("Firebase Error: ", error); }
-
-        let adminProvides = ""; let actionDescription = ""; let easyCopyText = ""; 
+        let adminProvides = ""; let easyCopyText = ""; 
         if (userState.type === 'Sell') {
             let walletAddress = "Waiting for Admin to provide address.";
             if (userState.step2 === 'TRC20') walletAddress = "TABCDEF1234567890YOURTRC20WALLETADDRESS";
@@ -310,6 +300,20 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
+        try {
+            await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
+                discordUserId: interaction.user.id, 
+                username: interaction.user.username, 
+                tradeType: userState.type, 
+                networkOrMethod: userState.step2, 
+                amountUsd: Number(tradeAmount), 
+                userReceivingDetails: userDetails, 
+                adminTransferDetails: easyCopyText, 
+                status: 'Open', 
+                createdAt: admin.firestore.FieldValue.serverTimestamp() 
+            });
+        } catch (error) { console.error("Firebase Error: ", error); }
+
         const cinematicDescription = 
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
@@ -318,11 +322,8 @@ client.on('interactionCreate', async interaction => {
             `**2. How much amount ($)?**\n` +
             `> ${tradeAmount}\n` +
             `**3. Which Method?**\n` +
-            `> ${userState.step2}\n` +
-            `**4. Your Provided Details:**\n` +
-            `> ${userDetails}\n` +
-            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
-            `${adminProvides}`;
+            `> ${userState.step2}\n\n` +
+            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`;
 
         const ticketEmbed = new EmbedBuilder()
             .setColor('#e50914')
@@ -330,8 +331,10 @@ client.on('interactionCreate', async interaction => {
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
-        const closeButtonRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger)
+        // 🔥 COMPLETE OR CANCEL BUTTONS
+        const actionButtonRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade (Admin)').setStyle(ButtonStyle.Danger)
         );
 
         let pingMsg = palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`;
@@ -339,38 +342,80 @@ client.on('interactionCreate', async interaction => {
         await ticketChannel.send({ 
             content: pingMsg, 
             embeds: [ticketEmbed], 
-            components: [closeButtonRow] 
+            components: [actionButtonRow] 
         });
 
-        const adminCopyEmbed = new EmbedBuilder()
-            .setColor('#2ecc71')
-            .setDescription(easyCopyText);
-            
+        // 🔥 SECURE REVEAL BUTTONS
+        const revealButtonsRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('reveal_admin_details')
+                .setLabel('👤 View Transfer Details (User Only)')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId('reveal_user_details')
+                .setLabel('👨‍💼 View User Details (Admin Only)')
+                .setStyle(ButtonStyle.Secondary)
+        );
+
         await ticketChannel.send({ 
-            content: `👤 **[ FOR USER ]** Tap & hold the text below to copy Transfer Details:`, 
-            embeds: [adminCopyEmbed] 
-        });
-        
-        const userCopyEmbed = new EmbedBuilder()
-            .setColor('#e50914')
-            .setDescription(userDetails);
-            
-        await ticketChannel.send({ 
-            content: `👨‍💼 **[ FOR ADMIN ]** Tap & hold the text below to copy User's Details:`, 
-            embeds: [userCopyEmbed] 
+            content: `🔒 **Secure Details Access**\nClick below to securely view the payment information. These details will only be visible to you.`, 
+            components: [revealButtonsRow] 
         });
 
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
     }
 
-    // --- 🏦 4. TICKET CLOSE & LOGGING ---
-    if (interaction.isButton() && interaction.customId === 'close_p2p_ticket') {
+    // --- 🔐 4. SECURE REVEAL BUTTON HANDLERS ---
+    if (interaction.isButton() && interaction.customId === 'reveal_admin_details') {
+        await interaction.deferReply({ ephemeral: true }); 
+        try {
+            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+            if (ticketDoc.exists) {
+                const data = ticketDoc.data();
+                if (interaction.user.id !== data.discordUserId) {
+                    return interaction.editReply({ content: '❌ **Access Denied:** Only the ticket creator can view this information.' });
+                }
+                await interaction.editReply({ content: `**Admin Transfer Details (Copy below):**\n\n${data.adminTransferDetails}` });
+            } else {
+                await interaction.editReply({ content: '❌ Ticket data not found.' });
+            }
+        } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
+    }
+
+    if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
+        await interaction.deferReply({ ephemeral: true }); 
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-        if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied:** Only Palermo or Professor can close tickets.', ephemeral: true });
 
-        await interaction.reply({ content: '🔒 Ticket closing in 5 seconds. Saving data to Vault and refreshing panel...' });
+        if (!isProfessor && !isPalermo) {
+            return interaction.editReply({ content: '❌ **Access Denied:** Only Admins/Palermo can view user details.' });
+        }
+
+        try {
+            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+            if (ticketDoc.exists) {
+                const data = ticketDoc.data();
+                await interaction.editReply({ content: `**User's Receiving Details (Copy below):**\n\n${data.userReceivingDetails}` });
+            } else {
+                await interaction.editReply({ content: '❌ Ticket data not found.' });
+            }
+        } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
+    }
+
+    // --- 🏦 5. TICKET CLOSE & LOGGING (Complete OR Cancel) ---
+    if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
+        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
+        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+        
+        if (!isProfessor && !isPalermo) {
+            return interaction.reply({ content: '❌ **Access Denied:** Only Palermo or Professor can take this action.', ephemeral: true });
+        }
+
+        const isSuccess = interaction.customId === 'complete_p2p_ticket';
+        const finalStatus = isSuccess ? 'Completed' : 'Cancelled';
+
+        await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
 
         try {
             const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
@@ -379,8 +424,13 @@ client.on('interactionCreate', async interaction => {
                 
                 const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
                 if (member) {
-                    const receiptEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🧾 Transaction Completed').setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully closed by Palermo Network.\n\nThank you for trading with us! 🏦`).setFooter({ text: 'Professor Network - Money Heist Automated System' });
-                    const serverLinkBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef'));
+                    const receiptEmbed = new EmbedBuilder()
+                        .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
+                        .setTitle(isSuccess ? '🧾 Transaction Completed' : '🚫 Transaction Cancelled')
+                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been **${finalStatus}** by The Vault Admin.\n\n${isSuccess ? 'Thank you for trading with us! 🏦' : 'This transaction was incomplete and has been cancelled.'}`)
+                        .setFooter({ text: 'Professor Network - Secure Terminal' });
+                    
+                    const serverLinkBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef')); 
                     await member.send({ embeds: [receiptEmbed], components: [serverLinkBtn] }).catch(()=> console.log("DM closed"));
                 }
 
@@ -394,11 +444,26 @@ client.on('interactionCreate', async interaction => {
                     logChannel = await interaction.guild.channels.create({ name: 'transaction-logs', type: ChannelType.GuildText, permissionOverwrites: logPerms });
                 }
 
-                const vaultEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('🏦 Vault Record: Transaction Completed').addFields({ name: '👤 User', value: `${ticketData.username} (<@${ticketData.discordUserId}>)`, inline: true }, { name: '🔒 Closed By', value: `${interaction.user.username} (<@${interaction.user.id}>)`, inline: true }, { name: 'Trade Type', value: ticketData.tradeType, inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd}`, inline: true }, { name: 'Method/Network', value: ticketData.networkOrMethod, inline: true }, { name: 'User Info Provided', value: `\`\`\`${ticketData.userReceivingDetails}\`\`\``, inline: false }).setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
+                const vaultEmbed = new EmbedBuilder()
+                    .setColor(isSuccess ? '#f1c40f' : '#e74c3c') 
+                    .setTitle(`🏦 Vault Record: Transaction ${finalStatus}`)
+                    .addFields(
+                        { name: '👤 User', value: `${ticketData.username} (<@${ticketData.discordUserId}>)`, inline: true }, 
+                        { name: '🔒 Handled By', value: `${interaction.user.username} (<@${interaction.user.id}>)`, inline: true }, 
+                        { name: 'Trade Type', value: ticketData.tradeType, inline: true }, 
+                        { name: 'Amount', value: `$${ticketData.amountUsd}`, inline: true }, 
+                        { name: 'Method/Network', value: ticketData.networkOrMethod, inline: true }, 
+                        { name: 'Status', value: `\`${finalStatus}\``, inline: true }
+                    )
+                    .setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
                 await logChannel.send({ embeds: [vaultEmbed] });
             }
 
-            await db.collection('p2p_tickets').doc(interaction.channel.id).update({ status: 'Completed', closedBy: interaction.user.username, closedAt: admin.firestore.FieldValue.serverTimestamp() });
+            await db.collection('p2p_tickets').doc(interaction.channel.id).update({ 
+                status: finalStatus, 
+                closedBy: interaction.user.username, 
+                closedAt: admin.firestore.FieldValue.serverTimestamp() 
+            });
 
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name === 'tickets' || c.name === 'exchange-desk');
             if (mainTicketChannel) {
@@ -410,12 +475,12 @@ client.on('interactionCreate', async interaction => {
                 const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [startButton] });
             }
-        } catch (error) { console.error("Error: ", error); }
+        } catch (error) { console.error("Error Closing Ticket: ", error); }
 
         setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
     }
 
-    // --- 📊 5. DISCORD DASHBOARD REFRESH ---
+    // --- 📊 6. DISCORD DASHBOARD REFRESH ---
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: '❌ Access Denied. Only The Professor can view the vault stats.', ephemeral: true });
@@ -638,7 +703,6 @@ app.post('/update-price', requireLogin, async (req, res) => {
 
         await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
         
-        // Pop-up Alert then redirect to dashboard seamlessly
         res.send(`<script>alert("✅ Market Price Broadcasted Successfully to Discord!"); window.location.href="/";</script>`);
 
     } catch (error) {
