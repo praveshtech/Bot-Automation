@@ -316,19 +316,19 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-         const cinematicDescription = 
-         `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
-         `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
-         `**1. What is the action?**\n` +
-         `> ${userState.type} Crypto\n\n` +
-         `**2. How much amount ($)?**\n` +
-         `> ${tradeAmount}\n\n` +
-         `**3. Which Method?**\n` +
-         `> ${userState.step2}\n\n` +
-         `**4. Your Provided Details:**\n` +
-         `> ${userDetails}\n\n` +
-         `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n` +
-        `${adminProvides}`;
+        const cinematicDescription = 
+    `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
+    `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
+    `**1. What is the action?**\n` +
+    `> ${userState.type} Crypto\n` +
+    `**2. How much amount ($)?**\n` +
+    `> ${tradeAmount}\n` +
+    `**3. Which Method?**\n` +
+    `> ${userState.step2}\n` +
+    `**4. Your Provided Details:**\n` +
+    `> ${userDetails}\n` +
+    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
+    `${adminProvides}`;
 
             const ticketEmbed = new EmbedBuilder()
              .setColor('#5977da') 
