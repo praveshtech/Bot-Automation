@@ -316,27 +316,37 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
+       // 1. UPAR WALA PAGE (Main Cinematic Ticket)
         const cinematicDescription = 
-    `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
-    `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
-    `**1. What is the action?**\n` +
-    `> ${userState.type} Crypto\n` +
-    `**2. How much amount ($)?**\n` +
-    `> ${tradeAmount}\n` +
-    `**3. Which Method?**\n` +
-    `> ${userState.step2}\n` +
-    `**4. Your Provided Details:**\n` +
-    `> ${userDetails}\n` +
-    `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
-    `${adminProvides}`;
+            `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
+            `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
+            `**1. What is the action?**\n` +
+            `> ${userState.type} Crypto\n` +
+            `**2. How much amount ($)?**\n` +
+            `> ${tradeAmount}\n` +
+            `**3. Which Method?**\n` +
+            `> ${userState.step2}\n` +
+            `**4. Your Provided Details:**\n` +
+            `> ${userDetails}\n` +
+            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
+            `${adminProvides}`;
 
-            const ticketEmbed = new EmbedBuilder()
-             .setColor('#5977da') 
-             .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
-             .setDescription(cinematicDescription)
-             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
-            const closeButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('close_p2p_ticket').setLabel('🔒 Close Ticket').setStyle(ButtonStyle.Danger));
-        
+        const ticketEmbed = new EmbedBuilder()
+            .setColor('#0052ff') 
+            .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
+            .setDescription(cinematicDescription)
+            .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
+
+        // 👇 YEH LINE MISSING THI! (Main ticket send karne wali)
+        await ticketChannel.send({ 
+            content: `Ping: ${interaction.user.toString()}`, // Aapne jo bhi ping lagaya ho
+            embeds: [ticketEmbed], 
+            components: [new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('close_ticket').setLabel('🔒 Close Ticket (Palermo/Admin Only)').setStyle(ButtonStyle.Danger)
+            )]
+        });
+
+        // 2. NICHE WALE MINI-EMBEDS (Copy Details)
         const adminCopyEmbed = new EmbedBuilder()
             .setColor('#2ecc71') // 🟢 Cyber Green color Admin details ke liye
             .setDescription(easyCopyText);
@@ -344,6 +354,15 @@ client.on('interactionCreate', async interaction => {
         await ticketChannel.send({ 
             content: `👤 **[ FOR USER ]** Tap & hold the text below to copy Transfer Details:`, 
             embeds: [adminCopyEmbed] 
+        });
+        
+        const userCopyEmbed = new EmbedBuilder()
+            .setColor('#e50914') // 🔴 Professor Red color User details ke liye
+            .setDescription(userDetails);
+            
+        await ticketChannel.send({ 
+            content: `👨‍💼 **[ FOR ADMIN ]** Tap & hold the text below to copy User's Details:`, 
+            embeds: [userCopyEmbed] 
         });
         
         const userCopyEmbed = new EmbedBuilder()
