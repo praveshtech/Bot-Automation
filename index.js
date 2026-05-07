@@ -127,7 +127,6 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.isModalSubmit() && interaction.customId === 'submit_kyc_modal') {
-        
         await interaction.deferReply({ ephemeral: true });
 
         try {
@@ -444,15 +443,16 @@ client.on('interactionCreate', async interaction => {
                     logChannel = await interaction.guild.channels.create({ name: 'transaction-logs', type: ChannelType.GuildText, permissionOverwrites: logPerms });
                 }
 
+                // 🔥 CRASH-PROOF EMBED FIELDS
                 const vaultEmbed = new EmbedBuilder()
                     .setColor(isSuccess ? '#f1c40f' : '#e74c3c') 
                     .setTitle(`🏦 Vault Record: Transaction ${finalStatus}`)
                     .addFields(
-                        { name: '👤 User', value: `${ticketData.username} (<@${ticketData.discordUserId}>)`, inline: true }, 
-                        { name: '🔒 Handled By', value: `${interaction.user.username} (<@${interaction.user.id}>)`, inline: true }, 
-                        { name: 'Trade Type', value: ticketData.tradeType, inline: true }, 
-                        { name: 'Amount', value: `$${ticketData.amountUsd}`, inline: true }, 
-                        { name: 'Method/Network', value: ticketData.networkOrMethod, inline: true }, 
+                        { name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, 
+                        { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, 
+                        { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, 
+                        { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, 
+                        { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, 
                         { name: 'Status', value: `\`${finalStatus}\``, inline: true }
                     )
                     .setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
@@ -507,7 +507,7 @@ client.on('interactionCreate', async interaction => {
                     }
                 }
 
-                if (data.closedAt) {
+                if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                     const tradeDate = data.closedAt.toDate();
                     const diffTime = Math.abs(now - tradeDate);
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
@@ -609,7 +609,10 @@ app.post('/login', async (req, res) => {
         } else {
             res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
         }
-    } catch (error) { res.render('login', { error: 'Database Connection Error.' }); }
+    } catch (error) { 
+        console.error("Login Error:", error);
+        res.render('login', { error: 'Database Connection Error. Please verify network.' }); 
+    }
 });
 
 app.get('/logout', (req, res) => {
@@ -632,7 +635,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
         let csv = 'Date,User,Action,Method,Amount(USD),Closed By\n';
         snapshot.forEach(doc => {
             const d = doc.data();
-            const date = d.closedAt ? d.closedAt.toDate().toLocaleString() : 'N/A';
+            const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
             csv += `"${date}","${d.username}","${d.tradeType}","${d.networkOrMethod}","${d.amountUsd}","${d.closedBy || 'Admin'}"\n`;
         });
         res.header('Content-Type', 'text/csv');
@@ -745,7 +748,8 @@ app.get('/', requireLogin, async (req, res) => {
             if (userVolumes[username]) { userVolumes[username] += amount; } 
             else { userVolumes[username] = amount; }
 
-            if (data.closedAt) {
+            // 🔥 CRASH-PROOF DATE CHECK
+            if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
                 const diffTime = Math.abs(now - tradeDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
@@ -755,9 +759,10 @@ app.get('/', requireLogin, async (req, res) => {
             }
         });
 
+        // 🔥 CRASH-PROOF SORTING
         allCompleted.sort((a, b) => {
-            const dateA = a.closedAt ? a.closedAt.toDate() : 0;
-            const dateB = b.closedAt ? b.closedAt.toDate() : 0;
+            const dateA = (a.closedAt && typeof a.closedAt.toDate === 'function') ? a.closedAt.toDate() : new Date(0);
+            const dateB = (b.closedAt && typeof b.closedAt.toDate === 'function') ? b.closedAt.toDate() : new Date(0);
             return dateB - dateA;
         });
         const recentFeed = allCompleted.slice(0, 10); 
@@ -774,7 +779,10 @@ app.get('/', requireLogin, async (req, res) => {
             pendingKycList, 
             buyVol, sellVol, recentFeed
         });
-    } catch (error) { res.send("Dashboard Loading Error!"); }
+    } catch (error) { 
+        console.error("Dashboard Render Error: ", error);
+        res.send("Dashboard Error: " + error.message); 
+    }
 });
 
 const PORT = process.env.PORT || 3000;
