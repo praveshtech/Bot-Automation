@@ -89,6 +89,9 @@
             <button onclick="showTab('dashboard-view', this)" class="sidebar-link active w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
                 <i class="fa-solid fa-chart-line mr-4 text-lg"></i> Dashboard
             </button>
+            <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
+               <i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update
+            </button>
             <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
                 <i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings
             </button>
@@ -263,6 +266,38 @@
                 </div>
             </div>
         </section>
+
+        </section>
+
+        <section id="price-view" class="hidden-section fade-in">
+            <div class="max-w-4xl grid grid-cols-1 gap-8">
+                <div class="glass-panel p-5 sm:p-8 border-t-4 border-green-500 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-green-500 text-glow-green"><i class="fa-solid fa-bolt mr-2"></i> Update USDT Market Price</h3>
+                        <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Broadcast new P2P trading rates directly to the Discord #daily-price-update channel.</p>
+                        
+                        <form action="/update-price" method="POST" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                                <div>
+                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🟢 Buy Price (₹)</label>
+                                    <input type="number" step="0.01" name="buyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition" placeholder="e.g. 88.50" required>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🔴 Sell Price (₹)</label>
+                                    <input type="number" step="0.01" name="sellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 87.20" required>
+                                </div>
+                            </div>
+                            <div class="pt-6 border-t border-slate-800/50 mt-4">
+                                <button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
+                                    Broadcast to Discord 🚀
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="settings-view" class="hidden-section fade-in">
 
         <section id="settings-view" class="hidden-section fade-in">
             <div class="max-w-4xl grid grid-cols-1 gap-8">
@@ -476,25 +511,32 @@
         }
 
         function showTab(tabId, btn) {
-            document.getElementById('dashboard-view').classList.add('hidden-section');
-            document.getElementById('settings-view').classList.add('hidden-section');
-            
-            const selectedTab = document.getElementById(tabId);
-            selectedTab.classList.remove('hidden-section');
-            selectedTab.classList.remove('fade-in');
-            void selectedTab.offsetWidth; 
-            selectedTab.classList.add('fade-in');
-            
-            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            btn.classList.add('active');
+    // Teeno sections ko hide karo (Yahan price-view add karna zaroori hai)
+    document.getElementById('dashboard-view').classList.add('hidden-section');
+    document.getElementById('settings-view').classList.add('hidden-section');
+    document.getElementById('price-view').classList.add('hidden-section'); 
+    
+    // Jo tab click hua usko dikhao
+    const selectedTab = document.getElementById(tabId);
+    selectedTab.classList.remove('hidden-section');
+    selectedTab.classList.remove('fade-in');
+    void selectedTab.offsetWidth; 
+    selectedTab.classList.add('fade-in');
+    
+    // Active class update karo
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    btn.classList.add('active');
 
-            const titles = { 'dashboard-view': 'Executive Analytics', 'settings-view': 'Vault Settings' };
-            document.getElementById('page-title').innerText = titles[tabId];
+    // Title update karo
+    const titles = { 
+        'dashboard-view': 'Executive Analytics', 
+        'settings-view': 'Vault Settings',
+        'price-view': 'Market Prices' 
+    };
+    document.getElementById('page-title').innerText = titles[tabId];
 
-            if (window.innerWidth < 1024) {
-                toggleSidebar();
-            }
-        }
+    if (window.innerWidth < 1024) { toggleSidebar(); }
+}
 
         // --- TRANSACTION DETAIL MODAL LOGIC ---
         function openTxModal(index) {
