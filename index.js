@@ -603,7 +603,7 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
 // ==========================================
 // 📈 MARKET PRICE BROADCAST API
 // ==========================================
-app.post('/api/broadcast-price', requireLogin, async (req, res) => {
+ app.post('/update-price', requireLogin, async (req, res) => {
     const { buyPrice, sellPrice } = req.body;
     
     try {
