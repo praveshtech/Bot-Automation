@@ -106,10 +106,20 @@ client.on('interactionCreate', async interaction => {
                 
                 // 🛑 Condition 2: Agar pass ho gaya hai, toh wapas form kyu bharna?
                 if (status === 'Approved') {
-                    return interaction.reply({ 
-                        content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!`, 
-                        ephemeral: true 
-                    });
+                    // NAYA LOGIC: Check karo ki kya user ke paas sach mein 'Verified' role hai?
+                    const hasVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
+
+                    if (hasVerifiedRole) {
+                        // Agar role hai, tabhi block karo
+                        return interaction.reply({ 
+                            content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!`, 
+                            ephemeral: true 
+                        });
+                    } else {
+                        // Agar role nahi hai (matlab leave karke wapas aaya hai), toh purana data reset karo
+                        // Iske baad niche wala form apne aap khul jayega
+                        await db.collection('users_kyc').doc(interaction.user.id).delete();
+                    }
                 }
                 
                 // 🟢 Condition 3: Agar 'Rejected' hai, toh yeh if block skip ho jayega aur niche naya form khul jayega!
