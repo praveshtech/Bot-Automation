@@ -88,6 +88,82 @@ client.on('messageCreate', async message => {
 // 🖱️ INTERACTION LOGIC (Buttons, Dropdowns, Forms)
 // ==========================================
 client.on('interactionCreate', async interaction => {
+
+    // --- 📊 0. DASHBOARD SYNC (REFRESH BUTTON) ---
+    if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
+        await interaction.deferUpdate(); // Discord ko batana ki "Loading chal rahi hai, wait karo"
+
+        try {
+            // 1. Live Server Members
+            const liveMembers = interaction.guild.memberCount;
+
+            // 2. Fetch Data from Firebase
+            const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
+            
+            let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
+            const userVolumes = {};
+            const now = new Date();
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const amount = data.amountUsd || 0;
+                const discordId = data.discordUserId; 
+                const username = data.username || 'Unknown';
+
+                // Whales ke liye User Volume Calculate karna
+                const userTag = discordId ? `<@${discordId}>` : `@${username}`;
+                if (userVolumes[userTag]) { userVolumes[userTag] += amount; } 
+                else { userVolumes[userTag] = amount; }
+
+                // Time ke hisaab se Volume nikalna
+                if (data.closedAt && typeof data.closedAt.toDate === 'function') {
+                    const tradeDate = data.closedAt.toDate();
+                    const diffTime = Math.abs(now - tradeDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    
+                    if (diffDays <= 1) dailyVol += amount;
+                    if (diffDays <= 7) weeklyVol += amount;
+                    if (diffDays <= 30) monthlyVol += amount;
+                }
+            });
+
+            // 3. Top 5 Whales Sort Karna
+            const topTraders = Object.keys(userVolumes)
+                .map(tag => ({ tag, totalVolume: userVolumes[tag] }))
+                .sort((a, b) => b.totalVolume - a.totalVolume)
+                .slice(0, 5);
+
+            let whalesText = '';
+            const medals = ['🥇', '🥈', '🥉', '🏅', '🏅'];
+            if (topTraders.length === 0) {
+                whalesText = 'No data available yet.';
+            } else {
+                topTraders.forEach((trader, index) => {
+                    whalesText += `${medals[index]} ${trader.tag} ━━ **$${trader.totalVolume}**\n`;
+                });
+            }
+
+            // 4. Dashboard ko Naya Look Dena (ONLINE)
+            const updatedDashEmbed = new EmbedBuilder()
+                .setColor('#2ecc71') // Green for Online
+                .setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD')
+                .setDescription('**[ 🟢 SYSTEM STATUS: ONLINE ]**\nReal-time network analytics securely fetched from the central database.')
+                .addFields(
+                    { name: '👥 Network Strength', value: `\`\`\`yaml\nTotal Live Members : ${liveMembers}\n\`\`\``, inline: false },
+                    { name: '📈 Transaction Analytics', value: `\`\`\`yaml\nDaily (24h)   : $${dailyVol}\nWeekly (7d)   : $${weeklyVol}\nMonthly (30d) : $${monthlyVol}\n\`\`\``, inline: false },
+                    { name: '🏆 Top 5 Network Whales', value: whalesText, inline: false }
+                )
+                .setTimestamp()
+                .setFooter({ text: 'Professor Network - Secure Terminal', iconURL: client.user.displayAvatarURL() });
+
+            // 5. Purane message ko edit karke naya data daalna
+            await interaction.editReply({ embeds: [updatedDashEmbed] });
+
+        } catch (error) {
+            console.error("Dashboard Sync Error:", error);
+            await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true });
+        }
+    }
     
     // --- 🛡️ 1. KYC SYSTEM ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
