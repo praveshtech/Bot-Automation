@@ -454,6 +454,32 @@ client.on('interactionCreate', async interaction => {
                     )
                     .setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
                 await logChannel.send({ embeds: [vaultEmbed] });
+                // 📢 🔥 PUBLIC TRANSACTION LOG 🔥
+                    if (isSuccess) {
+                        let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === 'public-transaction-log');
+                        
+                        // Agar channel nahi hai toh auto-create karega (Sirf Bot message bhej payega)
+                        if (!publicLogChannel) {
+                            publicLogChannel = await interaction.guild.channels.create({ 
+                                name: 'public-transaction-log', 
+                                type: ChannelType.GuildText, 
+                                permissionOverwrites: [
+                                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                                    { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                                ] 
+                            });
+                        }
+
+                        // Premium Public Message Embed
+                        const publicEmbed = new EmbedBuilder()
+                            .setColor('#2ecc71') // Green Color for Success
+                            .setTitle('✅ Secure Trade Completed')
+                            .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
+                            .setTimestamp()
+                            .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
+
+                        await publicLogChannel.send({ embeds: [publicEmbed] });
+                    }
             }
 
             await db.collection('p2p_tickets').doc(interaction.channel.id).update({ 
