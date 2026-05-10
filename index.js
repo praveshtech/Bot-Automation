@@ -773,6 +773,10 @@ app.get('/', requireLogin, async (req, res) => {
         const now = new Date();
         const userVolumes = {}; 
         const allCompleted = [];
+        
+        // 🔥 NAYA: Monthly & Calendar Analytics
+        const monthWiseData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Jan to Dec
+        const calendarData = {}; // For Heatmap
 
         snapshot.forEach(doc => {
             const data = doc.data();
@@ -790,6 +794,18 @@ app.get('/', requireLogin, async (req, res) => {
 
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
+                
+                // --- Monthly Data Calculation ---
+                monthWiseData[tradeDate.getMonth()] += amount;
+                
+                // --- Calendar Heatmap Data Calculation ---
+                const year = tradeDate.getFullYear();
+                const month = String(tradeDate.getMonth() + 1).padStart(2, '0');
+                const day = String(tradeDate.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+                calendarData[dateKey] = (calendarData[dateKey] || 0) + amount;
+
+                // --- Existing Time Logic ---
                 const diffTime = Math.abs(now - tradeDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                 if (diffDays <= 1) dailyVol += amount;
@@ -815,7 +831,10 @@ app.get('/', requireLogin, async (req, res) => {
             pendingTickets: pendingTicketsSnap.size,
             pendingKyc: pendingKycSnap.size,
             pendingKycList, 
-            buyVol, sellVol, recentFeed
+            buyVol, sellVol, recentFeed,
+            // NAYA DATA PASS KAR RAHE HAIN:
+            monthWiseData: JSON.stringify(monthWiseData),
+            calendarData: JSON.stringify(calendarData)
         });
     } catch (error) { 
         console.error("Dashboard Render Error: ", error);
