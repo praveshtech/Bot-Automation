@@ -197,12 +197,22 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 fade-in">
                 
-                <div class="glass-panel p-4 sm:p-6 relative overflow-hidden">
-                    <div class="flex items-center mb-6 relative z-10">
-                        <div class="p-2 bg-indigo-500/10 rounded-lg mr-3"><i class="fa-solid fa-chart-column text-indigo-400"></i></div>
-                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Monthly Volume</h4>
+                <div class="glass-panel p-4 sm:p-6 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center mb-4 relative z-10">
+                            <div class="p-2 bg-indigo-500/10 rounded-lg mr-3"><i class="fa-solid fa-chart-column text-indigo-400"></i></div>
+                            <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Monthly Volume</h4>
+                        </div>
+                        <div class="relative h-40 z-10"><canvas id="monthlyBarChart"></canvas></div>
                     </div>
-                    <div class="relative h-64 z-10"><canvas id="monthlyBarChart"></canvas></div>
+
+                    <div class="mt-5 pt-5 border-t border-slate-700/50">
+                        <div class="flex items-center mb-3 relative z-10">
+                            <div class="p-1.5 bg-sky-500/10 rounded-lg mr-3"><i class="fa-solid fa-calendar-week text-sky-400 text-xs"></i></div>
+                            <h4 class="font-black uppercase text-xs text-slate-400 tracking-widest">Current Week (Mon-Sun)</h4>
+                        </div>
+                        <div class="relative h-28 z-10"><canvas id="weeklyBarChart"></canvas></div>
+                    </div>
                 </div>
 
                 <div class="glass-panel p-4 sm:p-6 relative overflow-hidden">
@@ -740,6 +750,8 @@
             }
         });
 
+        const calData = <%- calendarData %>; // Declared globally for charts to use
+
         // --- 📊 NAYA: MONTHLY BAR CHART ---
         const monthlyCtx = document.getElementById('monthlyBarChart').getContext('2d');
         const monthDataRaw = <%- monthWiseData %>;
@@ -751,7 +763,7 @@
                 datasets: [{
                     label: 'Volume ($)',
                     data: monthDataRaw,
-                    backgroundColor: 'rgba(99, 102, 241, 0.5)', // Indigo Glow
+                    backgroundColor: 'rgba(99, 102, 241, 0.5)', 
                     borderColor: 'rgba(99, 102, 241, 1)',
                     borderWidth: 1,
                     borderRadius: 4,
@@ -768,6 +780,52 @@
             }
         });
 
+        // --- 📊 NAYA: CURRENT WEEK (MON-SUN) MINI CHART ---
+        const weeklyCtx = document.getElementById('weeklyBarChart').getContext('2d');
+        const currentWeekData = [0, 0, 0, 0, 0, 0, 0];
+        
+        const todayForWeek = new Date();
+        const dayOfWeek = todayForWeek.getDay(); 
+        const diffToMonday = todayForWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+        const mondayDate = new Date(todayForWeek.setDate(diffToMonday));
+
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(mondayDate);
+            d.setDate(mondayDate.getDate() + i);
+            const yStr = d.getFullYear();
+            const mStr = String(d.getMonth() + 1).padStart(2, '0');
+            const dayStr = String(d.getDate()).padStart(2, '0');
+            const dateKey = `${yStr}-${mStr}-${dayStr}`;
+            currentWeekData[i] = calData[dateKey] || 0;
+        }
+
+        new Chart(weeklyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Volume ($)',
+                    data: currentWeekData,
+                    backgroundColor: 'rgba(14, 165, 233, 0.4)', 
+                    borderColor: 'rgba(14, 165, 233, 0.8)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    hoverBackgroundColor: 'rgba(14, 165, 233, 1)'
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: function(context) { return '$' + context.raw.toLocaleString(); } } }
+                },
+                scales: {
+                    y: { display: false, beginAtZero: true }, 
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '700', size: 10 } }, border: { display: false } }
+                }
+            }
+        });
+
         // --- 📅 ADVANCED TRADING JOURNAL CALENDAR ENGINE ---
         const calendarGridContainer = document.getElementById('calendar-heatmap-grid');
         const monthYearLabel = document.getElementById('calendar-month-year');
@@ -775,19 +833,16 @@
         const tDate = document.getElementById('tooltip-date');
         const tVol = document.getElementById('tooltip-vol');
         
-        const calData = <%- calendarData %>;
         const todayObj = new Date();
         let currentMonth = todayObj.getMonth();
         let currentYear = todayObj.getFullYear();
 
-        // Date check helpers
         function isSameDay(d1, d2) {
             return d1.getFullYear() === d2.getFullYear() &&
                    d1.getMonth() === d2.getMonth() &&
                    d1.getDate() === d2.getDate();
         }
 
-        // Global functions for navigation (must be global to work with HTML onclick)
         window.changeMonth = function(delta) {
             currentMonth += delta;
             if (currentMonth > 11) {
@@ -801,17 +856,14 @@
         }
 
         function renderCalendar(month, year) {
-            // Header Update
             const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
             monthYearLabel.innerText = `${monthNames[month]} ${year}`;
 
-            // Core Date Calculations
-            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon...
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const heatmapHTML = [];
 
-            // 1. Padding Days for adjacent month start (dimmed style)
-            const prevMonthDate = new Date(year, month, 0); // Last day of prev month
+            const prevMonthDate = new Date(year, month, 0); 
             const prevMonthDays = prevMonthDate.getDate();
             for (let i = firstDayOfMonth - 1; i >= 0; i--) {
                 heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40">
@@ -819,17 +871,14 @@
                 </div>`);
             }
             
-            // 2. Real Days for current month
             for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber++) {
                 const d = new Date(year, month, dayNumber);
                 const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 const vol = calData[dateKey] || 0;
 
-                // Today Check
                 const todayClass = isSameDay(d, todayObj) ? "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : "";
 
-                // Volume Styling Logic
-                let colorClass = "bg-slate-800/60 border-slate-700/50 text-slate-300"; // Empty
+                let colorClass = "bg-slate-800/60 border-slate-700/50 text-slate-300"; 
                 let volTextHTML = "";
                 if (vol > 0 && vol <= 500) {
                     colorClass = "bg-emerald-900 border-emerald-800 hover:border-emerald-400 text-slate-300";
@@ -848,7 +897,6 @@
                 </div>`);
             }
 
-            // 3. Padding Days for adjacent month end (dimmed style)
             const totalCells = heatmapHTML.length;
             const cellsToPad = (7 * (Math.ceil(totalCells / 7))) - totalCells;
             for (let i = 1; i <= cellsToPad; i++) {
@@ -859,7 +907,6 @@
             
             calendarGridContainer.innerHTML = heatmapHTML.join('');
 
-            // Sleek Tooltip Logic
             document.querySelectorAll('.calendar-day').forEach(box => {
                 box.addEventListener('mouseenter', (e) => {
                     tDate.innerText = box.getAttribute('data-date');
@@ -879,7 +926,6 @@
             });
         }
         
-        // Initial Render
         renderCalendar(currentMonth, currentYear);
     </script>
 </body>
