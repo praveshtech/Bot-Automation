@@ -149,21 +149,21 @@
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Network Strength</h3>
                         <i class="fa-solid fa-users text-blue-500/50"></i>
                     </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 text-white"><%= liveMembers %></p>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 text-white animate-counter" data-target="<%= liveMembers %>" data-prefix="">0</p>
                 </div>
                 <div class="glass-panel p-6 border-l-4 border-green-500">
                     <div class="flex justify-between items-start">
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Daily Vol (24h)</h3>
                         <i class="fa-solid fa-chart-bar text-green-500/50"></i>
                     </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green">$<%= dailyVol.toLocaleString() %></p>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green animate-counter" data-target="<%= dailyVol %>" data-prefix="$">0</p>
                 </div>
                 <div class="glass-panel p-6 border-l-4 border-red-500 <%= pendingTickets > 0 ? 'shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/50' : '' %>">
                     <div class="flex justify-between items-start">
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Tickets</h3>
                         <i class="fa-solid fa-ticket text-red-500/50"></i>
                     </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingTickets > 0 ? 'text-red-500 text-glow animate-pulse' : 'text-gray-300' %>"><%= pendingTickets %></p>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingTickets > 0 ? 'text-red-500 text-glow animate-pulse' : 'text-gray-300' %> animate-counter" data-target="<%= pendingTickets %>" data-prefix="">0</p>
                 </div>
                 <div onclick="openKycModal()" class="glass-panel p-6 border-l-4 border-yellow-500 cursor-pointer <%= pendingKyc > 0 ? 'shadow-[0_0_20px_rgba(234,179,8,0.25)] border-yellow-500/50 hover:bg-yellow-500/5' : '' %>">
                     <div class="flex justify-between items-start">
@@ -173,7 +173,7 @@
                         </div>
                         <i class="fa-solid fa-id-card text-yellow-500/50"></i>
                     </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingKyc > 0 ? 'text-yellow-500 animate-pulse text-shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'text-gray-300' %>"><%= pendingKyc %></p>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingKyc > 0 ? 'text-yellow-500 animate-pulse text-shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'text-gray-300' %> animate-counter" data-target="<%= pendingKyc %>" data-prefix="">0</p>
                 </div>
             </div>
 
@@ -929,6 +929,36 @@
         }
         
         renderCalendar(currentMonth, currentYear);
+
+        // --- 🔢 NAYA: NUMBER COUNTER ANIMATION ---
+        document.addEventListener("DOMContentLoaded", () => {
+            const counters = document.querySelectorAll('.animate-counter');
+            
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                const prefix = counter.getAttribute('data-prefix') || '';
+                
+                if (target === 0) {
+                    counter.innerText = prefix + '0';
+                    return;
+                }
+                
+                const duration = 1500; 
+                const increment = target / (duration / 16); 
+                let current = 0;
+                
+                const updateCounter = () => {
+                    current += increment;
+                    if (current < target) {
+                        counter.innerText = prefix + Math.ceil(current).toLocaleString();
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        counter.innerText = prefix + target.toLocaleString();
+                    }
+                };
+                updateCounter();
+            });
+        });
     </script>
 </body>
 </html>
