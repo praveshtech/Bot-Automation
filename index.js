@@ -48,6 +48,13 @@ const userSelections = new Map();
 client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
+
+    // 🔥 Background loop: Har 1 ghante (3600000 ms) me sabhi servers ka leaderboard refresh karega
+    setInterval(() => {
+        client.guilds.cache.forEach(guild => {
+            updateWeeklyLeaderboard(guild);
+        });
+    }, 60 * 60 * 1000);
 });
 
 // ==========================================
@@ -82,6 +89,28 @@ client.on('messageCreate', async message => {
         await message.channel.send({ embeds: [dashEmbed], components: [refreshBtn] });
         await message.delete();
     }
+
+    // --- 🏆 WEEKLY LEADERBOARD SETUP (NO BUTTONS) ---
+    if (message.content === '!setupleaderboard' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        let leaderboardChannel = message.guild.channels.cache.find(c => c.name === 'top-trader-this-week');
+        
+        if (!leaderboardChannel) {
+            leaderboardChannel = await message.guild.channels.create({ 
+                name: 'top-trader-this-week', 
+                type: ChannelType.GuildText, 
+                permissionOverwrites: [
+                    { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
+                ] 
+            });
+        }
+
+        await message.reply({ content: `✅ Leaderboard setup in ${leaderboardChannel}. It will auto-update!`, ephemeral: true });
+        await message.delete();
+        
+        // Setup hote hi pehli baar list generate kar do
+        updateWeeklyLeaderboard(message.guild);
+    }
 });
 
 // ==========================================
@@ -91,13 +120,10 @@ client.on('interactionCreate', async interaction => {
 
     // --- 📊 0. DASHBOARD SYNC (REFRESH BUTTON) ---
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
-        await interaction.deferUpdate(); // Discord ko batana ki "Loading chal rahi hai, wait karo"
+        await interaction.deferUpdate(); 
 
         try {
-            // 1. Live Server Members
             const liveMembers = interaction.guild.memberCount;
-
-            // 2. Fetch Data from Firebase
             const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
             
             let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
@@ -110,12 +136,10 @@ client.on('interactionCreate', async interaction => {
                 const discordId = data.discordUserId; 
                 const username = data.username || 'Unknown';
 
-                // Whales ke liye User Volume Calculate karna
                 const userTag = discordId ? `<@${discordId}>` : `@${username}`;
                 if (userVolumes[userTag]) { userVolumes[userTag] += amount; } 
                 else { userVolumes[userTag] = amount; }
 
-                // Time ke hisaab se Volume nikalna
                 if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                     const tradeDate = data.closedAt.toDate();
                     const diffTime = Math.abs(now - tradeDate);
@@ -127,7 +151,6 @@ client.on('interactionCreate', async interaction => {
                 }
             });
 
-            // 3. Top 5 Whales Sort Karna
             const topTraders = Object.keys(userVolumes)
                 .map(tag => ({ tag, totalVolume: userVolumes[tag] }))
                 .sort((a, b) => b.totalVolume - a.totalVolume)
@@ -143,9 +166,8 @@ client.on('interactionCreate', async interaction => {
                 });
             }
 
-            // 4. Dashboard ko Naya Look Dena (ONLINE)
             const updatedDashEmbed = new EmbedBuilder()
-                .setColor('#2ecc71') // Green for Online
+                .setColor('#2ecc71') 
                 .setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD')
                 .setDescription('**[ 🟢 SYSTEM STATUS: ONLINE ]**\nReal-time network analytics securely fetched from the central database.')
                 .addFields(
@@ -156,7 +178,6 @@ client.on('interactionCreate', async interaction => {
                 .setTimestamp()
                 .setFooter({ text: 'Professor Network - Secure Terminal', iconURL: client.user.displayAvatarURL() });
 
-            // 5. Purane message ko edit karke naya data daalna
             await interaction.editReply({ embeds: [updatedDashEmbed] });
 
         } catch (error) {
@@ -238,7 +259,7 @@ client.on('interactionCreate', async interaction => {
                 })
             ]);
 
-            globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+            globalLastUpdate = Date.now(); 
             await interaction.editReply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.' });
 
         } catch (error) {
@@ -266,7 +287,7 @@ client.on('interactionCreate', async interaction => {
 
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         
-        globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+        globalLastUpdate = Date.now(); 
 
         const oldEmbed = interaction.message.embeds[0];
         const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#e74c3c').setTitle('❌ KYC Rejected');
@@ -385,7 +406,7 @@ client.on('interactionCreate', async interaction => {
                 status: 'Open', 
                 createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
-            globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+            globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
         const cinematicDescription = 
@@ -418,7 +439,6 @@ client.on('interactionCreate', async interaction => {
             components: [actionButtonRow] 
         });
 
-        // 🔥 SECURE REVEAL BUTTONS
         const revealButtonsRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('reveal_admin_details')
@@ -530,32 +550,31 @@ client.on('interactionCreate', async interaction => {
                     )
                     .setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
                 await logChannel.send({ embeds: [vaultEmbed] });
+                
                 // 📢 🔥 PUBLIC TRANSACTION LOG 🔥
-                    if (isSuccess) {
-                        let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === 'public-transaction-log');
-                        
-                        // Agar channel nahi hai toh auto-create karega (Sirf Bot message bhej payega)
-                        if (!publicLogChannel) {
-                            publicLogChannel = await interaction.guild.channels.create({ 
-                                name: 'public-transaction-log', 
-                                type: ChannelType.GuildText, 
-                                permissionOverwrites: [
-                                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
-                                    { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
-                                ] 
-                            });
-                        }
-
-                        // Premium Public Message Embed
-                        const publicEmbed = new EmbedBuilder()
-                            .setColor('#2ecc71') // Green Color for Success
-                            .setTitle('✅ Secure Trade Completed')
-                            .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
-                            .setTimestamp()
-                            .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
-
-                        await publicLogChannel.send({ embeds: [publicEmbed] });
+                if (isSuccess) {
+                    let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === 'public-transaction-log');
+                    
+                    if (!publicLogChannel) {
+                        publicLogChannel = await interaction.guild.channels.create({ 
+                            name: 'public-transaction-log', 
+                            type: ChannelType.GuildText, 
+                            permissionOverwrites: [
+                                { id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                                { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                            ] 
+                        });
                     }
+
+                    const publicEmbed = new EmbedBuilder()
+                        .setColor('#2ecc71') 
+                        .setTitle('✅ Secure Trade Completed')
+                        .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
+                        .setTimestamp()
+                        .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
+
+                    await publicLogChannel.send({ embeds: [publicEmbed] });
+                }
             }
 
             await db.collection('p2p_tickets').doc(interaction.channel.id).update({ 
@@ -564,7 +583,12 @@ client.on('interactionCreate', async interaction => {
                 closedAt: admin.firestore.FieldValue.serverTimestamp() 
             });
 
-            globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+            globalLastUpdate = Date.now(); 
+
+            // 🔥 NAYI LINE: Agar ticket successfully complete hui hai, toh turant Leaderboard update maro
+            if (isSuccess) {
+                updateWeeklyLeaderboard(interaction.guild);
+            }
 
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name === 'tickets' || c.name === 'exchange-desk');
             if (mainTicketChannel) {
@@ -582,6 +606,67 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
+// --- 🏆 AUTO-UPDATE LEADERBOARD ENGINE ---
+async function updateWeeklyLeaderboard(guild) {
+    if (!guild) return;
+    try {
+        const channel = guild.channels.cache.find(c => c.name === 'top-trader-this-week');
+        if (!channel) return; 
+
+        const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
+        const now = new Date();
+        const userVolumes = {};
+
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.closedAt && typeof data.closedAt.toDate === 'function') {
+                const tradeDate = data.closedAt.toDate();
+                const diffTime = Math.abs(now - tradeDate);
+                const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+                if (diffDays <= 7) { 
+                    const tag = data.discordUserId ? `<@${data.discordUserId}>` : data.username;
+                    const amount = data.amountUsd || 0;
+                    userVolumes[tag] = (userVolumes[tag] || 0) + amount;
+                }
+            }
+        });
+
+        const top10 = Object.keys(userVolumes)
+            .map(tag => ({ tag, volume: userVolumes[tag] }))
+            .sort((a, b) => b.volume - a.volume)
+            .slice(0, 10);
+
+        let description = 'These are the Top 10 Highest Volume P2P Traders of the last 7 days:\n\n';
+        if (top10.length === 0) {
+            description += '*No completed trades found for this week yet.*';
+        } else {
+            const medals = ['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'];
+            top10.forEach((trader, index) => {
+                description += `${medals[index]} **${index + 1}.** ${trader.tag} ━━ **$${trader.volume.toLocaleString()}**\n`;
+            });
+        }
+
+        const embed = new EmbedBuilder()
+            .setColor('#f1c40f')
+            .setTitle('🏆 Live Weekly Top Traders')
+            .setDescription(description)
+            .setTimestamp()
+            .setFooter({ text: 'Updates Automatically | Professor Network', iconURL: client.user.displayAvatarURL() });
+
+        const messages = await channel.messages.fetch({ limit: 10 });
+        const botMsg = messages.find(m => m.author.id === client.user.id);
+
+        if (botMsg) {
+            await botMsg.edit({ embeds: [embed], components: [] });
+        } else {
+            await channel.send({ embeds: [embed] });
+        }
+    } catch (error) {
+        console.error("Auto Leaderboard Update Error:", error);
+    }
+}
+
 async function approveUserKYC(userId, guild) {
     let verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
     if (!verifiedRole) { verifiedRole = await guild.roles.create({ name: 'Verified', color: '#2ecc71' }); }
@@ -589,7 +674,7 @@ async function approveUserKYC(userId, guild) {
         const member = await guild.members.fetch(userId);
         await member.roles.add(verifiedRole);
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' });
-        globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+        globalLastUpdate = Date.now(); 
         await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved from dashboard.').catch(() => {});
     } catch (e) { console.log("External KYC approve error", e); }
 }
@@ -702,7 +787,7 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
-        globalLastUpdate = Date.now(); // 🔥 Trigger Dashboard Refresh
+        globalLastUpdate = Date.now(); 
         res.json({ success: true });
     } catch (e) { 
         console.error("KYC Reject API Error:", e);
@@ -749,7 +834,6 @@ app.post('/update-price', requireLogin, async (req, res) => {
     }
 });
 
-// 🔥 NAYA API: Dashboard is route se poochega ki koi naya data aaya hai kya
 app.get('/api/check-updates', requireLogin, (req, res) => {
     res.json({ timestamp: globalLastUpdate });
 });
@@ -774,9 +858,8 @@ app.get('/', requireLogin, async (req, res) => {
         const userVolumes = {}; 
         const allCompleted = [];
         
-        // 🔥 NAYA: Monthly & Calendar Analytics
-        const monthWiseData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Jan to Dec
-        const calendarData = {}; // For Heatmap
+        const monthWiseData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 
+        const calendarData = {}; 
 
         snapshot.forEach(doc => {
             const data = doc.data();
@@ -798,7 +881,7 @@ app.get('/', requireLogin, async (req, res) => {
                 // --- Monthly Data Calculation ---
                 monthWiseData[tradeDate.getMonth()] += amount;
                 
-                // --- Calendar Heatmap Data Calculation ---
+                // --- Calendar Data Calculation ---
                 const year = tradeDate.getFullYear();
                 const month = String(tradeDate.getMonth() + 1).padStart(2, '0');
                 const day = String(tradeDate.getDate()).padStart(2, '0');
@@ -832,7 +915,6 @@ app.get('/', requireLogin, async (req, res) => {
             pendingKyc: pendingKycSnap.size,
             pendingKycList, 
             buyVol, sellVol, recentFeed,
-            // NAYA DATA PASS KAR RAHE HAIN:
             monthWiseData: JSON.stringify(monthWiseData),
             calendarData: JSON.stringify(calendarData)
         });
