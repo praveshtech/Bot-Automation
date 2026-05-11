@@ -302,17 +302,20 @@ client.on('interactionCreate', async interaction => {
         if (!hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: '⚠️ **Access Denied:** You must complete KYC to start a transaction. Please go to the Verification channel.', ephemeral: true });
         }
-        userSelections.set(interaction.user.id, { type: null, step2: null });
+        userSelections.set(interaction.user.id, { type: null, step2: null, step3: null });
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         await interaction.reply({ content: '🏦 **Professor Network:** Step 1 - Do you want to Buy or Sell Crypto?', components: [row1], ephemeral: true });
     }
 
+    // 🔥 NAYA UPDATE: 3-Step Dynamic Dropdown Logic
     if (interaction.isStringSelectMenu()) {
-        const userState = userSelections.get(interaction.user.id) || { type: null, step2: null };
+        const userState = userSelections.get(interaction.user.id) || { type: null, step2: null, step3: null };
+        
         if (interaction.customId === 'dropdown_type') {
             userState.type = interaction.values[0];
             userState.step2 = null;
+            userState.step3 = null;
             userSelections.set(interaction.user.id, userState);
             const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
@@ -325,9 +328,16 @@ client.on('interactionCreate', async interaction => {
             const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
             await interaction.update({ content: `🏦 **Professor Network:** Step 2 - Select your ${userState.type === 'Sell' ? 'Network' : 'Payment Method'}.`, components: [row1, row2] });
         }
-        if (interaction.customId === 'dropdown_step2') {
-            userState.step2 = interaction.values[0];
+        
+        if (interaction.customId === 'dropdown_step2' || interaction.customId === 'dropdown_step3') {
+            if (interaction.customId === 'dropdown_step2') {
+                userState.step2 = interaction.values[0];
+                userState.step3 = null; // Naya network liya toh step 3 reset
+            } else {
+                userState.step3 = interaction.values[0];
+            }
             userSelections.set(interaction.user.id, userState);
+            
             const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             if (userState.type === 'Sell') {
@@ -335,24 +345,61 @@ client.on('interactionCreate', async interaction => {
             } else {
                 step2Dropdown.addOptions([{ label: 'UPI', value: 'UPI', emoji: '📱', default: userState.step2 === 'UPI' }, { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦', default: userState.step2 === 'IMPS' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }]);
             }
+            
             const row1 = new ActionRowBuilder().addComponents(typeDropdown);
             const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
-            const nextButton = new ButtonBuilder().setCustomId('proceed_to_amount').setLabel('Next (Enter Details)').setStyle(ButtonStyle.Success);
-            const row3 = new ActionRowBuilder().addComponents(nextButton);
-            await interaction.update({ content: '🏦 **Professor Network:** Step 3 - Click Next to enter Amount.', components: [row1, row2, row3] });
+            const components = [row1, row2];
+
+            // 🔥 Step 3 Dropdown specifically for 'Sell'
+            if (userState.type === 'Sell') {
+                const step3Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step3').setPlaceholder('Select Receiving Method');
+                step3Dropdown.addOptions([
+                    { label: 'IMPS (Bank Transfer)', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' },
+                    { label: 'CDM (Cash Deposit)', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                    { label: 'CCW', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' }
+                ]);
+                components.push(new ActionRowBuilder().addComponents(step3Dropdown));
+
+                if (userState.step3) {
+                    const nextButton = new ButtonBuilder().setCustomId('proceed_to_amount').setLabel('Next (Enter Details)').setStyle(ButtonStyle.Success);
+                    components.push(new ActionRowBuilder().addComponents(nextButton));
+                    await interaction.update({ content: '🏦 **Professor Network:** Step 4 - Click Next to enter Amount.', components });
+                } else {
+                    await interaction.update({ content: '🏦 **Professor Network:** Step 3 - Select how you want to receive INR.', components });
+                }
+            } else {
+                const nextButton = new ButtonBuilder().setCustomId('proceed_to_amount').setLabel('Next (Enter Details)').setStyle(ButtonStyle.Success);
+                components.push(new ActionRowBuilder().addComponents(nextButton));
+                await interaction.update({ content: '🏦 **Professor Network:** Step 3 - Click Next to enter Amount.', components });
+            }
         }
     }
 
+    // 🔥 NAYA UPDATE: Dynamic Labels for Forms
     if (interaction.isButton() && interaction.customId === 'proceed_to_amount') {
         const userState = userSelections.get(interaction.user.id);
         const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Transaction: ${userState.type} Crypto`);
         const amountInput = new TextInputBuilder().setCustomId('trade_amount').setLabel('Amount in USD ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
         let userReceivingDetails;
+        
         if (userState.type === 'Sell') {
-            userReceivingDetails = new TextInputBuilder().setCustomId('user_receiving_details').setLabel('Your Bank/UPI details (To receive INR)').setPlaceholder('Enter your account info here').setStyle(TextInputStyle.Paragraph).setRequired(true);
+            let dynamicLabel = `Your ${userState.step3 || 'Bank'} details (To receive INR)`;
+            let dynamicPlaceholder = 'Enter your account info here';
+            
+            if (userState.step3 === 'IMPS') dynamicPlaceholder = 'Bank Name, Account No, IFSC...';
+            if (userState.step3 === 'CDM') dynamicPlaceholder = 'CDM Account No, Branch, Name...';
+            if (userState.step3 === 'CCW') dynamicPlaceholder = 'Enter your CCW details here...';
+
+            userReceivingDetails = new TextInputBuilder()
+                .setCustomId('user_receiving_details')
+                .setLabel(dynamicLabel)
+                .setPlaceholder(dynamicPlaceholder)
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
         } else {
             userReceivingDetails = new TextInputBuilder().setCustomId('user_receiving_details').setLabel('Your Crypto Wallet Address (To receive)').setPlaceholder('Enter your wallet address here').setStyle(TextInputStyle.Short).setRequired(true);
         }
+        
         const row1 = new ActionRowBuilder().addComponents(amountInput);
         const row2 = new ActionRowBuilder().addComponents(userReceivingDetails);
         p2pModal.addComponents(row1, row2);
@@ -399,7 +446,8 @@ client.on('interactionCreate', async interaction => {
                 discordUserId: interaction.user.id, 
                 username: interaction.user.username, 
                 tradeType: userState.type, 
-                networkOrMethod: userState.step2, 
+                // 🔥 NAYA UPDATE: Network aur Method dono dashboard par bhejna
+                networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${userState.step3}` : userState.step2, 
                 amountUsd: Number(tradeAmount), 
                 userReceivingDetails: userDetails, 
                 adminTransferDetails: easyCopyText, 
@@ -417,7 +465,7 @@ client.on('interactionCreate', async interaction => {
             `**2. How much amount ($)?**\n` +
             `> ${tradeAmount}\n` +
             `**3. Which Method?**\n` +
-            `> ${userState.step2}\n\n` +
+            `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + userState.step3 + ')' : userState.step2}\n\n` +
             `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`;
 
         const ticketEmbed = new EmbedBuilder()
@@ -585,7 +633,7 @@ client.on('interactionCreate', async interaction => {
 
             globalLastUpdate = Date.now(); 
 
-            // 🔥 NAYI LINE: Agar ticket successfully complete hui hai, toh turant Leaderboard update maro
+            // 🔥 Leaderboard Auto-update on successful trade
             if (isSuccess) {
                 updateWeeklyLeaderboard(interaction.guild);
             }
