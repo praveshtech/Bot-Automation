@@ -86,7 +86,7 @@ client.on('messageCreate', async message => {
             .setFooter({ text: 'Data is encrypted and stored securely.' });
             
         const kycButton = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Start KYC').setStyle(ButtonStyle.Primary).setEmoji('📝')
+            new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Start Auto-KYC').setStyle(ButtonStyle.Primary).setEmoji('📝')
         );
         
         await message.channel.send({ embeds: [kycEmbed], components: [kycButton] });
@@ -183,9 +183,9 @@ client.on('interactionCreate', async interaction => {
         }
     }
     
-    // --- 🛡️ 1. KYC SYSTEM (MODAL FORM) ---
+    // --- 🛡️ 1. AUTO-KYC SYSTEM (MODAL FORM) ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
-        const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
+        const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
         const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
         const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
         const paymentInfoField = new TextInputBuilder().setCustomId('kyc_payment').setLabel('Default Payment Info (UPI/Wallet)').setStyle(TextInputStyle.Paragraph).setRequired(true);
@@ -206,15 +206,10 @@ client.on('interactionCreate', async interaction => {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists) {
                 const status = existingKyc.data().status;
-                if (status === 'Pending') {
-                    return interaction.editReply({ content: `⚠️ **Action Denied:** You have already submitted a KYC form. Your current status is: **Pending**.\n\nPlease wait for the Admin to review it.` });
-                }
                 if (status === 'Approved') {
                     const hasVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
                     if (hasVerifiedRole) {
-                        return interaction.editReply({ content: `✅ **Action Denied:** Your KYC is already **Approved**. You can go ahead and start a P2P transaction!` });
-                    } else {
-                        await db.collection('users_kyc').doc(interaction.user.id).delete();
+                        return interaction.editReply({ content: `✅ **Action Denied:** Your profile is already **Approved**. You can go ahead and start a P2P transaction!` });
                     }
                 }
             }
@@ -223,71 +218,27 @@ client.on('interactionCreate', async interaction => {
             const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
             const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
             
-            let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'kyc-requests');
-            if (!reviewChannel) { 
-                reviewChannel = await interaction.guild.channels.create({ name: 'kyc-requests', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }] }); 
-            }
-            
-            const adminEmbed = new EmbedBuilder()
-                .setColor('#e67e22')
-                .setTitle('🚨 New KYC Request')
-                .addFields(
-                    { name: 'User', value: `${interaction.user.tag} (<@${interaction.user.id}>)`, inline: true }, 
-                    { name: 'Name/Alias', value: name, inline: true }, 
-                    { name: 'Discord ID/Name', value: discordContactVal, inline: true }, 
-                    { name: 'Payment Info', value: paymentDetails, inline: false }
-                );
-                
-            const actionButtons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('Approve').setStyle(ButtonStyle.Success), 
-                new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('Reject').setStyle(ButtonStyle.Danger)
-            );
+            // Directly saving as 'Approved'
+            await db.collection('users_kyc').doc(interaction.user.id).set({ 
+                discordId: interaction.user.id, 
+                username: interaction.user.username, 
+                name: name, 
+                discordContact: discordContactVal, 
+                paymentInfo: paymentDetails, 
+                status: 'Approved', 
+                createdAt: admin.firestore.FieldValue.serverTimestamp() 
+            });
 
-            await Promise.all([
-                reviewChannel.send({ embeds: [adminEmbed], components: [actionButtons] }),
-                db.collection('users_kyc').doc(interaction.user.id).set({ 
-                    discordId: interaction.user.id, 
-                    username: interaction.user.username, 
-                    name: name, 
-                    discordContact: discordContactVal, 
-                    paymentInfo: paymentDetails, 
-                    status: 'Pending', 
-                    createdAt: admin.firestore.FieldValue.serverTimestamp() 
-                })
-            ]);
+            // Grant Role and Nickname instantly
+            await approveUserKYC(interaction.user.id, interaction.guild);
 
             globalLastUpdate = Date.now(); 
-            await interaction.editReply({ content: '✅ Your KYC details have been submitted securely. Please wait for approval.' });
+            await interaction.editReply({ content: '✅ **Registration Successful!** Your details have been securely auto-verified and you now have the Verified✔️ tag.' });
 
         } catch (error) {
-            console.error("KYC Submit Error:", error);
+            console.error("KYC Auto-Approve Error:", error);
             await interaction.editReply({ content: '❌ Something went wrong while saving your data. Please contact support.' });
         }
-    }
-
-    if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
-        const userId = interaction.customId.replace('approve_kyc_', '');
-        await interaction.deferUpdate(); 
-        await approveUserKYC(userId, interaction.guild);
-        
-        const oldEmbed = interaction.message.embeds[0];
-        const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#2ecc71').setTitle('✅ KYC Approved');
-        
-        await interaction.editReply({ embeds: [updatedEmbed], components: [] });
-        await interaction.followUp({ content: `✅ Successfully verified <@${userId}>!`, ephemeral: true });
-    }
-
-    if (interaction.isButton() && interaction.customId.startsWith('reject_kyc_')) {
-        const userId = interaction.customId.replace('reject_kyc_', '');
-        await interaction.deferUpdate();
-        await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
-        globalLastUpdate = Date.now(); 
-
-        const oldEmbed = interaction.message.embeds[0];
-        const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#e74c3c').setTitle('❌ KYC Rejected');
-        
-        await interaction.editReply({ embeds: [updatedEmbed], components: [] });
-        await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>.`, ephemeral: true });
     }
 
     // --- 💸 2. START P2P TRADE ---
@@ -295,18 +246,18 @@ client.on('interactionCreate', async interaction => {
         
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
         if (interaction.customId === 'start_p2p_with_kyc' && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return interaction.reply({ content: '⚠️ **Access Denied:** You must complete KYC to use this option. Please complete verification or use the Without KYC option.', ephemeral: true });
+            return interaction.reply({ content: '⚠️ **Access Denied:** You must complete the basic auto-KYC to use this option. Please click the KYC button first or choose "P2P Without KYC".', ephemeral: true });
         }
 
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null });
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴' }]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         
-        // 🔥 NEW UI: Premium Step 1 Embed
+        // 🔥 PREMIUM UI: Step 1 Embed
         const step1Embed = new EmbedBuilder()
             .setColor('#3498db')
             .setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() })
-            .setDescription('Please select whether you want to **Buy** or **Sell** USDT from the dropdown below.');
+            .setDescription('Please select whether you want to **Buy** or **Sell** Crypto from the dropdown below.');
 
         await interaction.reply({ embeds: [step1Embed], components: [row1], ephemeral: true });
     }
@@ -323,15 +274,15 @@ client.on('interactionCreate', async interaction => {
             userState.amount = null;
             userSelections.set(interaction.user.id, userState);
             
-            const amountModal = new ModalBuilder().setCustomId('amount_modal_popup').setTitle(`🏦 Trade Amount (${userState.type} USDT)`);
-            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USDT ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
+            const amountModal = new ModalBuilder().setCustomId('amount_modal_popup').setTitle(`🏦 Trade Amount (${userState.type} Crypto)`);
+            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USD ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
             amountModal.addComponents(new ActionRowBuilder().addComponents(amountInput));
             
             await interaction.showModal(amountModal);
-            return; // Stops here to wait for modal submit
+            return; 
         }
         
-        // STEP 3 & 4: Network/Method Select (Amount is already entered)
+        // STEP 3 & 4: Network/Method Select 
         if (interaction.customId === 'dropdown_step2' || interaction.customId === 'dropdown_step3') {
             if (interaction.customId === 'dropdown_step2') {
                 userState.step2 = interaction.values[0];
@@ -341,7 +292,7 @@ client.on('interactionCreate', async interaction => {
             }
             userSelections.set(interaction.user.id, userState);
             
-            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             if (userState.type === 'Sell') {
                 step2Dropdown.addOptions([{ label: 'TRC20 (Tron)', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, { label: 'ERC20 (Ethereum)', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, { label: 'BEP20 (Binance)', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, { label: 'BTC (Bitcoin)', value: 'BTC', emoji: '🪙', default: userState.step2 === 'BTC' }]);
@@ -353,11 +304,11 @@ client.on('interactionCreate', async interaction => {
             const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
             const components = [row1, row2];
 
-            // 🔥 NEW UI: Premium Base Embed for tracking context
+            // 🔥 PREMIUM UI: Step 3 / 4 Dynamic Embeds with Context
             const stepEmbed = new EmbedBuilder()
                 .setColor('#3498db')
                 .addFields(
-                    { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy' : '🔴 Sell'}`, inline: true },
+                    { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy Crypto' : '🔴 Sell Crypto'}`, inline: true },
                     { name: '💰 Amount', value: `$${userState.amount}`, inline: true },
                     { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true }
                 );
@@ -375,14 +326,14 @@ client.on('interactionCreate', async interaction => {
                     const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success);
                     components.push(new ActionRowBuilder().addComponents(nextButton));
                     
-                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step' })
+                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                              .setColor('#2ecc71')
                              .setDescription('Click the **Next** button below to securely enter your bank details.')
                              .addFields({ name: '🏦 Receiving Method', value: `${userState.step3}`, inline: true });
                              
                     await interaction.update({ content: '', embeds: [stepEmbed], components });
                 } else {
-                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3' })
+                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3', iconURL: client.user.displayAvatarURL() })
                              .setDescription('Please select how you want to receive your INR from the dropdown below.');
                              
                     await interaction.update({ content: '', embeds: [stepEmbed], components });
@@ -391,7 +342,7 @@ client.on('interactionCreate', async interaction => {
                 const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Wallet Details)').setStyle(ButtonStyle.Success);
                 components.push(new ActionRowBuilder().addComponents(nextButton));
                 
-                stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step' })
+                stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                          .setColor('#2ecc71')
                          .setDescription('Click the **Next** button below to securely enter your wallet details.');
                          
@@ -406,7 +357,7 @@ client.on('interactionCreate', async interaction => {
         userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
         userSelections.set(interaction.user.id, userState);
 
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
@@ -418,23 +369,23 @@ client.on('interactionCreate', async interaction => {
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
 
-        // 🔥 NEW UI: Premium Step 2 Embed
+        // 🔥 PREMIUM UI: Step 2 Embed
         const step2Embed = new EmbedBuilder()
             .setColor('#3498db')
-            .setAuthor({ name: '🏦 P2P Trade Setup | Step 2' })
+            .setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() })
             .setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`)
             .addFields(
-                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true },
+                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy Crypto' : '🔴 Sell Crypto'}`, inline: true },
                 { name: '💰 Amount', value: `$${userState.amount}`, inline: true }
             );
 
         await interaction.update({ content: '', embeds: [step2Embed], components: [row1, row2] });
     }
 
-    // 🔥 MODAL 2: Dynamic Detail Form (Isme se amount field nikal diya gaya hai)
+    // 🔥 MODAL 2: Dynamic Detail Form 
     if (interaction.isButton() && interaction.customId === 'proceed_to_details') {
         const userState = userSelections.get(interaction.user.id);
-        const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} USDT`);
+        const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} Crypto`);
         
         if (userState.type === 'Sell') {
             if (userState.step3 === 'IMPS') {
@@ -552,7 +503,7 @@ client.on('interactionCreate', async interaction => {
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
             `**1. What is the action?**\n` +
-            `> ${userState.type} USDT\n` +
+            `> ${userState.type} Crypto\n` +
             `**2. How much amount ($)?**\n` +
             `> ${tradeAmount}\n` +
             `**3. Which Method?**\n` +
@@ -716,7 +667,7 @@ client.on('interactionCreate', async interaction => {
                 const publicEmbed = new EmbedBuilder()
                     .setColor('#2ecc71') 
                     .setTitle('✅ Secure Trade Completed')
-                    .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} USDT\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
+                    .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
                     .setTimestamp()
                     .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
 
@@ -861,7 +812,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
 
-// Session Configuration
 app.use(session({
     secret: 'professor-vault-secret-key-2026',
     resave: true, 
@@ -931,24 +881,16 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     } catch(e) { res.send("Export Error"); }
 });
 
-const GUILD_ID = '1456297708892586057'; // Ensure this matches your server ID
+const GUILD_ID = '1456297708892586057';
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-
-        if (!guild) {
-            return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." });
-        }
-
+        if (!guild) { return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." }); }
         await approveUserKYC(userId, guild);
         res.json({ success: true });
-
-    } catch (e) { 
-        console.error("KYC Approve API Error:", e);
-        res.json({ success: false, error: e.message }); 
-    }
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/api/kyc-reject', requireLogin, async (req, res) => {
@@ -957,26 +899,17 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         globalLastUpdate = Date.now(); 
         res.json({ success: true });
-    } catch (e) { 
-        console.error("KYC Reject API Error:", e);
-        res.json({ success: false, error: e.message }); 
-    }
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/update-price', requireLogin, async (req, res) => {
     const { buyPrice, sellPrice } = req.body; 
-    
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-        if (!guild) {
-            return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
-        }
+        if (!guild) return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
 
         let priceChannel = guild.channels.cache.find(c => c.name === '🚨daily-price-update');
-        
-        if (!priceChannel) {
-            return res.send(`<script>alert("❌ Error: Channel #🚨daily-price-update not found in Discord!"); window.location.href="/";</script>`);
-        }
+        if (!priceChannel) return res.send(`<script>alert("❌ Error: Channel #🚨daily-price-update not found."); window.location.href="/";</script>`);
 
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f') 
@@ -986,15 +919,11 @@ app.post('/update-price', requireLogin, async (req, res) => {
                 { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true },
                 { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }
             )
-            .setTimestamp()
-            .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
+            .setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
         await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
-        
         res.send(`<script>alert("✅ Market Price Broadcasted Successfully to Discord!"); window.location.href="/";</script>`);
-
     } catch (error) {
-        console.error("Price Broadcast Error:", error);
         res.send(`<script>alert("❌ Error: ${error.message}"); window.location.href="/";</script>`);
     }
 });
@@ -1013,16 +942,13 @@ app.get('/', requireLogin, async (req, res) => {
         
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
         const pendingKycList = [];
-        pendingKycSnap.forEach(doc => {
-            pendingKycList.push(doc.data());
-        });
+        pendingKycSnap.forEach(doc => { pendingKycList.push(doc.data()); });
 
         let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
         let buyVol = 0, sellVol = 0;
         const now = new Date();
         const userVolumes = {}; 
         const allCompleted = [];
-        
         const monthWiseData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 
         const calendarData = {}; 
 
@@ -1033,16 +959,13 @@ app.get('/', requireLogin, async (req, res) => {
             const type = data.tradeType || 'Unknown';
             
             allCompleted.push(data);
-            
             if (type === 'Buy') buyVol += amount;
             if (type === 'Sell') sellVol += amount;
 
-            if (userVolumes[username]) { userVolumes[username] += amount; } 
-            else { userVolumes[username] = amount; }
+            if (userVolumes[username]) { userVolumes[username] += amount; } else { userVolumes[username] = amount; }
 
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
-                
                 monthWiseData[tradeDate.getMonth()] += amount;
                 
                 const year = tradeDate.getFullYear();
@@ -1065,25 +988,15 @@ app.get('/', requireLogin, async (req, res) => {
             return dateB - dateA;
         });
         const recentFeed = allCompleted.slice(0, 10); 
-
-        const topTraders = Object.keys(userVolumes)
-            .map(username => ({ username, totalVolume: userVolumes[username] }))
-            .sort((a, b) => b.totalVolume - a.totalVolume)
-            .slice(0, 5);
+        const topTraders = Object.keys(userVolumes).map(username => ({ username, totalVolume: userVolumes[username] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
 
         res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders,
-            pendingTickets: pendingTicketsSnap.size,
-            pendingKyc: pendingKycSnap.size,
-            pendingKycList, 
-            buyVol, sellVol, recentFeed,
-            monthWiseData: JSON.stringify(monthWiseData),
-            calendarData: JSON.stringify(calendarData)
+            pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
+            pendingKycList, buyVol, sellVol, recentFeed,
+            monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData)
         });
-    } catch (error) { 
-        console.error("Dashboard Render Error: ", error);
-        res.send("Dashboard Error: " + error.message); 
-    }
+    } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
 
 const PORT = process.env.PORT || 3000;
