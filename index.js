@@ -290,7 +290,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>.`, ephemeral: true });
     }
 
-    // --- 💸 2. START P2P TRADE ---
+    // --- 💸 2. START P2P TRADE (DONO BUTTONS P2P WALE) ---
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
@@ -371,7 +371,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // 🔥 NAYA UPDATE: Dynamic Modal Form based on IMPS
+    // 🔥 NAYA UPDATE: Dynamic Modal Form for IMPS, CDM & CCW
     if (interaction.isButton() && interaction.customId === 'proceed_to_amount') {
         const userState = userSelections.get(interaction.user.id);
         const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Transaction: ${userState.type} Crypto`);
@@ -381,7 +381,7 @@ client.on('interactionCreate', async interaction => {
         
         if (userState.type === 'Sell') {
             if (userState.step3 === 'IMPS') {
-                // If IMPS, create 4 distinct short text fields
+                // IMPS: 5 Fields Limit
                 const bankName = new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setPlaceholder('e.g. HDFC Bank').setStyle(TextInputStyle.Short).setRequired(true);
                 const accName = new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setPlaceholder('e.g. Pravesh Yadav').setStyle(TextInputStyle.Short).setRequired(true);
                 const accNo = new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setPlaceholder('e.g. 50100...').setStyle(TextInputStyle.Short).setRequired(true);
@@ -393,16 +393,29 @@ client.on('interactionCreate', async interaction => {
                     new ActionRowBuilder().addComponents(accNo),
                     new ActionRowBuilder().addComponents(ifscCode)
                 );
-            } else {
-                // For CDM or CCW, use a generic paragraph
-                let dynamicLabel = `Your ${userState.step3} details`;
-                let dynamicPlaceholder = userState.step3 === 'CDM' ? 'CDM Account No, Branch, Name...' : 'Enter your CCW details here...';
-                
-                const detailInput = new TextInputBuilder().setCustomId('user_receiving_details').setLabel(dynamicLabel).setPlaceholder(dynamicPlaceholder).setStyle(TextInputStyle.Paragraph).setRequired(true);
-                p2pModal.addComponents(new ActionRowBuilder().addComponents(detailInput));
+            } else if (userState.step3 === 'CDM') {
+                // CDM: 4 Fields
+                const cdmAccName = new TextInputBuilder().setCustomId('cdm_account_name').setLabel('Account Holder Name').setPlaceholder('e.g. Pravesh Yadav').setStyle(TextInputStyle.Short).setRequired(true);
+                const cdmAccNo = new TextInputBuilder().setCustomId('cdm_account_number').setLabel('Account Number').setPlaceholder('e.g. 50100...').setStyle(TextInputStyle.Short).setRequired(true);
+                const cdmMobNo = new TextInputBuilder().setCustomId('cdm_mobile_number').setLabel('Mobile Number').setPlaceholder('e.g. 9876543210').setStyle(TextInputStyle.Short).setRequired(true);
+
+                p2pModal.addComponents(
+                    new ActionRowBuilder().addComponents(cdmAccName),
+                    new ActionRowBuilder().addComponents(cdmAccNo),
+                    new ActionRowBuilder().addComponents(cdmMobNo)
+                );
+            } else if (userState.step3 === 'CCW') {
+                // CCW: 3 Fields
+                const ccwRefNo = new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Reference Number').setPlaceholder('e.g. REF12345678').setStyle(TextInputStyle.Short).setRequired(true);
+                const ccwAccName = new TextInputBuilder().setCustomId('ccw_account_name').setLabel('Account Holder Name').setPlaceholder('e.g. Pravesh Yadav').setStyle(TextInputStyle.Short).setRequired(true);
+
+                p2pModal.addComponents(
+                    new ActionRowBuilder().addComponents(ccwRefNo),
+                    new ActionRowBuilder().addComponents(ccwAccName)
+                );
             }
         } else {
-            // For Buy, just ask for Crypto Wallet
+            // For Buy Crypto
             const walletInput = new TextInputBuilder().setCustomId('user_receiving_details').setLabel('Your Crypto Wallet Address (To receive)').setPlaceholder('Enter your wallet address here').setStyle(TextInputStyle.Short).setRequired(true);
             p2pModal.addComponents(new ActionRowBuilder().addComponents(walletInput));
         }
@@ -416,13 +429,24 @@ client.on('interactionCreate', async interaction => {
         const tradeAmount = interaction.fields.getTextInputValue('trade_amount');
         let userDetails = "";
 
-        // 🔥 Extracting data based on what form was shown
-        if (userState.type === 'Sell' && userState.step3 === 'IMPS') {
-            const bName = interaction.fields.getTextInputValue('bank_name');
-            const aName = interaction.fields.getTextInputValue('account_name');
-            const aNo = interaction.fields.getTextInputValue('account_number');
-            const ifsc = interaction.fields.getTextInputValue('ifsc_code');
-            userDetails = `Bank Name: ${bName}\nHolder Name: ${aName}\nAccount No: ${aNo}\nIFSC Code: ${ifsc}`;
+        // 🔥 Extracting data based on form type
+        if (userState.type === 'Sell') {
+            if (userState.step3 === 'IMPS') {
+                const bName = interaction.fields.getTextInputValue('bank_name');
+                const aName = interaction.fields.getTextInputValue('account_name');
+                const aNo = interaction.fields.getTextInputValue('account_number');
+                const ifsc = interaction.fields.getTextInputValue('ifsc_code');
+                userDetails = `Bank Name: ${bName}\nHolder Name: ${aName}\nAccount No: ${aNo}\nIFSC Code: ${ifsc}`;
+            } else if (userState.step3 === 'CDM') {
+                const aName = interaction.fields.getTextInputValue('cdm_account_name');
+                const aNo = interaction.fields.getTextInputValue('cdm_account_number');
+                const mobNo = interaction.fields.getTextInputValue('cdm_mobile_number');
+                userDetails = `Holder Name: ${aName}\nAccount No: ${aNo}\nMobile No: ${mobNo}`;
+            } else if (userState.step3 === 'CCW') {
+                const rNo = interaction.fields.getTextInputValue('ccw_ref_number');
+                const aName = interaction.fields.getTextInputValue('ccw_account_name');
+                userDetails = `Reference No: ${rNo}\nHolder Name: ${aName}`;
+            }
         } else {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
@@ -559,7 +583,7 @@ client.on('interactionCreate', async interaction => {
         } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
     }
 
-    // --- 🏦 5. TICKET CLOSE & LOGGING (Complete OR Cancel) ---
+    // --- 🏦 5. TICKET CLOSE & LOGGING ---
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
@@ -790,10 +814,7 @@ app.use(session({
     secret: 'professor-vault-secret-key-2026',
     resave: true, 
     saveUninitialized: true, 
-    cookie: { 
-        secure: false, 
-        maxAge: 7 * 24 * 60 * 60 * 1000 
-    }
+    cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
 const requireLogin = (req, res, next) => {
@@ -825,7 +846,6 @@ app.post('/login', async (req, res) => {
             res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
         }
     } catch (error) { 
-        console.error("Login Error:", error);
         res.render('login', { error: 'Database Connection Error. Please verify network.' }); 
     }
 });
