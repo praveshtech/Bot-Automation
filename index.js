@@ -741,7 +741,7 @@ client.on('interactionCreate', async interaction => {
                     .setTitle('✅ Secure Trade Completed')
                     .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
                     .setTimestamp()
-                    .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
+                    .setFooter({ text: 'Palemero | Professor Network', iconURL: client.user.displayAvatarURL() });
 
                 await publicLogChannel.send({ embeds: [publicEmbed] });
             }
