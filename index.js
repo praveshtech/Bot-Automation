@@ -299,14 +299,14 @@ client.on('interactionCreate', async interaction => {
         }
 
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null });
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴' }]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         
         // 🔥 NEW UI: Premium Step 1 Embed
         const step1Embed = new EmbedBuilder()
             .setColor('#3498db')
             .setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() })
-            .setDescription('Please select whether you want to **Buy** or **Sell** Crypto from the dropdown below.');
+            .setDescription('Please select whether you want to **Buy** or **Sell** USDT from the dropdown below.');
 
         await interaction.reply({ embeds: [step1Embed], components: [row1], ephemeral: true });
     }
@@ -323,8 +323,8 @@ client.on('interactionCreate', async interaction => {
             userState.amount = null;
             userSelections.set(interaction.user.id, userState);
             
-            const amountModal = new ModalBuilder().setCustomId('amount_modal_popup').setTitle(`🏦 Trade Amount (${userState.type} Crypto)`);
-            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USD ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
+            const amountModal = new ModalBuilder().setCustomId('amount_modal_popup').setTitle(`🏦 Trade Amount (${userState.type} USDT)`);
+            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USDT ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
             amountModal.addComponents(new ActionRowBuilder().addComponents(amountInput));
             
             await interaction.showModal(amountModal);
@@ -341,7 +341,7 @@ client.on('interactionCreate', async interaction => {
             }
             userSelections.set(interaction.user.id, userState);
             
-            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             if (userState.type === 'Sell') {
                 step2Dropdown.addOptions([{ label: 'TRC20 (Tron)', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, { label: 'ERC20 (Ethereum)', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, { label: 'BEP20 (Binance)', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, { label: 'BTC (Bitcoin)', value: 'BTC', emoji: '🪙', default: userState.step2 === 'BTC' }]);
@@ -406,7 +406,7 @@ client.on('interactionCreate', async interaction => {
         userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
         userSelections.set(interaction.user.id, userState);
 
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
@@ -424,7 +424,7 @@ client.on('interactionCreate', async interaction => {
             .setAuthor({ name: '🏦 P2P Trade Setup | Step 2' })
             .setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`)
             .addFields(
-                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy Crypto' : '🔴 Sell Crypto'}`, inline: true },
+                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true },
                 { name: '💰 Amount', value: `$${userState.amount}`, inline: true }
             );
 
@@ -434,7 +434,7 @@ client.on('interactionCreate', async interaction => {
     // 🔥 MODAL 2: Dynamic Detail Form (Isme se amount field nikal diya gaya hai)
     if (interaction.isButton() && interaction.customId === 'proceed_to_details') {
         const userState = userSelections.get(interaction.user.id);
-        const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} Crypto`);
+        const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} USDT`);
         
         if (userState.type === 'Sell') {
             if (userState.step3 === 'IMPS') {
@@ -552,7 +552,7 @@ client.on('interactionCreate', async interaction => {
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
             `**1. What is the action?**\n` +
-            `> ${userState.type} Crypto\n` +
+            `> ${userState.type} USDT\n` +
             `**2. How much amount ($)?**\n` +
             `> ${tradeAmount}\n` +
             `**3. Which Method?**\n` +
@@ -716,7 +716,7 @@ client.on('interactionCreate', async interaction => {
                 const publicEmbed = new EmbedBuilder()
                     .setColor('#2ecc71') 
                     .setTitle('✅ Secure Trade Completed')
-                    .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
+                    .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} USDT\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
                     .setTimestamp()
                     .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
 
