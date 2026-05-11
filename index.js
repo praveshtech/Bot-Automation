@@ -733,11 +733,30 @@ async function approveUserKYC(userId, guild) {
     if (!verifiedRole) { verifiedRole = await guild.roles.create({ name: 'Verified', color: '#2ecc71' }); }
     try {
         const member = await guild.members.fetch(userId);
+        
+        // 1. Give Verified Role
         await member.roles.add(verifiedRole);
+
+        // 🔥 2. NAYA UPDATE: Change User Nickname to add [KYC Verified] tag
+        const currentName = member.displayName;
+        if (!currentName.includes('[KYC Verified]')) {
+            let newName = `[KYC Verified] ${currentName}`;
+            // Discord limits nicknames to max 32 characters, so we trim if it's too long
+            if (newName.length > 32) newName = newName.substring(0, 32); 
+            
+            // Note: Bot Server Owner/Admin ka naam change nahi kar sakta, uske liye error catch lagaya hai
+            await member.setNickname(newName).catch(err => console.log("Nickname Error (Bot Role Hierarchy):", err.message));
+        }
+
+        // 3. Update Database
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' });
         globalLastUpdate = Date.now(); 
-        await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved from dashboard.').catch(() => {});
-    } catch (e) { console.log("External KYC approve error", e); }
+        
+        // 4. Send DM
+        await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved and your profile is now [KYC Verified].').catch(() => {});
+    } catch (e) { 
+        console.log("External KYC approve error", e); 
+    }
 }
 
 // ==========================================
