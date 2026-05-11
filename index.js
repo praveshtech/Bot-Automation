@@ -308,7 +308,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: '🏦 **Professor Network:** Step 1 - Do you want to Buy or Sell Crypto?', components: [row1], ephemeral: true });
     }
 
-    // 🔥 NAYA UPDATE: 3-Step Dynamic Dropdown Logic
+    // 🔥 Dynamic Dropdown Logic
     if (interaction.isStringSelectMenu()) {
         const userState = userSelections.get(interaction.user.id) || { type: null, step2: null, step3: null };
         
@@ -332,7 +332,7 @@ client.on('interactionCreate', async interaction => {
         if (interaction.customId === 'dropdown_step2' || interaction.customId === 'dropdown_step3') {
             if (interaction.customId === 'dropdown_step2') {
                 userState.step2 = interaction.values[0];
-                userState.step3 = null; // Naya network liya toh step 3 reset
+                userState.step3 = null;
             } else {
                 userState.step3 = interaction.values[0];
             }
@@ -350,7 +350,6 @@ client.on('interactionCreate', async interaction => {
             const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
             const components = [row1, row2];
 
-            // 🔥 Step 3 Dropdown specifically for 'Sell'
             if (userState.type === 'Sell') {
                 const step3Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step3').setPlaceholder('Select Receiving Method');
                 step3Dropdown.addOptions([
@@ -375,7 +374,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // 🔥 NAYA UPDATE: Dynamic Labels for Forms
+    // Dynamic Labels for Forms
     if (interaction.isButton() && interaction.customId === 'proceed_to_amount') {
         const userState = userSelections.get(interaction.user.id);
         const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Transaction: ${userState.type} Crypto`);
@@ -446,7 +445,6 @@ client.on('interactionCreate', async interaction => {
                 discordUserId: interaction.user.id, 
                 username: interaction.user.username, 
                 tradeType: userState.type, 
-                // 🔥 NAYA UPDATE: Network aur Method dono dashboard par bhejna
                 networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${userState.step3}` : userState.step2, 
                 amountUsd: Number(tradeAmount), 
                 userReceivingDetails: userDetails, 
@@ -474,9 +472,10 @@ client.on('interactionCreate', async interaction => {
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
+        // 🔥 NAYA UPDATE: Cancel Button label changed to be available for Users too
         const actionButtonRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade (Admin)').setStyle(ButtonStyle.Danger)
+            new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger)
         );
 
         let pingMsg = palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`;
@@ -545,84 +544,95 @@ client.on('interactionCreate', async interaction => {
     }
 
     // --- 🏦 5. TICKET CLOSE & LOGGING (Complete OR Cancel) ---
+    // 🔥 NAYA UPDATE: Split Permissions for Complete and Cancel buttons
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-        
-        if (!isProfessor && !isPalermo) {
-            return interaction.reply({ content: '❌ **Access Denied:** Only Palermo or Professor can take this action.', ephemeral: true });
-        }
-
-        const isSuccess = interaction.customId === 'complete_p2p_ticket';
-        const finalStatus = isSuccess ? 'Completed' : 'Cancelled';
-
-        await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
+        const isAdmin = isProfessor || isPalermo;
 
         try {
+            // Check Database to see who the ticket creator is
             const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
-            if (ticketDoc.exists) {
-                const ticketData = ticketDoc.data();
+            if (!ticketDoc.exists) {
+                return interaction.reply({ content: '❌ Ticket data not found.', ephemeral: true });
+            }
+            
+            const ticketData = ticketDoc.data();
+            const isTicketCreator = interaction.user.id === ticketData.discordUserId;
+
+            // Security Rules
+            if (interaction.customId === 'complete_p2p_ticket' && !isAdmin) {
+                return interaction.reply({ content: '❌ **Access Denied:** Only Admins can mark a trade as Complete.', ephemeral: true });
+            }
+
+            if (interaction.customId === 'cancel_p2p_ticket' && !isAdmin && !isTicketCreator) {
+                return interaction.reply({ content: '❌ **Access Denied:** Only Admins or the Ticket Creator can cancel this trade.', ephemeral: true });
+            }
+
+            const isSuccess = interaction.customId === 'complete_p2p_ticket';
+            const finalStatus = isSuccess ? 'Completed' : 'Cancelled';
+
+            await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
+            
+            const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
+            if (member) {
+                const receiptEmbed = new EmbedBuilder()
+                    .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
+                    .setTitle(isSuccess ? '🧾 Transaction Completed' : '🚫 Transaction Cancelled')
+                    .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been **${finalStatus}** by The Vault Admin.\n\n${isSuccess ? 'Thank you for trading with us! 🏦' : 'This transaction was incomplete and has been cancelled.'}`)
+                    .setFooter({ text: 'Professor Network - Secure Terminal' });
                 
-                const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
-                if (member) {
-                    const receiptEmbed = new EmbedBuilder()
-                        .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
-                        .setTitle(isSuccess ? '🧾 Transaction Completed' : '🚫 Transaction Cancelled')
-                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been **${finalStatus}** by The Vault Admin.\n\n${isSuccess ? 'Thank you for trading with us! 🏦' : 'This transaction was incomplete and has been cancelled.'}`)
-                        .setFooter({ text: 'Professor Network - Secure Terminal' });
-                    
-                    const serverLinkBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef')); 
-                    await member.send({ embeds: [receiptEmbed], components: [serverLinkBtn] }).catch(()=> console.log("DM closed"));
-                }
+                const serverLinkBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef')); 
+                await member.send({ embeds: [receiptEmbed], components: [serverLinkBtn] }).catch(()=> console.log("DM closed"));
+            }
 
-                let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
-                if (!logChannel) {
-                    const palermoRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
-                    const verifiedRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Verified');
-                    let logPerms = [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }];
-                    if (verifiedRoleForLog) logPerms.push({ id: verifiedRoleForLog.id, deny: [PermissionsBitField.Flags.ViewChannel] });
-                    if (palermoRoleForLog) logPerms.push({ id: palermoRoleForLog.id, allow: [PermissionsBitField.Flags.ViewChannel] });
-                    logChannel = await interaction.guild.channels.create({ name: 'transaction-logs', type: ChannelType.GuildText, permissionOverwrites: logPerms });
-                }
+            let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
+            if (!logChannel) {
+                const palermoRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
+                const verifiedRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Verified');
+                let logPerms = [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }];
+                if (verifiedRoleForLog) logPerms.push({ id: verifiedRoleForLog.id, deny: [PermissionsBitField.Flags.ViewChannel] });
+                if (palermoRoleForLog) logPerms.push({ id: palermoRoleForLog.id, allow: [PermissionsBitField.Flags.ViewChannel] });
+                logChannel = await interaction.guild.channels.create({ name: 'transaction-logs', type: ChannelType.GuildText, permissionOverwrites: logPerms });
+            }
 
-                const vaultEmbed = new EmbedBuilder()
-                    .setColor(isSuccess ? '#f1c40f' : '#e74c3c') 
-                    .setTitle(`🏦 Vault Record: Transaction ${finalStatus}`)
-                    .addFields(
-                        { name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, 
-                        { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, 
-                        { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, 
-                        { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, 
-                        { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, 
-                        { name: 'Status', value: `\`${finalStatus}\``, inline: true }
-                    )
-                    .setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
-                await logChannel.send({ embeds: [vaultEmbed] });
+            const vaultEmbed = new EmbedBuilder()
+                .setColor(isSuccess ? '#f1c40f' : '#e74c3c') 
+                .setTitle(`🏦 Vault Record: Transaction ${finalStatus}`)
+                .addFields(
+                    { name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, 
+                    { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, 
+                    { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, 
+                    { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, 
+                    { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, 
+                    { name: 'Status', value: `\`${finalStatus}\``, inline: true }
+                )
+                .setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
+            await logChannel.send({ embeds: [vaultEmbed] });
+            
+            // 📢 🔥 PUBLIC TRANSACTION LOG 🔥
+            if (isSuccess) {
+                let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === 'public-transaction-log');
                 
-                // 📢 🔥 PUBLIC TRANSACTION LOG 🔥
-                if (isSuccess) {
-                    let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === 'public-transaction-log');
-                    
-                    if (!publicLogChannel) {
-                        publicLogChannel = await interaction.guild.channels.create({ 
-                            name: 'public-transaction-log', 
-                            type: ChannelType.GuildText, 
-                            permissionOverwrites: [
-                                { id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
-                                { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
-                            ] 
-                        });
-                    }
-
-                    const publicEmbed = new EmbedBuilder()
-                        .setColor('#2ecc71') 
-                        .setTitle('✅ Secure Trade Completed')
-                        .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
-                        .setTimestamp()
-                        .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
-
-                    await publicLogChannel.send({ embeds: [publicEmbed] });
+                if (!publicLogChannel) {
+                    publicLogChannel = await interaction.guild.channels.create({ 
+                        name: 'public-transaction-log', 
+                        type: ChannelType.GuildText, 
+                        permissionOverwrites: [
+                            { id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                            { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                        ] 
+                    });
                 }
+
+                const publicEmbed = new EmbedBuilder()
+                    .setColor('#2ecc71') 
+                    .setTitle('✅ Secure Trade Completed')
+                    .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
+                    .setTimestamp()
+                    .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
+
+                await publicLogChannel.send({ embeds: [publicEmbed] });
             }
 
             await db.collection('p2p_tickets').doc(interaction.channel.id).update({ 
@@ -648,9 +658,12 @@ client.on('interactionCreate', async interaction => {
                 const startButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_ticket').setLabel('Start Transaction').setStyle(ButtonStyle.Danger).setEmoji('💸'));
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [startButton] });
             }
-        } catch (error) { console.error("Error Closing Ticket: ", error); }
 
-        setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
+            setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
+
+        } catch (error) { 
+            console.error("Error Closing Ticket: ", error); 
+        }
     }
 });
 
