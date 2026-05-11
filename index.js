@@ -62,7 +62,6 @@ client.once('ready', () => {
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // 🔥 UPDATED: Dual Button Setup for KYC and Non-KYC
     if (message.content === '!p2p' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
         const setupEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
@@ -86,6 +85,22 @@ client.on('messageCreate', async message => {
         );
 
         await message.channel.send({ embeds: [setupEmbed], components: [buttons] });
+        await message.delete();
+    }
+
+    // 🔥 FIXED HERE: Changed 'start_kyc_form' to 'start_kyc_ticket'
+    if (message.content === '!setupkyc' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        const kycEmbed = new EmbedBuilder()
+            .setColor('#2b2d31')
+            .setTitle('🛡️ Network KYC Verification')
+            .setDescription('To maintain the highest security and anonymity, all members must complete KYC before trading.\n\nClick the button below to start your verification process securely.')
+            .setFooter({ text: 'Data is encrypted and stored securely.' });
+            
+        const kycButton = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('start_kyc_ticket').setLabel('Start KYC').setStyle(ButtonStyle.Primary).setEmoji('🛡️')
+        );
+        
+        await message.channel.send({ embeds: [kycEmbed], components: [kycButton] });
         await message.delete();
     }
 
@@ -727,7 +742,10 @@ async function approveUserKYC(userId, guild) {
         const currentName = member.displayName;
         if (!currentName.includes('Verified✔️')) {
             let newName = ` ${currentName} Verified✔️`;
+            // Discord limits nicknames to max 32 characters, so we trim if it's too long
             if (newName.length > 32) newName = newName.substring(0, 32); 
+            
+            // Note: Bot Server Owner/Admin ka naam change nahi kar sakta, uske liye error catch lagaya hai
             await member.setNickname(newName).catch(err => console.log("Nickname Error (Bot Role Hierarchy):", err.message));
         }
 
@@ -757,7 +775,10 @@ app.use(session({
     secret: 'professor-vault-secret-key-2026',
     resave: true, 
     saveUninitialized: true, 
-    cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 }
+    cookie: { 
+        secure: false, 
+        maxAge: 7 * 24 * 60 * 60 * 1000 
+    }
 }));
 
 const requireLogin = (req, res, next) => {
@@ -789,6 +810,7 @@ app.post('/login', async (req, res) => {
             res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
         }
     } catch (error) { 
+        console.error("Login Error:", error);
         res.render('login', { error: 'Database Connection Error. Please verify network.' }); 
     }
 });
@@ -828,10 +850,16 @@ app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-        if (!guild) { return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." }); }
+
+        if (!guild) {
+            return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." });
+        }
+
         await approveUserKYC(userId, guild);
         res.json({ success: true });
+
     } catch (e) { 
+        console.error("KYC Approve API Error:", e);
         res.json({ success: false, error: e.message }); 
     }
 });
@@ -843,18 +871,28 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
         globalLastUpdate = Date.now(); 
         res.json({ success: true });
     } catch (e) { 
+        console.error("KYC Reject API Error:", e);
         res.json({ success: false, error: e.message }); 
     }
 });
 
+// ==========================================
+// 📈 MARKET PRICE BROADCAST API
+// ==========================================
 app.post('/update-price', requireLogin, async (req, res) => {
     const { buyPrice, sellPrice } = req.body; 
+    
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-        if (!guild) return res.send(`<script>alert("❌ Error: Discord server not found."); window.location.href="/";</script>`);
+        if (!guild) {
+            return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
+        }
 
         let priceChannel = guild.channels.cache.find(c => c.name === '🚨daily-price-update');
-        if (!priceChannel) return res.send(`<script>alert("❌ Error: Channel #🚨daily-price-update not found."); window.location.href="/";</script>`);
+        
+        if (!priceChannel) {
+            return res.send(`<script>alert("❌ Error: Channel #🚨daily-price-update not found in Discord!"); window.location.href="/";</script>`);
+        }
 
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f') 
@@ -864,11 +902,15 @@ app.post('/update-price', requireLogin, async (req, res) => {
                 { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true },
                 { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }
             )
-            .setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
+            .setTimestamp()
+            .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
         await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
+        
         res.send(`<script>alert("✅ Market Price Broadcasted Successfully to Discord!"); window.location.href="/";</script>`);
+
     } catch (error) {
+        console.error("Price Broadcast Error:", error);
         res.send(`<script>alert("❌ Error: ${error.message}"); window.location.href="/";</script>`);
     }
 });
@@ -887,7 +929,9 @@ app.get('/', requireLogin, async (req, res) => {
         
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
         const pendingKycList = [];
-        pendingKycSnap.forEach(doc => { pendingKycList.push(doc.data()); });
+        pendingKycSnap.forEach(doc => {
+            pendingKycList.push(doc.data());
+        });
 
         let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
         let buyVol = 0, sellVol = 0;
@@ -909,18 +953,23 @@ app.get('/', requireLogin, async (req, res) => {
             if (type === 'Buy') buyVol += amount;
             if (type === 'Sell') sellVol += amount;
 
-            if (userVolumes[username]) { userVolumes[username] += amount; } else { userVolumes[username] = amount; }
+            if (userVolumes[username]) { userVolumes[username] += amount; } 
+            else { userVolumes[username] = amount; }
 
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
+                
+                // --- Monthly Data Calculation ---
                 monthWiseData[tradeDate.getMonth()] += amount;
                 
+                // --- Calendar Data Calculation ---
                 const year = tradeDate.getFullYear();
                 const month = String(tradeDate.getMonth() + 1).padStart(2, '0');
                 const day = String(tradeDate.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
                 calendarData[dateKey] = (calendarData[dateKey] || 0) + amount;
 
+                // --- Existing Time Logic ---
                 const diffTime = Math.abs(now - tradeDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                 if (diffDays <= 1) dailyVol += amount;
@@ -936,7 +985,10 @@ app.get('/', requireLogin, async (req, res) => {
         });
         const recentFeed = allCompleted.slice(0, 10); 
 
-        const topTraders = Object.keys(userVolumes).map(username => ({ username, totalVolume: userVolumes[username] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
+        const topTraders = Object.keys(userVolumes)
+            .map(username => ({ username, totalVolume: userVolumes[username] }))
+            .sort((a, b) => b.totalVolume - a.totalVolume)
+            .slice(0, 5);
 
         res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders,
@@ -948,6 +1000,7 @@ app.get('/', requireLogin, async (req, res) => {
             calendarData: JSON.stringify(calendarData)
         });
     } catch (error) { 
+        console.error("Dashboard Render Error: ", error);
         res.send("Dashboard Error: " + error.message); 
     }
 });
