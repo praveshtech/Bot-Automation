@@ -57,7 +57,7 @@ client.once('ready', () => {
 });
 
 // ==========================================
-// 🛠️ DISCORD COMMANDS
+// 🛠️ DISCORD COMMANDS (Admin Setup)
 // ==========================================
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
@@ -78,7 +78,8 @@ client.on('messageCreate', async message => {
         await message.delete();
     }
 
-    if (message.content === '!setupkyc' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+    // 🔥 Command aur Button Name update kiya gaya hai
+    if (message.content === '!verify' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
         const kycEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
             .setTitle('📝 Basic Network Registration')
@@ -86,7 +87,7 @@ client.on('messageCreate', async message => {
             .setFooter({ text: 'Data is encrypted and stored securely.' });
             
         const kycButton = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Start Registration').setStyle(ButtonStyle.Primary).setEmoji('📝')
+            new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Verify').setStyle(ButtonStyle.Primary).setEmoji('📝')
         );
         
         await message.channel.send({ embeds: [kycEmbed], components: [kycButton] });
@@ -147,12 +148,18 @@ client.on('interactionCreate', async interaction => {
                 const discordId = data.discordUserId; 
                 const username = data.username || 'Unknown';
                 const userTag = discordId ? `<@${discordId}>` : `@${username}`;
-                if (userVolumes[userTag]) { userVolumes[userTag] += amount; } else { userVolumes[userTag] = amount; }
+                
+                if (userVolumes[userTag]) { 
+                    userVolumes[userTag] += amount; 
+                } else { 
+                    userVolumes[userTag] = amount; 
+                }
 
                 if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                     const tradeDate = data.closedAt.toDate();
                     const diffTime = Math.abs(now - tradeDate);
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    
                     if (diffDays <= 1) dailyVol += amount;
                     if (diffDays <= 7) weeklyVol += amount;
                     if (diffDays <= 30) monthlyVol += amount;
@@ -162,8 +169,14 @@ client.on('interactionCreate', async interaction => {
             const topTraders = Object.keys(userVolumes).map(tag => ({ tag, totalVolume: userVolumes[tag] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
             let whalesText = '';
             const medals = ['🥇', '🥈', '🥉', '🏅', '🏅'];
-            if (topTraders.length === 0) whalesText = 'No data available yet.';
-            else topTraders.forEach((trader, index) => { whalesText += `${medals[index]} ${trader.tag} ━━ **$${trader.totalVolume}**\n`; });
+            
+            if (topTraders.length === 0) {
+                whalesText = 'No data available yet.';
+            } else {
+                topTraders.forEach((trader, index) => { 
+                    whalesText += `${medals[index]} ${trader.tag} ━━ **$${trader.totalVolume}**\n`; 
+                });
+            }
 
             const updatedDashEmbed = new EmbedBuilder()
                 .setColor('#2ecc71') 
@@ -232,13 +245,13 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- 🔥 NAYA UPDATE: ADVANCED KYC (TICKET ROOM) & P2P BUTTONS ---
+    // --- 🔥 ADVANCED KYC (TICKET ROOM) & P2P BUTTONS ---
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-        // 🔥 TIER 2 KYC: Agar 'With KYC' dabaya aur role nahi hai -> Create Ticket!
+        // TIER 2 KYC: Agar 'With KYC' dabaya aur role nahi hai -> Create Ticket!
         if (isVerifiedRoute && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             await interaction.reply({ content: '⏳ You are not **Vault Verified** yet. Creating your secure KYC verification room...', ephemeral: true });
 
@@ -247,7 +260,10 @@ client.on('interactionCreate', async interaction => {
                 { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
                 { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
             ];
-            if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
+            
+            if (palermoRole) {
+                channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
+            }
 
             const kycChannel = await interaction.guild.channels.create({
                 name: `kyc-${interaction.user.username}`,
@@ -280,7 +296,11 @@ client.on('interactionCreate', async interaction => {
 
         // If they chose 'Without KYC' OR they already have the Vault Verified role, proceed to trade
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }]);
+        
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
+            { label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, 
+            { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }
+        ]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         
         const step1Embed = new EmbedBuilder()
@@ -297,7 +317,10 @@ client.on('interactionCreate', async interaction => {
         
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-        if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied:** Only Admins can approve KYC.', ephemeral: true });
+        
+        if (!isProfessor && !isPalermo) {
+            return interaction.reply({ content: '❌ **Access Denied:** Only Admins can approve KYC.', ephemeral: true });
+        }
 
         await interaction.deferUpdate(); 
         await approveUserKYC(userId, interaction.guild);
@@ -308,7 +331,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.editReply({ embeds: [updatedEmbed], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
-        // Ensure it's a kyc ticket before deleting
         if (interaction.channel.name.startsWith('kyc-') && interaction.channel.name !== 'kyc-requests') {
             setTimeout(() => interaction.channel.delete().catch(()=> {}), 5000);
         }
@@ -319,7 +341,10 @@ client.on('interactionCreate', async interaction => {
 
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-        if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied:** Only Admins can reject KYC.', ephemeral: true });
+        
+        if (!isProfessor && !isPalermo) {
+            return interaction.reply({ content: '❌ **Access Denied:** Only Admins can reject KYC.', ephemeral: true });
+        }
 
         await interaction.deferUpdate();
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' }).catch(()=>{});
@@ -336,7 +361,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- 🔥 DYNAMIC DROPDOWN LOGIC ---
+    // --- DYNAMIC DROPDOWN LOGIC ---
     if (interaction.isStringSelectMenu()) {
         const userState = userSelections.get(interaction.user.id) || { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: false };
         
@@ -368,10 +393,20 @@ client.on('interactionCreate', async interaction => {
             
             const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
+            
             if (userState.type === 'Sell') {
-                step2Dropdown.addOptions([{ label: 'TRC20 (Tron)', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, { label: 'ERC20 (Ethereum)', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, { label: 'BEP20 (Binance)', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, { label: 'BTC (Bitcoin)', value: 'BTC', emoji: '🪙', default: userState.step2 === 'BTC' }]);
+                step2Dropdown.addOptions([
+                    { label: 'TRC20 (Tron)', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, 
+                    { label: 'ERC20 (Ethereum)', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, 
+                    { label: 'BEP20 (Binance)', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, 
+                    { label: 'BTC (Bitcoin)', value: 'BTC', emoji: '🪙', default: userState.step2 === 'BTC' }
+                ]);
             } else {
-                step2Dropdown.addOptions([{ label: 'UPI', value: 'UPI', emoji: '📱', default: userState.step2 === 'UPI' }, { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦', default: userState.step2 === 'IMPS' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }]);
+                step2Dropdown.addOptions([
+                    { label: 'UPI', value: 'UPI', emoji: '📱', default: userState.step2 === 'UPI' }, 
+                    { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦', default: userState.step2 === 'IMPS' }, 
+                    { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }
+                ]);
             }
             
             const row1 = new ActionRowBuilder().addComponents(typeDropdown);
@@ -499,7 +534,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(p2pModal);
     }
 
-    // --- 🔒 3. PRIVATE CHANNEL CREATION ---
+    // --- 🔒 3. PRIVATE TICKET ROOM CREATION ---
     if (interaction.isModalSubmit() && interaction.customId === 'final_p2p_modal') {
         const userState = userSelections.get(interaction.user.id);
         const tradeAmount = userState.amount; 
@@ -535,8 +570,13 @@ client.on('interactionCreate', async interaction => {
             { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, 
             { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] } 
         ];
-        if (verifiedRole) channelPermissions.push({ id: verifiedRole.id, deny: [PermissionsBitField.Flags.ViewChannel] });
-        if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages] });
+        
+        if (verifiedRole) {
+            channelPermissions.push({ id: verifiedRole.id, deny: [PermissionsBitField.Flags.ViewChannel] });
+        }
+        if (palermoRole) {
+            channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages] });
+        }
 
         const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${interaction.user.username}`, type: ChannelType.GuildText, permissionOverwrites: channelPermissions });
 
@@ -556,6 +596,9 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
+        const fee = userState.isVerifiedTrade ? 0 : 3;
+        const totalToCollect = Number(tradeAmount) + fee;
+
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
                 discordUserId: interaction.user.id, 
@@ -563,6 +606,8 @@ client.on('interactionCreate', async interaction => {
                 tradeType: userState.type, 
                 networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${userState.step3}` : userState.step2, 
                 amountUsd: Number(tradeAmount), 
+                fee: fee,
+                isVerifiedTrade: userState.isVerifiedTrade,
                 userReceivingDetails: userDetails, 
                 adminTransferDetails: easyCopyText, 
                 status: 'Open', 
@@ -580,11 +625,13 @@ client.on('interactionCreate', async interaction => {
             `> $${tradeAmount}\n` +
             `**3. Which Method?**\n` +
             `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + userState.step3 + ')' : userState.step2}\n\n` +
-            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`;
+            `**Fee Structure:** $${fee} (Non-KYC Charge)\n` +
+            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
+            `**Please pay exactly: $${totalToCollect}**`;
 
         const ticketEmbed = new EmbedBuilder()
-            .setColor('#e50914')
-            .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
+            .setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22')
+            .setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() })
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
@@ -741,7 +788,7 @@ client.on('interactionCreate', async interaction => {
                     .setTitle('✅ Secure Trade Completed')
                     .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
                     .setTimestamp()
-                    .setFooter({ text: 'Palemero | Professor Network', iconURL: client.user.displayAvatarURL() });
+                    .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
 
                 await publicLogChannel.send({ embeds: [publicEmbed] });
             }
@@ -758,11 +805,14 @@ client.on('interactionCreate', async interaction => {
                 updateWeeklyLeaderboard(interaction.guild);
             }
 
+            // REFRESH BUTTONS
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('exchange') || c.name.includes('ticket') || c.name.includes('p2p'));
             if (mainTicketChannel) {
-                const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
+                const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 20 });
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
-                botMessages.forEach(msg => msg.delete().catch(console.error));
+                for (const [id, msg] of botMessages) {
+                    await msg.delete().catch(() => {});
+                }
                 
                 const setupEmbed = new EmbedBuilder()
                     .setColor('#2b2d31')
@@ -849,7 +899,10 @@ async function updateWeeklyLeaderboard(guild) {
 // 🔥 YEH FUNCTION SIRF ADMIN APPROVE (P2P WITH KYC ROOM) KE LIYE HAI
 async function approveUserKYC(userId, guild) {
     let verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
-    if (!verifiedRole) { verifiedRole = await guild.roles.create({ name: 'Vault Verified', color: '#2ecc71' }); }
+    if (!verifiedRole) { 
+        verifiedRole = await guild.roles.create({ name: 'Vault Verified', color: '#2ecc71' }); 
+    }
+    
     try {
         const member = await guild.members.fetch(userId);
         
@@ -899,6 +952,7 @@ app.post('/login', async (req, res) => {
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
         let validUser = 'professor', validPass = 'heist2026';
+        
         if (authDoc.exists) {
             validUser = authDoc.data().username;
             validPass = authDoc.data().password;
@@ -935,15 +989,19 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
         let csv = 'Date,User,Action,Method,Amount(USD),Closed By\n';
+        
         snapshot.forEach(doc => {
             const d = doc.data();
             const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
             csv += `"${date}","${d.username}","${d.tradeType}","${d.networkOrMethod}","${d.amountUsd}","${d.closedBy || 'Admin'}"\n`;
         });
+        
         res.header('Content-Type', 'text/csv');
         res.attachment('The_Vault_Ledger.csv');
         res.send(csv);
-    } catch(e) { res.send("Export Error"); }
+    } catch(e) { 
+        res.send("Export Error"); 
+    }
 });
 
 const GUILD_ID = '1456297708892586057';
@@ -952,10 +1010,14 @@ app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-        if (!guild) { return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." }); }
+        if (!guild) { 
+            return res.json({ success: false, error: "Discord server connection lost. Check Guild ID." }); 
+        }
         await approveUserKYC(userId, guild);
         res.json({ success: true });
-    } catch (e) { res.json({ success: false, error: e.message }); }
+    } catch (e) { 
+        res.json({ success: false, error: e.message }); 
+    }
 });
 
 app.post('/api/kyc-reject', requireLogin, async (req, res) => {
@@ -964,7 +1026,9 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         globalLastUpdate = Date.now(); 
         res.json({ success: true });
-    } catch (e) { res.json({ success: false, error: e.message }); }
+    } catch (e) { 
+        res.json({ success: false, error: e.message }); 
+    }
 });
 
 app.post('/update-price', requireLogin, async (req, res) => {
@@ -1007,7 +1071,9 @@ app.get('/', requireLogin, async (req, res) => {
         
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
         const pendingKycList = [];
-        pendingKycSnap.forEach(doc => { pendingKycList.push(doc.data()); });
+        pendingKycSnap.forEach(doc => { 
+            pendingKycList.push(doc.data()); 
+        });
 
         let dailyVol = 0, weeklyVol = 0, monthlyVol = 0;
         let buyVol = 0, sellVol = 0;
@@ -1027,7 +1093,11 @@ app.get('/', requireLogin, async (req, res) => {
             if (type === 'Buy') buyVol += amount;
             if (type === 'Sell') sellVol += amount;
 
-            if (userVolumes[username]) { userVolumes[username] += amount; } else { userVolumes[username] = amount; }
+            if (userVolumes[username]) { 
+                userVolumes[username] += amount; 
+            } else { 
+                userVolumes[username] = amount; 
+            }
 
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
@@ -1041,6 +1111,7 @@ app.get('/', requireLogin, async (req, res) => {
 
                 const diffTime = Math.abs(now - tradeDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                
                 if (diffDays <= 1) dailyVol += amount;
                 if (diffDays <= 7) weeklyVol += amount;
                 if (diffDays <= 30) monthlyVol += amount;
@@ -1053,7 +1124,11 @@ app.get('/', requireLogin, async (req, res) => {
             return dateB - dateA;
         });
         const recentFeed = allCompleted.slice(0, 10); 
-        const topTraders = Object.keys(userVolumes).map(username => ({ username, totalVolume: userVolumes[username] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
+        
+        const topTraders = Object.keys(userVolumes)
+            .map(username => ({ username, totalVolume: userVolumes[username] }))
+            .sort((a, b) => b.totalVolume - a.totalVolume)
+            .slice(0, 5);
 
         res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders,
@@ -1061,7 +1136,9 @@ app.get('/', requireLogin, async (req, res) => {
             pendingKycList, buyVol, sellVol, recentFeed,
             monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData)
         });
-    } catch (error) { res.send("Dashboard Error: " + error.message); }
+    } catch (error) { 
+        res.send("Dashboard Error: " + error.message); 
+    }
 });
 
 const PORT = process.env.PORT || 3000;
