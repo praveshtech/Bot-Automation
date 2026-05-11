@@ -198,33 +198,27 @@ client.on('interactionCreate', async interaction => {
         }
     }
     
-   // --- 🛡️ 1. AUTO-KYC SYSTEM (BASIC REGISTRATION) ---
+   // --- 🛡️ 1. AUTO-KYC & ACCESS RESTORE LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         
-        // 🔥 NAYA UPDATE: Returning users ke liye button dabate hi DB check
+        // 🔥 UPDATE: Database check to restore 'Verified' role for returning users
         const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
         if (existingKyc.exists && existingKyc.data().status === 'Approved') {
             
-            // User database mein hai, usko sidha role dekar access restore karo
-            let registeredRole = interaction.guild.roles.cache.find(r => r.name === 'Registered');
-            if (!registeredRole) { 
-                registeredRole = await interaction.guild.roles.create({ name: 'Registered', color: '#3498db' }); 
+            let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
+            if (!basicRole) { 
+                basicRole = await interaction.guild.roles.create({ name: 'Verified', color: '#3498db' }); 
             }
-            await interaction.member.roles.add(registeredRole).catch(console.error);
+            await interaction.member.roles.add(basicRole).catch(console.error);
 
             return interaction.reply({ content: '✅ **Welcome Back!** We found your profile in our secure database. Your server access has been automatically restored.', ephemeral: true });
         }
 
-        // Agar naya user hai, tabhi form dikhao
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
-        const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
-        const discordContactField = new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true);
-        const paymentInfoField = new TextInputBuilder().setCustomId('kyc_payment').setLabel('Default Payment Info (UPI/Wallet)').setStyle(TextInputStyle.Paragraph).setRequired(true);
-        
         kycModal.addComponents(
-            new ActionRowBuilder().addComponents(realName), 
-            new ActionRowBuilder().addComponents(discordContactField), 
-            new ActionRowBuilder().addComponents(paymentInfoField)
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), 
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_payment').setLabel('Default Payment Info (UPI/Wallet)').setStyle(TextInputStyle.Paragraph).setRequired(true))
         );
         
         await interaction.showModal(kycModal);
@@ -243,7 +237,6 @@ client.on('interactionCreate', async interaction => {
             const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
             const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
             
-            // Database me save karo
             await db.collection('users_kyc').doc(interaction.user.id).set({ 
                 discordId: interaction.user.id, 
                 username: interaction.user.username, 
@@ -254,15 +247,15 @@ client.on('interactionCreate', async interaction => {
                 createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
 
-            // 🔥 NAYA UPDATE: Naye user ko bhi form submit karte hi 'Registered' role de do
-            let registeredRole = interaction.guild.roles.cache.find(r => r.name === 'Registered');
-            if (!registeredRole) { 
-                registeredRole = await interaction.guild.roles.create({ name: 'Registered', color: '#3498db' }); 
+            // 🔥 UPDATE: Give 'Verified' role to the user instantly after form submission
+            let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
+            if (!basicRole) { 
+                basicRole = await interaction.guild.roles.create({ name: 'Verified', color: '#3498db' }); 
             }
-            await interaction.member.roles.add(registeredRole).catch(console.error);
+            await interaction.member.roles.add(basicRole).catch(console.error);
 
             globalLastUpdate = Date.now(); 
-            await interaction.editReply({ content: '✅ **Registration Successful!** Your basic details have been saved and your server access is unlocked.\n*(Note: To get the **Vault Verified** tag for $0 Fee P2P trades, select "P2P With KYC" at the Exchange Desk).*' });
+            await interaction.editReply({ content: '✅ **Registration Successful!** You have received the **Verified** role and basic channels are now unlocked.\n*(Note: To get the **Vault Verified** tag for $0 Fee P2P trades, select "P2P With KYC" at the Exchange Desk).*' });
 
         } catch (error) {
             console.error("KYC Auto-Approve Error:", error);
