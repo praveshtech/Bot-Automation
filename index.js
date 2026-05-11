@@ -739,7 +739,7 @@ async function approveUserKYC(userId, guild) {
 
         // 🔥 2. NAYA UPDATE: Change User Nickname to add [KYC Verified] tag
         const currentName = member.displayName;
-        if (!currentName.includes('[KYC Verified]')) {
+        if (!currentName.includes('Verified✔️')) {
             let newName = `[KYC Verified] ${currentName}`;
             // Discord limits nicknames to max 32 characters, so we trim if it's too long
             if (newName.length > 32) newName = newName.substring(0, 32); 
