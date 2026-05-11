@@ -807,10 +807,10 @@ app.post('/update-price', requireLogin, async (req, res) => {
             return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
         }
 
-        let priceChannel = guild.channels.cache.find(c => c.name === 'daily-price-update');
+        let priceChannel = guild.channels.cache.find(c => c.name === '🚨daily-price-update');
         
         if (!priceChannel) {
-            return res.send(`<script>alert("❌ Error: Channel #daily-price-update not found in Discord!"); window.location.href="/";</script>`);
+            return res.send(`<script>alert("❌ Error: Channel #🚨daily-price-update not found in Discord!"); window.location.href="/";</script>`);
         }
 
         const priceEmbed = new EmbedBuilder()
