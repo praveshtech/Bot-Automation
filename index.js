@@ -85,7 +85,7 @@ client.on('messageCreate', async message => {
             // Title ko Fancy Gothic/Cursive style mein change kiya hai
             .setTitle('📝 𝕭𝖆𝖘𝖎𝖈 𝕹𝖊𝖙𝖜𝖔𝖗𝖐 𝕽𝖊𝖌𝖎𝖘𝖙𝖗𝖆𝖙𝖎𝖔𝖓')
             // Description ko Blockquote (>) aur Bold (**) se premium banaya hai
-            .setDescription('> **To join the community legally, submit your basic details here.**\n\n`Note: For $0 Fee P2P trades, a separate ID verification is required at the Exchange Desk.`')
+            .setDescription('> **To join the community legally, submit your basic details here.**\n\n`Note: If You Want $0 Fee on P2P trades use P2P WITH KYC, a separate ID verification is required at the Exchange Desk.`')
             .setFooter({ text: '🔒 Data is encrypted and stored securely.' });
             
         const kycButton = new ActionRowBuilder().addComponents(
