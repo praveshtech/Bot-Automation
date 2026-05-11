@@ -78,13 +78,15 @@ client.on('messageCreate', async message => {
         await message.delete();
     }
 
-    // 🔥 Command aur Button Name update kiya gaya hai
+    // 🔥 NAYA UPDATE: !verify command and "Verify" button label with STYLISH FONT
     if (message.content === '!verify' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
         const kycEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
-            .setTitle('📝 Basic Network Registration')
-            .setDescription('To join the community legally, submit your basic details here.\n*(Note: For $0 Fee P2P trades, a separate ID verification is required at the Exchange Desk).*')
-            .setFooter({ text: 'Data is encrypted and stored securely.' });
+            // Title ko Fancy Gothic/Cursive style mein change kiya hai
+            .setTitle('📝 𝕭𝖆𝖘𝖎𝖈 𝕹𝖊𝖙𝖜𝖔𝖗𝖐 𝕽𝖊𝖌𝖎𝖘𝖙𝖗𝖆𝖙𝖎𝖔𝖓')
+            // Description ko Blockquote (>) aur Bold (**) se premium banaya hai
+            .setDescription('> **To join the community legally, submit your basic details here.**\n\n`Note: For $0 Fee P2P trades, a separate ID verification is required at the Exchange Desk.`')
+            .setFooter({ text: '🔒 Data is encrypted and stored securely.' });
             
         const kycButton = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Verify').setStyle(ButtonStyle.Primary).setEmoji('📝')
