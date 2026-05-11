@@ -48,7 +48,7 @@ client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
 
-    // 🔥 Background loop: Har 1 ghante me leaderboard refresh karega
+    // Background loop: Har 1 ghante me leaderboard refresh karega
     setInterval(() => {
         client.guilds.cache.forEach(guild => {
             updateWeeklyLeaderboard(guild);
@@ -62,7 +62,6 @@ client.once('ready', () => {
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // 🔥 NAYA UPDATE: P2P COMMAND WITH 2 SIMPLE BUTTONS
     if (message.content === '!p2p' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
         const setupEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
@@ -79,7 +78,6 @@ client.on('messageCreate', async message => {
         await message.delete();
     }
 
-    // WAPAS PURANA KYC BUTTON (Form wala)
     if (message.content === '!setupkyc' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
         const kycEmbed = new EmbedBuilder()
             .setColor('#2b2d31')
@@ -185,7 +183,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
     
-    // --- 🛡️ 1. WAPAS PURANA KYC SYSTEM (MODAL FORM) ---
+    // --- 🛡️ 1. KYC SYSTEM (MODAL FORM) ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ KYC Verification Form');
         const realName = new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true);
@@ -292,10 +290,9 @@ client.on('interactionCreate', async interaction => {
         await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>.`, ephemeral: true });
     }
 
-    // --- 💸 2. START P2P TRADE (DONO BUTTONS SAME KAAM KARENGE ABHI KE LIYE) ---
+    // --- 💸 2. START P2P TRADE ---
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
-        // Puraana Strict Logic: Abhi dono pe lagoo hoga as per your request
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
         if (!hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: '⚠️ **Access Denied:** You must complete KYC to start a transaction. Please go to the Verification channel.', ephemeral: true });
@@ -308,7 +305,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: '🏦 **Professor Network:** Step 1 - Do you want to Buy or Sell Crypto?', components: [row1], ephemeral: true });
     }
 
-    // 🔥 Dynamic Dropdown Logic (Kept Intact)
+    // Dropdown Logic
     if (interaction.isStringSelectMenu()) {
         const userState = userSelections.get(interaction.user.id) || { type: null, step2: null, step3: null };
         
@@ -374,38 +371,42 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // Dynamic Labels for Forms (Kept Intact)
+    // 🔥 NAYA UPDATE: Dynamic Modal Form based on IMPS
     if (interaction.isButton() && interaction.customId === 'proceed_to_amount') {
         const userState = userSelections.get(interaction.user.id);
         const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Transaction: ${userState.type} Crypto`);
+        
         const amountInput = new TextInputBuilder().setCustomId('trade_amount').setLabel('Amount in USD ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
-        let userReceivingDetails;
+        p2pModal.addComponents(new ActionRowBuilder().addComponents(amountInput));
         
         if (userState.type === 'Sell') {
-            let dynamicLabel = `Your ${userState.step3 || 'Bank'} details (To receive INR)`;
-            let dynamicPlaceholder = 'Enter your account info here';
-            
-            if (userState.step3 === 'IMPS') dynamicPlaceholder = 'Bank Name, Account No, IFSC...';
-            if (userState.step3 === 'CDM') dynamicPlaceholder = 'CDM Account No, Branch, Name...';
-            if (userState.step3 === 'CCW') dynamicPlaceholder = 'Enter your CCW details here...';
+            if (userState.step3 === 'IMPS') {
+                // If IMPS, create 4 distinct short text fields
+                const bankName = new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setPlaceholder('e.g. HDFC Bank').setStyle(TextInputStyle.Short).setRequired(true);
+                const accName = new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setPlaceholder('e.g. Pravesh Yadav').setStyle(TextInputStyle.Short).setRequired(true);
+                const accNo = new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setPlaceholder('e.g. 50100...').setStyle(TextInputStyle.Short).setRequired(true);
+                const ifscCode = new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setPlaceholder('e.g. HDFC0001234').setStyle(TextInputStyle.Short).setRequired(true);
 
-            userReceivingDetails = new TextInputBuilder()
-                .setCustomId('user_receiving_details')
-                .setLabel(dynamicLabel)
-                .setPlaceholder(dynamicPlaceholder)
-                .setStyle(TextInputStyle.Paragraph)
-                .setRequired(true);
+                p2pModal.addComponents(
+                    new ActionRowBuilder().addComponents(bankName),
+                    new ActionRowBuilder().addComponents(accName),
+                    new ActionRowBuilder().addComponents(accNo),
+                    new ActionRowBuilder().addComponents(ifscCode)
+                );
+            } else {
+                // For CDM or CCW, use a generic paragraph
+                let dynamicLabel = `Your ${userState.step3} details`;
+                let dynamicPlaceholder = userState.step3 === 'CDM' ? 'CDM Account No, Branch, Name...' : 'Enter your CCW details here...';
+                
+                const detailInput = new TextInputBuilder().setCustomId('user_receiving_details').setLabel(dynamicLabel).setPlaceholder(dynamicPlaceholder).setStyle(TextInputStyle.Paragraph).setRequired(true);
+                p2pModal.addComponents(new ActionRowBuilder().addComponents(detailInput));
+            }
         } else {
-            userReceivingDetails = new TextInputBuilder()
-                .setCustomId('user_receiving_details')
-                .setLabel('Your Crypto Wallet Address (To receive)')
-                .setPlaceholder('Enter your wallet address here')
-                .setStyle(TextInputStyle.Short).setRequired(true);
+            // For Buy, just ask for Crypto Wallet
+            const walletInput = new TextInputBuilder().setCustomId('user_receiving_details').setLabel('Your Crypto Wallet Address (To receive)').setPlaceholder('Enter your wallet address here').setStyle(TextInputStyle.Short).setRequired(true);
+            p2pModal.addComponents(new ActionRowBuilder().addComponents(walletInput));
         }
         
-        const row1 = new ActionRowBuilder().addComponents(amountInput);
-        const row2 = new ActionRowBuilder().addComponents(userReceivingDetails);
-        p2pModal.addComponents(row1, row2);
         await interaction.showModal(p2pModal);
     }
 
@@ -413,7 +414,19 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isModalSubmit() && interaction.customId === 'final_p2p_modal') {
         const userState = userSelections.get(interaction.user.id);
         const tradeAmount = interaction.fields.getTextInputValue('trade_amount');
-        const userDetails = interaction.fields.getTextInputValue('user_receiving_details');
+        let userDetails = "";
+
+        // 🔥 Extracting data based on what form was shown
+        if (userState.type === 'Sell' && userState.step3 === 'IMPS') {
+            const bName = interaction.fields.getTextInputValue('bank_name');
+            const aName = interaction.fields.getTextInputValue('account_name');
+            const aNo = interaction.fields.getTextInputValue('account_number');
+            const ifsc = interaction.fields.getTextInputValue('ifsc_code');
+            userDetails = `Bank Name: ${bName}\nHolder Name: ${aName}\nAccount No: ${aNo}\nIFSC Code: ${ifsc}`;
+        } else {
+            userDetails = interaction.fields.getTextInputValue('user_receiving_details');
+        }
+
         await interaction.reply({ content: '🏦 Creating your secure P2P room...', ephemeral: true });
 
         const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
@@ -450,7 +463,7 @@ client.on('interactionCreate', async interaction => {
                 username: interaction.user.username, 
                 tradeType: userState.type, 
                 networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${userState.step3}` : userState.step2, 
-                amountUsd: Number(tradeAmount),
+                amountUsd: Number(tradeAmount), 
                 userReceivingDetails: userDetails, 
                 adminTransferDetails: easyCopyText, 
                 status: 'Open', 
@@ -472,7 +485,7 @@ client.on('interactionCreate', async interaction => {
 
         const ticketEmbed = new EmbedBuilder()
             .setColor('#e50914')
-            .setAuthor({ name: `🏦 Secure P2P Room`, iconURL: client.user.displayAvatarURL() })
+            .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
@@ -546,7 +559,7 @@ client.on('interactionCreate', async interaction => {
         } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
     }
 
-    // --- 🏦 5. TICKET CLOSE & LOGGING ---
+    // --- 🏦 5. TICKET CLOSE & LOGGING (Complete OR Cancel) ---
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
@@ -652,7 +665,6 @@ client.on('interactionCreate', async interaction => {
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
                 botMessages.forEach(msg => msg.delete().catch(console.error));
                 
-                // Regenerate the 2 buttons
                 const setupEmbed = new EmbedBuilder()
                     .setColor('#2b2d31')
                     .setTitle('🏦 Exchange Desk (P2P)')
@@ -744,10 +756,10 @@ async function approveUserKYC(userId, guild) {
         // 1. Give Verified Role
         await member.roles.add(verifiedRole);
 
-        // 🔥 2. Change User Nickname to add [KYC Verified] tag
+        // 2. Change User Nickname to add [KYC Verified] tag
         const currentName = member.displayName;
-        if (!currentName.includes('[KYC Verified]')) {
-            let newName = `[KYC Verified] ${currentName}`;
+        if (!currentName.includes('Verified✔️')) {
+            let newName = ` ${currentName} Verified✔️`;
             if (newName.length > 32) newName = newName.substring(0, 32); 
             await member.setNickname(newName).catch(err => console.log("Nickname Error (Bot Role Hierarchy):", err.message));
         }
@@ -757,7 +769,7 @@ async function approveUserKYC(userId, guild) {
         globalLastUpdate = Date.now(); 
         
         // 4. Send DM
-        await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved and your profile is now [KYC Verified].').catch(() => {});
+        await member.send('🏦 **Professor Network:** Congratulations! Your KYC has been approved and your profile is now Verified✔️.').catch(() => {});
     } catch (e) { 
         console.log("External KYC approve error", e); 
     }
@@ -778,7 +790,10 @@ app.use(session({
     secret: 'professor-vault-secret-key-2026',
     resave: true, 
     saveUninitialized: true, 
-    cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 }
+    cookie: { 
+        secure: false, 
+        maxAge: 7 * 24 * 60 * 60 * 1000 
+    }
 }));
 
 const requireLogin = (req, res, next) => {
@@ -810,6 +825,7 @@ app.post('/login', async (req, res) => {
             res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
         }
     } catch (error) { 
+        console.error("Login Error:", error);
         res.render('login', { error: 'Database Connection Error. Please verify network.' }); 
     }
 });
@@ -955,17 +971,14 @@ app.get('/', requireLogin, async (req, res) => {
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
                 const tradeDate = data.closedAt.toDate();
                 
-                // --- Monthly Data Calculation ---
                 monthWiseData[tradeDate.getMonth()] += amount;
                 
-                // --- Calendar Data Calculation ---
                 const year = tradeDate.getFullYear();
                 const month = String(tradeDate.getMonth() + 1).padStart(2, '0');
                 const day = String(tradeDate.getDate()).padStart(2, '0');
                 const dateKey = `${year}-${month}-${day}`;
                 calendarData[dateKey] = (calendarData[dateKey] || 0) + amount;
 
-                // --- Existing Time Logic ---
                 const diffTime = Math.abs(now - tradeDate);
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
                 if (diffDays <= 1) dailyVol += amount;
