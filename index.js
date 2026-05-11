@@ -290,22 +290,28 @@ client.on('interactionCreate', async interaction => {
         await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>.`, ephemeral: true });
     }
 
-    // --- 💸 2. START P2P TRADE (DONO BUTTONS P2P WALE) ---
+    // --- 💸 2. START P2P TRADE ---
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
-        if (!hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            return interaction.reply({ content: '⚠️ **Access Denied:** You must complete KYC to start a transaction. Please go to the Verification channel.', ephemeral: true });
+        if (interaction.customId === 'start_p2p_with_kyc' && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply({ content: '⚠️ **Access Denied:** You must complete KYC to use this option. Please complete verification or use the Without KYC option.', ephemeral: true });
         }
 
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null });
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         
-        await interaction.reply({ content: '🏦 **Professor Network:** Step 1 - Do you want to Buy or Sell Crypto?', components: [row1], ephemeral: true });
+        // 🔥 NEW UI: Premium Step 1 Embed
+        const step1Embed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() })
+            .setDescription('Please select whether you want to **Buy** or **Sell** Crypto from the dropdown below.');
+
+        await interaction.reply({ embeds: [step1Embed], components: [row1], ephemeral: true });
     }
 
-    // --- 🔥 DYNAMIC DROPDOWN & AMOUNT POPUP LOGIC ---
+    // --- 🔥 DYNAMIC DROPDOWN LOGIC ---
     if (interaction.isStringSelectMenu()) {
         const userState = userSelections.get(interaction.user.id) || { type: null, step2: null, step3: null, amount: null };
         
@@ -322,10 +328,10 @@ client.on('interactionCreate', async interaction => {
             amountModal.addComponents(new ActionRowBuilder().addComponents(amountInput));
             
             await interaction.showModal(amountModal);
-            return; // Modal dikhaya, ab yahin ruk jayega
+            return; // Stops here to wait for modal submit
         }
         
-        // STEP 3 & 4: Network/Method Select (Amount already entered)
+        // STEP 3 & 4: Network/Method Select (Amount is already entered)
         if (interaction.customId === 'dropdown_step2' || interaction.customId === 'dropdown_step3') {
             if (interaction.customId === 'dropdown_step2') {
                 userState.step2 = interaction.values[0];
@@ -347,6 +353,15 @@ client.on('interactionCreate', async interaction => {
             const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
             const components = [row1, row2];
 
+            // 🔥 NEW UI: Premium Base Embed for tracking context
+            const stepEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .addFields(
+                    { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy' : '🔴 Sell'}`, inline: true },
+                    { name: '💰 Amount', value: `$${userState.amount}`, inline: true },
+                    { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true }
+                );
+
             if (userState.type === 'Sell') {
                 const step3Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step3').setPlaceholder('Select Receiving Method');
                 step3Dropdown.addOptions([
@@ -359,19 +374,33 @@ client.on('interactionCreate', async interaction => {
                 if (userState.step3) {
                     const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success);
                     components.push(new ActionRowBuilder().addComponents(nextButton));
-                    await interaction.update({ content: `🏦 **Professor Network:** Step 4 - Click Next to enter Bank Details.\n💰 **Trade Amount:** $${userState.amount}`, components });
+                    
+                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step' })
+                             .setColor('#2ecc71')
+                             .setDescription('Click the **Next** button below to securely enter your bank details.')
+                             .addFields({ name: '🏦 Receiving Method', value: `${userState.step3}`, inline: true });
+                             
+                    await interaction.update({ content: '', embeds: [stepEmbed], components });
                 } else {
-                    await interaction.update({ content: `🏦 **Professor Network:** Step 3 - Select how you want to receive INR.\n💰 **Trade Amount:** $${userState.amount}`, components });
+                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3' })
+                             .setDescription('Please select how you want to receive your INR from the dropdown below.');
+                             
+                    await interaction.update({ content: '', embeds: [stepEmbed], components });
                 }
             } else {
                 const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Wallet Details)').setStyle(ButtonStyle.Success);
                 components.push(new ActionRowBuilder().addComponents(nextButton));
-                await interaction.update({ content: `🏦 **Professor Network:** Step 3 - Click Next to enter details.\n💰 **Trade Amount:** $${userState.amount}`, components });
+                
+                stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step' })
+                         .setColor('#2ecc71')
+                         .setDescription('Click the **Next** button below to securely enter your wallet details.');
+                         
+                await interaction.update({ content: '', embeds: [stepEmbed], components });
             }
         }
     }
 
-    // 🔥 MODAL 1 SUBMIT: Save Amount & Show Step 2
+    // 🔥 MODAL 1 SUBMIT: Save Amount & Show Step 2 Embed UI
     if (interaction.isModalSubmit() && interaction.customId === 'amount_modal_popup') {
         const userState = userSelections.get(interaction.user.id);
         userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
@@ -389,10 +418,17 @@ client.on('interactionCreate', async interaction => {
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         const row2 = new ActionRowBuilder().addComponents(step2Dropdown);
 
-        await interaction.update({ 
-            content: `🏦 **Professor Network:** Step 2 - Select your ${userState.type === 'Sell' ? 'Network' : 'Payment Method'}.\n💰 **Trade Amount:** $${userState.amount}`, 
-            components: [row1, row2] 
-        });
+        // 🔥 NEW UI: Premium Step 2 Embed
+        const step2Embed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setAuthor({ name: '🏦 P2P Trade Setup | Step 2' })
+            .setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`)
+            .addFields(
+                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy Crypto' : '🔴 Sell Crypto'}`, inline: true },
+                { name: '💰 Amount', value: `$${userState.amount}`, inline: true }
+            );
+
+        await interaction.update({ content: '', embeds: [step2Embed], components: [row1, row2] });
     }
 
     // 🔥 MODAL 2: Dynamic Detail Form (Isme se amount field nikal diya gaya hai)
@@ -443,7 +479,7 @@ client.on('interactionCreate', async interaction => {
     // --- 🔒 3. PRIVATE CHANNEL CREATION ---
     if (interaction.isModalSubmit() && interaction.customId === 'final_p2p_modal') {
         const userState = userSelections.get(interaction.user.id);
-        const tradeAmount = userState.amount; // Getting Amount from saved state, not the modal
+        const tradeAmount = userState.amount; 
         let userDetails = "";
 
         if (userState.type === 'Sell') {
