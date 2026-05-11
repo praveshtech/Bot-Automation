@@ -48,6 +48,7 @@ client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
 
+    // Background loop: Har 1 ghante me leaderboard refresh karega
     setInterval(() => {
         client.guilds.cache.forEach(guild => {
             updateWeeklyLeaderboard(guild);
@@ -211,6 +212,7 @@ client.on('interactionCreate', async interaction => {
             const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
             const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
             
+            // Just Saving as Basic Registration (Approved in DB) - No Role Given Here
             await db.collection('users_kyc').doc(interaction.user.id).set({ 
                 discordId: interaction.user.id, 
                 username: interaction.user.username, 
@@ -222,7 +224,8 @@ client.on('interactionCreate', async interaction => {
             });
 
             globalLastUpdate = Date.now(); 
-            await interaction.editReply({ content: '✅ **Registration Successful!** Your basic details have been saved.' });
+            await interaction.editReply({ content: '✅ **Registration Successful!** Your basic details have been saved. *(Note: To get the **Vault Verified** tag for $0 Fee P2P trades, select "P2P With KYC" at the Exchange Desk).*' });
+
         } catch (error) {
             console.error("KYC Auto-Approve Error:", error);
             await interaction.editReply({ content: '❌ Something went wrong while saving your data. Please contact support.' });
@@ -233,11 +236,11 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
-        const hasRole = interaction.member.roles.cache.some(role => role.name === 'Verified');
+        const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
         // 🔥 TIER 2 KYC: Agar 'With KYC' dabaya aur role nahi hai -> Create Ticket!
         if (isVerifiedRoute && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            await interaction.reply({ content: '⏳ You are not **Verified** yet. Creating your secure KYC verification room...', ephemeral: true });
+            await interaction.reply({ content: '⏳ You are not **Vault Verified** yet. Creating your secure KYC verification room...', ephemeral: true });
 
             const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
             const channelPermissions = [
@@ -275,7 +278,7 @@ client.on('interactionCreate', async interaction => {
             return interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.` });
         }
 
-        // If they chose 'Without KYC' OR they already have the role, proceed to trade
+        // If they chose 'Without KYC' OR they already have the Vault Verified role, proceed to trade
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
@@ -303,7 +306,7 @@ client.on('interactionCreate', async interaction => {
         const updatedEmbed = EmbedBuilder.from(oldEmbed).setColor('#2ecc71').setTitle('✅ KYC Approved');
         
         await interaction.editReply({ embeds: [updatedEmbed], components: [] });
-        await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! This room will close in 5 seconds.`, ephemeral: true });
+        await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
         // Ensure it's a kyc ticket before deleting
         if (interaction.channel.name.startsWith('kyc-') && interaction.channel.name !== 'kyc-requests') {
@@ -496,7 +499,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(p2pModal);
     }
 
-    // --- 🔒 3. PRIVATE TICKET ROOM CREATION ---
+    // --- 🔒 3. PRIVATE CHANNEL CREATION ---
     if (interaction.isModalSubmit() && interaction.customId === 'final_p2p_modal') {
         const userState = userSelections.get(interaction.user.id);
         const tradeAmount = userState.amount; 
@@ -526,7 +529,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: '🏦 Creating your secure P2P room...', ephemeral: true });
 
         const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
-        const verifiedRole = interaction.guild.roles.cache.find(role => role.name === 'Verified');
+        const verifiedRole = interaction.guild.roles.cache.find(role => role.name === 'Vault Verified');
         
         const channelPermissions = [
             { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, 
@@ -553,10 +556,6 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-        // 🔥 FEE CALCULATION 
-        const fee = userState.isVerifiedTrade ? 0 : 3;
-        const totalToCollect = Number(tradeAmount) + fee;
-
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
                 discordUserId: interaction.user.id, 
@@ -564,8 +563,6 @@ client.on('interactionCreate', async interaction => {
                 tradeType: userState.type, 
                 networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${userState.step3}` : userState.step2, 
                 amountUsd: Number(tradeAmount), 
-                fee: fee,
-                isVerifiedTrade: userState.isVerifiedTrade,
                 userReceivingDetails: userDetails, 
                 adminTransferDetails: easyCopyText, 
                 status: 'Open', 
@@ -583,13 +580,11 @@ client.on('interactionCreate', async interaction => {
             `> $${tradeAmount}\n` +
             `**3. Which Method?**\n` +
             `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + userState.step3 + ')' : userState.step2}\n\n` +
-            `**Fee Structure:** $${fee} (Non-KYC Charge)\n` +
-            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
-            `**Please pay exactly: $${totalToCollect}**`;
+            `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`;
 
         const ticketEmbed = new EmbedBuilder()
-            .setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22')
-            .setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() })
+            .setColor('#e50914')
+            .setAuthor({ name: '🏦 Secure P2P Room', iconURL: client.user.displayAvatarURL() })
             .setDescription(cinematicDescription)
             .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
@@ -706,7 +701,7 @@ client.on('interactionCreate', async interaction => {
             let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
             if (!logChannel) {
                 const palermoRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
-                const verifiedRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Verified');
+                const verifiedRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Vault Verified');
                 let logPerms = [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }];
                 if (verifiedRoleForLog) logPerms.push({ id: verifiedRoleForLog.id, deny: [PermissionsBitField.Flags.ViewChannel] });
                 if (palermoRoleForLog) logPerms.push({ id: palermoRoleForLog.id, allow: [PermissionsBitField.Flags.ViewChannel] });
@@ -851,29 +846,22 @@ async function updateWeeklyLeaderboard(guild) {
     }
 }
 
+// 🔥 YEH FUNCTION SIRF ADMIN APPROVE (P2P WITH KYC ROOM) KE LIYE HAI
 async function approveUserKYC(userId, guild) {
-    let verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
-    if (!verifiedRole) { verifiedRole = await guild.roles.create({ name: 'Verified', color: '#2ecc71' }); }
+    let verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
+    if (!verifiedRole) { verifiedRole = await guild.roles.create({ name: 'Vault Verified', color: '#2ecc71' }); }
     try {
         const member = await guild.members.fetch(userId);
         
-        // 1. Give Verified Role
+        // Give Vault Verified Role
         await member.roles.add(verifiedRole);
 
-        // 2. Change User Nickname to add [KYC Verified] tag
-        const currentName = member.displayName;
-        if (!currentName.includes('Verified✔️')) {
-            let newName = ` ${currentName} Verified✔️`;
-            if (newName.length > 32) newName = newName.substring(0, 32); 
-            await member.setNickname(newName).catch(err => console.log("Nickname Error (Bot Role Hierarchy):", err.message));
-        }
-
-        // 3. Update Database
+        // Update Database
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' }).catch(()=>{});
         globalLastUpdate = Date.now(); 
         
-        // 4. Send DM
-        await member.send('🏦 **Professor Network:** Congratulations! Your Advanced KYC has been approved. You can now do $0 Fee P2P Trades.').catch(() => {});
+        // Send DM
+        await member.send('🏦 **Professor Network:** Congratulations! Your Advanced KYC has been approved. You have received the **Vault Verified** tag.').catch(() => {});
     } catch (e) { 
         console.log("External KYC approve error", e); 
     }
