@@ -264,7 +264,7 @@ client.on('interactionCreate', async interaction => {
             await interaction.member.roles.add(basicRole).catch(console.error);
 
             globalLastUpdate = Date.now(); 
-            await interaction.editReply({ content: '✅ **Registration Successful!** You have received the **Verified** role and basic channels are now unlocked.\n*(Note: To get the **Vault Verified** tag for $0 Fee P2P trades, select "P2P With KYC" at the Exchange Desk).*' });
+            await interaction.editReply({ content: '✅ **Registration Successful!** You have received the **Verified** role and basic channels are now unlocked.\n*(Note: To get the **Vault Verified** tag for $0 Fee On P2P Trades, Select "P2P With KYC" at the Exchange Desk).*' });
 
         } catch (error) {
             console.error("KYC Auto-Approve Error:", error);
