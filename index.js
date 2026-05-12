@@ -138,11 +138,11 @@ client.on('messageCreate', async message => {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
         try {
-            let leaderboardChannel = message.guild.channels.cache.find(c => c.name === 'top-trader-this-week');
+            let leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-ledger');
             
             if (!leaderboardChannel) {
                 leaderboardChannel = await message.guild.channels.create({ 
-                    name: 'top-trader-this-week', 
+                    name: '📈・weekly-ledger', 
                     type: ChannelType.GuildText, 
                     permissionOverwrites: [
                         { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
