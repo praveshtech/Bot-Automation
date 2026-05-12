@@ -325,8 +325,8 @@ client.on('interactionCreate', async interaction => {
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
         
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
-            { label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢' }, 
-            { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴' }
+            { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢' }, 
+            { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴' }
         ]);
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
         
