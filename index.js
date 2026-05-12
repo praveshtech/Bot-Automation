@@ -138,7 +138,8 @@ client.on('messageCreate', async message => {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
         try {
-            let leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-ledger');
+            // Naya naam yahan update kiya gaya hai
+            let leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-ledger' || c.name === 'weekly-ledger');
             
             if (!leaderboardChannel) {
                 leaderboardChannel = await message.guild.channels.create({ 
@@ -1025,7 +1026,8 @@ client.on('interactionCreate', async interaction => {
 async function updateWeeklyLeaderboard(guild) {
     if (!guild) return;
     try {
-        const channel = guild.channels.cache.find(c => c.name === 'top-trader-this-week');
+        // Naya naam yahan bhi update kiya gaya hai
+        const channel = guild.channels.cache.find(c => c.name === '📈・weekly-ledger' || c.name.includes('weekly-ledger'));
         if (!channel) return; 
 
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
