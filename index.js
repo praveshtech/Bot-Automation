@@ -401,7 +401,7 @@ client.on('interactionCreate', async interaction => {
             userSelections.set(interaction.user.id, userState);
             
             const amountModal = new ModalBuilder().setCustomId('amount_modal_popup').setTitle(`🏦 Trade Amount (${userState.type} Crypto)`);
-            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USD ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
+            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USDT ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
             amountModal.addComponents(new ActionRowBuilder().addComponents(amountInput));
             
             await interaction.showModal(amountModal);
