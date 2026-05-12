@@ -211,7 +211,7 @@ client.on('interactionCreate', async interaction => {
             }
             await interaction.member.roles.add(basicRole).catch(console.error);
 
-            return interaction.reply({ content: '✅ **Welcome Back!** We found your profile in our secure database. Your server access has been automatically restored.', ephemeral: true });
+            return interaction.reply({ content: '✅ **Welcome Back!** You Are Already Verified Member. Your server access has been automatically restored.', ephemeral: true });
         }
 
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
