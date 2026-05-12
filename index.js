@@ -197,6 +197,63 @@ client.on('interactionCreate', async interaction => {
             await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true });
         }
     }
+
+    // --- 🌟 FEEDBACK SYSTEM CONFIRM BUTTON ---
+    if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
+        const expectedUserId = interaction.customId.replace('confirm_feedback_', '');
+        
+        // Sirf wahi user daba sakta hai jiska ticket hai
+        if (interaction.user.id !== expectedUserId) {
+            return interaction.reply({ content: '❌ Action Denied.', ephemeral: true });
+        }
+
+        await interaction.deferUpdate();
+
+        // 🔥 Channel ke messages padhna user ka text aur photo dhoondhne ke liye
+        const messages = await interaction.channel.messages.fetch({ limit: 10 });
+        const userMsg = messages.find(m => m.author.id === expectedUserId && (m.content !== '' || m.attachments.size > 0));
+
+        if (!userMsg) {
+            return interaction.followUp({ content: '⚠️ Please write a message or upload a screenshot before clicking Confirm!', ephemeral: true });
+        }
+
+        let reviewText = userMsg.content || "Awesome and fast trade! 🚀";
+        let imageUrl = userMsg.attachments.size > 0 ? userMsg.attachments.first().url : null;
+        let tradeInfo = interaction.channel.topic || "P2P Trade"; // Humne channel topic me save kiya tha
+
+        // Transaction-Reviews channel dhoondhna ya banana
+        let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-reviews' || c.name === 'reviews');
+        if (!reviewChannel) {
+            reviewChannel = await interaction.guild.channels.create({
+                name: 'transaction-reviews',
+                type: ChannelType.GuildText,
+                permissionOverwrites: [
+                    { id: interaction.guild.id, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] },
+                    { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
+                ]
+            });
+        }
+
+        const reviewEmbed = new EmbedBuilder()
+            .setColor('#f1c40f')
+            .setAuthor({ name: `${interaction.user.username}'s Feedback`, iconURL: interaction.user.displayAvatarURL() })
+            .setDescription(`💬 **Review:**\n> ${reviewText}`)
+            .addFields({ name: '🔄 Trade Info', value: `\`${tradeInfo}\``, inline: true })
+            .setTimestamp()
+            .setFooter({ text: '💎 Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
+
+        if (imageUrl) {
+            reviewEmbed.setImage(imageUrl); // Embed me screenshot attach ho jayega
+        }
+
+        // Public channel me bhej dena @everyone tag ke sath
+        await reviewChannel.send({ content: `🔔 **New Transaction Review!** | @everyone`, embeds: [reviewEmbed] });
+
+        await interaction.followUp({ content: '✅ Your feedback has been published! Thank you for trusting The Vault. Closing room...', ephemeral: true });
+
+        // Feedback room 5 second me delete
+        setTimeout(() => interaction.channel.delete().catch(()=> {}), 5000);
+    }
     
    // --- 🛡️ 1. AUTO-KYC & ACCESS RESTORE LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
@@ -861,27 +918,53 @@ client.on('interactionCreate', async interaction => {
             }
 
             // REFRESH BUTTONS
+            // Refresh Buttons in exchange desk
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('exchange') || c.name.includes('ticket') || c.name.includes('p2p'));
             if (mainTicketChannel) {
-                const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 20 });
+                const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
-                for (const [id, msg] of botMessages) {
-                    await msg.delete().catch(() => {});
-                }
+                botMessages.forEach(msg => msg.delete().catch(console.error));
                 
                 const setupEmbed = new EmbedBuilder()
                     .setColor('#2b2d31')
                     .setTitle('🏦 Exchange Desk (P2P)')
-                    .setDescription('Welcome to the Professor Network.\n\nSelect your trading method below to begin.')
+                    .setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.')
                     .setFooter({ text: 'Automated by Professor Network' });
                     
                 const buttons = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('start_p2p_with_kyc').setLabel('🛡️ P2P With KYC').setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId('start_p2p_without_kyc').setLabel('💸 P2P Without KYC').setStyle(ButtonStyle.Secondary)
+                    new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary)
                 );
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [buttons] });
             }
 
+            // 🔥 NAYA UPDATE: FEEDBACK CHANNEL CREATION (ONLY IF SUCCESS)
+            if (isSuccess) {
+                try {
+                    const fbPerms = [
+                        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: ticketData.discordUserId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
+                    ];
+                    const feedbackChannel = await interaction.guild.channels.create({
+                        name: `feedback-${ticketData.username}`,
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: fbPerms,
+                        topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` // Trade detail chupane ke liye
+                    });
+
+                    const fbEmbed = new EmbedBuilder()
+                        .setColor('#f1c40f')
+                        .setTitle('⭐ Give Your Feedback')
+                        .setDescription(`Hi <@${ticketData.discordUserId}>,\nYour transaction is completed successfully! Please share your experience to build community trust.\n\n📝 **Write a review message below**\n📸 **Upload a payment screenshot**\n\nWhen you are done, click the **Confirm** button to publish your review.`);
+
+                    const fbBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId(`confirm_feedback_${ticketData.discordUserId}`).setLabel('✅ Confirm & Publish').setStyle(ButtonStyle.Success)
+                    );
+
+                    await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [fbBtn] });
+                } catch (e) { console.error("Feedback room error:", e); }
+            }
+
+            // Purana ticket delete karna
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
 
         } catch (error) { 
