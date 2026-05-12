@@ -15,6 +15,7 @@ const {
     TextInputStyle, 
     PermissionsBitField,
     ChannelType
+    AttachmentBuilder
 } = require('discord.js');
 
 const admin = require('firebase-admin');
@@ -198,18 +199,16 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- 🌟 FEEDBACK SYSTEM CONFIRM BUTTON ---
+   // --- 🌟 FEEDBACK SYSTEM CONFIRM BUTTON ---
     if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
         const expectedUserId = interaction.customId.replace('confirm_feedback_', '');
         
-        // Sirf wahi user daba sakta hai jiska ticket hai
         if (interaction.user.id !== expectedUserId) {
             return interaction.reply({ content: '❌ Action Denied.', ephemeral: true });
         }
 
         await interaction.deferUpdate();
 
-        // 🔥 Channel ke messages padhna user ka text aur photo dhoondhne ke liye
         const messages = await interaction.channel.messages.fetch({ limit: 10 });
         const userMsg = messages.find(m => m.author.id === expectedUserId && (m.content !== '' || m.attachments.size > 0));
 
@@ -218,10 +217,9 @@ client.on('interactionCreate', async interaction => {
         }
 
         let reviewText = userMsg.content || "Awesome and fast trade! 🚀";
-        let imageUrl = userMsg.attachments.size > 0 ? userMsg.attachments.first().url : null;
-        let tradeInfo = interaction.channel.topic || "P2P Trade"; // Humne channel topic me save kiya tha
+        let imageAttachment = userMsg.attachments.size > 0 ? userMsg.attachments.first() : null;
+        let tradeInfo = interaction.channel.topic || "P2P Trade"; 
 
-        // Transaction-Reviews channel dhoondhna ya banana
         let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-reviews' || c.name === 'reviews');
         if (!reviewChannel) {
             reviewChannel = await interaction.guild.channels.create({
@@ -242,16 +240,19 @@ client.on('interactionCreate', async interaction => {
             .setTimestamp()
             .setFooter({ text: '💎 Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
 
-        if (imageUrl) {
-            reviewEmbed.setImage(imageUrl); // Embed me screenshot attach ho jayega
+        let filesToUpload = [];
+
+        // 🔥 NAYA UPDATE: Photo ko permanently upload karne ka logic
+        if (imageAttachment) {
+            const proofImage = new AttachmentBuilder(imageAttachment.url, { name: 'feedback-proof.png' });
+            reviewEmbed.setImage('attachment://feedback-proof.png');
+            filesToUpload.push(proofImage);
         }
 
-        // Public channel me bhej dena @everyone tag ke sath
-        await reviewChannel.send({ content: `🔔 **New Transaction Review!** | @everyone`, embeds: [reviewEmbed] });
+        await reviewChannel.send({ content: `🔔 **New Transaction Review!** | @everyone`, embeds: [reviewEmbed], files: filesToUpload });
 
         await interaction.followUp({ content: '✅ Your feedback has been published! Thank you for trusting The Vault. Closing room...', ephemeral: true });
 
-        // Feedback room 5 second me delete
         setTimeout(() => interaction.channel.delete().catch(()=> {}), 5000);
     }
     
