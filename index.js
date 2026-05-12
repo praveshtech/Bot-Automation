@@ -297,7 +297,7 @@ client.on('interactionCreate', async interaction => {
                     `To unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\n` +
                     `Please upload:\n` +
                     `1️⃣ **A clear photo of your National ID**\n` +
-                    `2️⃣ **A selfie of you holding the ID**\n\n` +
+                    `2️⃣ **A selfie of your **\n\n` +
                     `Send the images directly in this chat. Our Admin will review them shortly.`
                 )
                 .setFooter({ text: 'Professor Network - Secure KYC' });
