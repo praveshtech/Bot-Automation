@@ -1247,7 +1247,8 @@ app.get('/api/check-updates', requireLogin, (req, res) => {
 
 app.get('/', requireLogin, async (req, res) => {
     try {
-        const guild = client.guilds.cache.first(); 
+        // 🔥 NAYA UPDATE: Bot ab directly aapke GUILD_ID wale server ka data nikalega
+        const guild = client.guilds.cache.get(GUILD_ID); 
         const liveMembers = guild ? guild.memberCount : 0;
         
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
