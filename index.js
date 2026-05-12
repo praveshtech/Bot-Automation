@@ -58,26 +58,110 @@ client.once('ready', () => {
 });
 
 // ==========================================
+// ==========================================
 // 🛠️ DISCORD COMMANDS (Admin Setup)
 // ==========================================
 client.on('messageCreate', async message => {
+    // Agar message kisi bot ne bheja hai, toh ignore karo
     if (message.author.bot) return;
 
-    if (message.content === '!p2p' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        const setupEmbed = new EmbedBuilder()
-            .setColor('#2b2d31')
-            .setTitle('🏦 Exchange Desk (P2P)')
-            .setDescription('Welcome to the Professor Network.\n\nSelect your trading method below to begin.')
-            .setFooter({ text: 'Automated by Professor Network' });
-            
-        const buttons = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('start_p2p_with_kyc').setLabel('🛡️ P2P With KYC').setStyle(ButtonStyle.Success),
-            new ButtonBuilder().setCustomId('start_p2p_without_kyc').setLabel('💸 P2P Without KYC').setStyle(ButtonStyle.Secondary)
-        );
+    // Command ko clean karna (taaki capital letters ya extra space se error na aaye)
+    const command = message.content.trim().toLowerCase();
 
-        await message.channel.send({ embeds: [setupEmbed], components: [buttons] });
-        await message.delete();
+    // 🔥 P2P COMMAND
+    if (command === '!p2p') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return message.reply({ content: "❌ Action Denied: Only Administrators can run this command.", ephemeral: true });
+        }
+        
+        try {
+            const setupEmbed = new EmbedBuilder()
+                .setColor('#2b2d31')
+                .setTitle('🏦 Exchange Desk (P2P)')
+                .setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.')
+                .setFooter({ text: 'Automated by Professor Network' });
+                
+            const buttons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary)
+            );
+
+            await message.channel.send({ embeds: [setupEmbed], components: [buttons] });
+            
+            // Delete original command message, catch error if bot lacks manage messages permission
+            await message.delete().catch(() => console.log("Note: Bot lacks 'Manage Messages' permission to delete the !p2p command."));
+        } catch (err) {
+            console.error("❌ Error in !p2p command:", err);
+        }
     }
+
+    // 🔥 VERIFY COMMAND
+    if (command === '!verify') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        
+        try {
+            const kycEmbed = new EmbedBuilder()
+                .setColor('#2b2d31')
+                .setTitle('📝 Basic Network Verification')
+                .setDescription('> **To join the community legally, submit your basic details here.**\n\n`Note: If You Want $0 Fee on P2P trades use P2P WITH KYC, a separate ID verification is required at the Exchange Desk.`')
+                .setFooter({ text: '🔒 Data is encrypted and stored securely.' });
+                
+            const kycButton = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Verify').setStyle(ButtonStyle.Primary).setEmoji('📝')
+            );
+            
+            await message.channel.send({ embeds: [kycEmbed], components: [kycButton] });
+            await message.delete().catch(()=>{});
+        } catch (err) {
+            console.error("❌ Error in !verify command:", err);
+        }
+    }
+
+    // 🔥 DASHBOARD COMMAND
+    if (command === '!setupdashboard') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        
+        try {
+            const dashEmbed = new EmbedBuilder()
+                .setColor('#2b2d31')
+                .setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD')
+                .setDescription('**[ 🔴 SYSTEM STATUS: STANDBY ]**\n\nClick the **Sync Network Data** button below to securely fetch the latest real-time analytics from the central database.')
+                .setFooter({ text: 'Professor Network - Secure Terminal' });
+                
+            const refreshBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('refresh_dashboard').setLabel('🔄 Sync Network Data').setStyle(ButtonStyle.Primary));
+            
+            await message.channel.send({ embeds: [dashEmbed], components: [refreshBtn] });
+            await message.delete().catch(()=>{});
+        } catch (err) {
+            console.error("❌ Error in dashboard command:", err);
+        }
+    }
+
+    // 🔥 LEADERBOARD COMMAND
+    if (command === '!setupleaderboard') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        
+        try {
+            let leaderboardChannel = message.guild.channels.cache.find(c => c.name === 'top-trader-this-week');
+            
+            if (!leaderboardChannel) {
+                leaderboardChannel = await message.guild.channels.create({ 
+                    name: 'top-trader-this-week', 
+                    type: ChannelType.GuildText, 
+                    permissionOverwrites: [
+                        { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
+                    ] 
+                });
+            }
+
+            await message.reply({ content: `✅ Leaderboard setup in ${leaderboardChannel}. It will auto-update!`, ephemeral: true });
+            await message.delete().catch(()=>{});
+            updateWeeklyLeaderboard(message.guild);
+        } catch (err) {
+            console.error("❌ Error setting up leaderboard:", err);
+        }
+    }
+});
 
     // 🔥 NAYA UPDATE: !verify command and "Verify" button label with STYLISH FONT
     if (message.content === '!verify' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
