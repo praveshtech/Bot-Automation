@@ -215,10 +215,19 @@ client.on('interactionCreate', async interaction => {
         }
 
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
+        
+        // 🔥 NAYA UPDATE: Payment box hata kar Welcome Message laga diya
+        const welcomeMessageField = new TextInputBuilder()
+            .setCustomId('welcome_message')
+            .setLabel('🙏 Welcome To Professor Network')
+            .setStyle(TextInputStyle.Paragraph)
+            .setValue('💎 Trusted P2P Platform For Usdt Buy/Sell') // Yeh box me pehle se likha hoga
+            .setRequired(false); // False hai taaki user ko type na karna pade
+
         kycModal.addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), 
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true)), 
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_payment').setLabel('Default Payment Info (UPI/Wallet)').setStyle(TextInputStyle.Paragraph).setRequired(true))
+            new ActionRowBuilder().addComponents(welcomeMessageField) // <-- Naya message box
         );
         
         await interaction.showModal(kycModal);
@@ -235,14 +244,14 @@ client.on('interactionCreate', async interaction => {
 
             const name = interaction.fields.getTextInputValue('kyc_name');
             const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
-            const paymentDetails = interaction.fields.getTextInputValue('kyc_payment'); 
+            // 🔥 NAYA UPDATE: Payment read karne wala code hata diya taaki crash na ho
             
             await db.collection('users_kyc').doc(interaction.user.id).set({ 
                 discordId: interaction.user.id, 
                 username: interaction.user.username, 
                 name: name, 
                 discordContact: discordContactVal, 
-                paymentInfo: paymentDetails, 
+                paymentInfo: 'N/A', // DB me payment info ab 'N/A' jayega
                 status: 'Approved', 
                 createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
