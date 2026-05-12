@@ -14,8 +14,8 @@ const {
     TextInputBuilder, 
     TextInputStyle, 
     PermissionsBitField,
-    ChannelType
-    AttachmentBuilder
+    ChannelType,
+    AttachmentBuilder // ✅ Comma missing tha yahan, fix kar diya gaya hai
 } = require('discord.js');
 
 const admin = require('firebase-admin');
@@ -58,7 +58,6 @@ client.once('ready', () => {
 });
 
 // ==========================================
-// ==========================================
 // 🛠️ DISCORD COMMANDS (Admin Setup)
 // ==========================================
 client.on('messageCreate', async message => {
@@ -86,22 +85,20 @@ client.on('messageCreate', async message => {
             );
 
             await message.channel.send({ embeds: [setupEmbed], components: [buttons] });
-            
-            // Delete original command message, catch error if bot lacks manage messages permission
-            await message.delete().catch(() => console.log("Note: Bot lacks 'Manage Messages' permission to delete the !p2p command."));
+            await message.delete().catch(() => {});
         } catch (err) {
             console.error("❌ Error in !p2p command:", err);
         }
     }
 
-    // 🔥 VERIFY COMMAND
+    // 🔥 VERIFY COMMAND (With Fancy Font)
     if (command === '!verify') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
         try {
             const kycEmbed = new EmbedBuilder()
                 .setColor('#2b2d31')
-                .setTitle('📝 Basic Network Verification')
+                .setTitle('📝 𝕭𝖆𝖘𝖎𝖈 𝕹𝖊𝖙𝖜𝖔𝖗𝖐 𝕽𝖊𝖌𝖎𝖘𝖙𝖗𝖆𝖙𝖎𝖔𝖓')
                 .setDescription('> **To join the community legally, submit your basic details here.**\n\n`Note: If You Want $0 Fee on P2P trades use P2P WITH KYC, a separate ID verification is required at the Exchange Desk.`')
                 .setFooter({ text: '🔒 Data is encrypted and stored securely.' });
                 
@@ -161,58 +158,7 @@ client.on('messageCreate', async message => {
             console.error("❌ Error setting up leaderboard:", err);
         }
     }
-});
-
-    // 🔥 NAYA UPDATE: !verify command and "Verify" button label with STYLISH FONT
-    if (message.content === '!verify' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        const kycEmbed = new EmbedBuilder()
-            .setColor('#2b2d31')
-            // Title ko Fancy Gothic/Cursive style mein change kiya hai
-            .setTitle('📝 Basic Network Verification')
-            // Description ko Blockquote (>) aur Bold (**) se premium banaya hai
-            .setDescription('> **To join the community legally, submit your basic details here.**\n\n`Note: If You Want $0 Fee on P2P trades use P2P WITH KYC, a separate ID verification is required at the Exchange Desk.`')
-            .setFooter({ text: '🔒 Data is encrypted and stored securely.' });
-            
-        const kycButton = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Verify').setStyle(ButtonStyle.Primary).setEmoji('📝')
-        );
-        
-        await message.channel.send({ embeds: [kycEmbed], components: [kycButton] });
-        await message.delete();
-    }
-
-    if (message.content === '!setupdashboard' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        const dashEmbed = new EmbedBuilder()
-            .setColor('#2b2d31')
-            .setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD')
-            .setDescription('**[ 🔴 SYSTEM STATUS: STANDBY ]**\n\nClick the **Sync Network Data** button below to securely fetch the latest real-time analytics from the central database.')
-            .setFooter({ text: 'Professor Network - Secure Terminal' });
-            
-        const refreshBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('refresh_dashboard').setLabel('🔄 Sync Network Data').setStyle(ButtonStyle.Primary));
-        
-        await message.channel.send({ embeds: [dashEmbed], components: [refreshBtn] });
-        await message.delete();
-    }
-
-    if (message.content === '!setupleaderboard' && message.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-        let leaderboardChannel = message.guild.channels.cache.find(c => c.name === 'top-trader-this-week');
-        
-        if (!leaderboardChannel) {
-            leaderboardChannel = await message.guild.channels.create({ 
-                name: 'top-trader-this-week', 
-                type: ChannelType.GuildText, 
-                permissionOverwrites: [
-                    { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
-                    { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
-                ] 
-            });
-        }
-
-        await message.reply({ content: `✅ Leaderboard setup in ${leaderboardChannel}. It will auto-update!`, ephemeral: true });
-        await message.delete();
-        updateWeeklyLeaderboard(message.guild);
-    }
-});
+}); // ✅ Brackets ko sahi jagah close kiya gaya hai
 
 // ==========================================
 // 🖱️ INTERACTION LOGIC
@@ -326,7 +272,6 @@ client.on('interactionCreate', async interaction => {
 
         let filesToUpload = [];
 
-        // 🔥 NAYA UPDATE: Photo ko permanently upload karne ka logic
         if (imageAttachment) {
             const proofImage = new AttachmentBuilder(imageAttachment.url, { name: 'feedback-proof.png' });
             reviewEmbed.setImage('attachment://feedback-proof.png');
@@ -343,7 +288,6 @@ client.on('interactionCreate', async interaction => {
    // --- 🛡️ 1. AUTO-KYC & ACCESS RESTORE LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         
-        // 🔥 UPDATE: Database check to restore 'Verified' role for returning users
         const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
         if (existingKyc.exists && existingKyc.data().status === 'Approved') {
             
@@ -358,18 +302,17 @@ client.on('interactionCreate', async interaction => {
 
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
         
-        // 🔥 NAYA UPDATE: Payment box hata kar Welcome Message laga diya
         const welcomeMessageField = new TextInputBuilder()
             .setCustomId('welcome_message')
             .setLabel('🙏 Welcome To Professor Network')
             .setStyle(TextInputStyle.Paragraph)
-            .setValue('💎 Trusted P2P Platform For Usdt Buy/Sell') // Yeh box me pehle se likha hoga
-            .setRequired(false); // False hai taaki user ko type na karna pade
+            .setValue('💎 Trusted P2P Platform For Usdt Buy/Sell') 
+            .setRequired(false); 
 
         kycModal.addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), 
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true)), 
-            new ActionRowBuilder().addComponents(welcomeMessageField) // <-- Naya message box
+            new ActionRowBuilder().addComponents(welcomeMessageField) 
         );
         
         await interaction.showModal(kycModal);
@@ -386,19 +329,17 @@ client.on('interactionCreate', async interaction => {
 
             const name = interaction.fields.getTextInputValue('kyc_name');
             const discordContactVal = interaction.fields.getTextInputValue('kyc_discord_contact');
-            // 🔥 NAYA UPDATE: Payment read karne wala code hata diya taaki crash na ho
             
             await db.collection('users_kyc').doc(interaction.user.id).set({ 
                 discordId: interaction.user.id, 
                 username: interaction.user.username, 
                 name: name, 
                 discordContact: discordContactVal, 
-                paymentInfo: 'N/A', // DB me payment info ab 'N/A' jayega
+                paymentInfo: 'N/A', 
                 status: 'Approved', 
                 createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
 
-            // 🔥 UPDATE: Give 'Verified' role to the user instantly after form submission
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (!basicRole) { 
                 basicRole = await interaction.guild.roles.create({ name: 'Verified', color: '#3498db' }); 
@@ -414,15 +355,32 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- 🔥 ADVANCED KYC (TICKET ROOM) & P2P BUTTONS ---
+    // --- 🔥 DYNAMIC 1-MESSAGE P2P TRADE FLOW ---
+    
+    // ✅ Step A: Public button click -> Open 1 Private Message with Modes (Yeh wala block missing tha)
+    if (interaction.isButton() && interaction.customId === 'start_p2p_trade') {
+        const modeEmbed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setAuthor({ name: '🏦 P2P Trade Setup | Mode Selection', iconURL: client.user.displayAvatarURL() })
+            .setDescription('Please choose your trade mode:\n\n🛡️ **P2P With KYC:** $0 Fee (Requires Vault Verified tag)\n💸 **P2P Without KYC:** $3 Fee (Instant, No ID required)');
+            
+        const modeButtons = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('start_p2p_with_kyc').setLabel('🛡️ P2P With KYC').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('start_p2p_without_kyc').setLabel('💸 P2P Without KYC').setStyle(ButtonStyle.Secondary)
+        );
+
+        await interaction.reply({ embeds: [modeEmbed], components: [modeButtons], ephemeral: true });
+    }
+
+    // Step B: Mode selected -> UPDATE the SAME Private Message dynamically
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-        // TIER 2 KYC: Agar 'With KYC' dabaya aur role nahi hai -> Create Ticket!
         if (isVerifiedRoute && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
-            await interaction.reply({ content: '⏳ You are not **Vault Verified** yet. Creating your secure KYC verification room...', ephemeral: true });
+            
+            await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
 
             const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
             const channelPermissions = [
@@ -460,10 +418,14 @@ client.on('interactionCreate', async interaction => {
 
             await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
 
-            return interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.` });
+            await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
+            
+            setTimeout(() => {
+                interaction.deleteReply().catch(() => {});
+            }, 15000);
+            return;
         }
 
-        // If they chose 'Without KYC' OR they already have the Vault Verified role, proceed to trade
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
         
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
@@ -477,7 +439,7 @@ client.on('interactionCreate', async interaction => {
             .setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() })
             .setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC ($3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
 
-        await interaction.reply({ embeds: [step1Embed], components: [row1], ephemeral: true });
+        await interaction.update({ content: '', embeds: [step1Embed], components: [row1] });
     }
 
     // --- 🛡️ ADVANCED KYC APPROVE / REJECT HANDLERS ---
@@ -500,27 +462,23 @@ client.on('interactionCreate', async interaction => {
         await interaction.editReply({ embeds: [updatedEmbed], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
-        // 🔥 NAYA UPDATE: Exchange Desk ko clear karke wapas !p2p menu bhejna
         const exchangeChannel = interaction.guild.channels.cache.find(c => c.name === 'exchange-desk' || c.name.includes('exchange'));
         if (exchangeChannel) {
             try {
-                // Purane messages delete karna
                 const fetchedMessages = await exchangeChannel.messages.fetch({ limit: 10 });
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
                 for (const [id, msg] of botMessages) {
                     await msg.delete().catch(() => {});
                 }
                 
-                // Naya !p2p wala menu bhejna
                 const setupEmbed = new EmbedBuilder()
                     .setColor('#2b2d31')
                     .setTitle('🏦 Exchange Desk (P2P)')
-                    .setDescription('Welcome to the Professor Network.\n\nSelect your trading method below to begin.')
+                    .setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.')
                     .setFooter({ text: 'Automated by Professor Network' });
                     
                 const buttons = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('start_p2p_with_kyc').setLabel('🛡️ P2P With KYC').setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId('start_p2p_without_kyc').setLabel('💸 P2P Without KYC').setStyle(ButtonStyle.Secondary)
+                    new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary)
                 );
                 await exchangeChannel.send({ embeds: [setupEmbed], components: [buttons] });
             } catch (err) {
@@ -562,7 +520,6 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isStringSelectMenu()) {
         const userState = userSelections.get(interaction.user.id) || { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: false };
         
-        // STEP 1: Select Type -> Turant Amount Modal Dikhega
         if (interaction.customId === 'dropdown_type') {
             userState.type = interaction.values[0];
             userState.step2 = null;
@@ -578,7 +535,6 @@ client.on('interactionCreate', async interaction => {
             return; 
         }
         
-        // STEP 3 & 4: Network/Method Select 
         if (interaction.customId === 'dropdown_step2' || interaction.customId === 'dropdown_step3') {
             if (interaction.customId === 'dropdown_step2') {
                 userState.step2 = interaction.values[0];
@@ -656,7 +612,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // 🔥 MODAL 1 SUBMIT: Save Amount & Show Step 2 Embed UI
     if (interaction.isModalSubmit() && interaction.customId === 'amount_modal_popup') {
         const userState = userSelections.get(interaction.user.id);
         userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
@@ -686,7 +641,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.update({ content: '', embeds: [step2Embed], components: [row1, row2] });
     }
 
-    // 🔥 MODAL 2: Dynamic Detail Form 
     if (interaction.isButton() && interaction.customId === 'proceed_to_details') {
         const userState = userSelections.get(interaction.user.id);
         const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} USDT`);
@@ -731,7 +685,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.showModal(p2pModal);
     }
 
-    // --- 🔒 3. PRIVATE TICKET ROOM CREATION ---
     if (interaction.isModalSubmit() && interaction.customId === 'final_p2p_modal') {
         const userState = userSelections.get(interaction.user.id);
         const tradeAmount = userState.amount; 
@@ -865,7 +818,6 @@ client.on('interactionCreate', async interaction => {
         userSelections.delete(interaction.user.id);
     }
 
-    // --- 🔐 4. SECURE REVEAL BUTTON HANDLERS ---
     if (interaction.isButton() && interaction.customId === 'reveal_admin_details') {
         await interaction.deferReply({ ephemeral: true }); 
         try {
@@ -902,7 +854,6 @@ client.on('interactionCreate', async interaction => {
         } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
     }
 
-    // --- 🏦 5. TICKET CLOSE & LOGGING ---
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
@@ -945,7 +896,7 @@ client.on('interactionCreate', async interaction => {
             let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
             if (!logChannel) {
                 const palermoRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
-                const verifiedRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Vault Verified');
+                const verifiedRoleForLog = interaction.guild.roles.cache.find(r => r.name === 'Verified');
                 let logPerms = [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }];
                 if (verifiedRoleForLog) logPerms.push({ id: verifiedRoleForLog.id, deny: [PermissionsBitField.Flags.ViewChannel] });
                 if (palermoRoleForLog) logPerms.push({ id: palermoRoleForLog.id, allow: [PermissionsBitField.Flags.ViewChannel] });
@@ -1002,8 +953,6 @@ client.on('interactionCreate', async interaction => {
                 updateWeeklyLeaderboard(interaction.guild);
             }
 
-            // REFRESH BUTTONS
-            // Refresh Buttons in exchange desk
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('exchange') || c.name.includes('ticket') || c.name.includes('p2p'));
             if (mainTicketChannel) {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
@@ -1022,7 +971,6 @@ client.on('interactionCreate', async interaction => {
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [buttons] });
             }
 
-            // 🔥 NAYA UPDATE: FEEDBACK CHANNEL CREATION (ONLY IF SUCCESS)
             if (isSuccess) {
                 try {
                     const fbPerms = [
@@ -1033,7 +981,7 @@ client.on('interactionCreate', async interaction => {
                         name: `feedback-${ticketData.username}`,
                         type: ChannelType.GuildText,
                         permissionOverwrites: fbPerms,
-                        topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` // Trade detail chupane ke liye
+                        topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` 
                     });
 
                     const fbEmbed = new EmbedBuilder()
@@ -1049,7 +997,6 @@ client.on('interactionCreate', async interaction => {
                 } catch (e) { console.error("Feedback room error:", e); }
             }
 
-            // Purana ticket delete karna
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
 
         } catch (error) { 
@@ -1119,7 +1066,6 @@ async function updateWeeklyLeaderboard(guild) {
     }
 }
 
-// 🔥 YEH FUNCTION SIRF ADMIN APPROVE (P2P WITH KYC ROOM) KE LIYE HAI
 async function approveUserKYC(userId, guild) {
     let verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
     if (!verifiedRole) { 
@@ -1129,14 +1075,11 @@ async function approveUserKYC(userId, guild) {
     try {
         const member = await guild.members.fetch(userId);
         
-        // Give Vault Verified Role
         await member.roles.add(verifiedRole);
 
-        // Update Database
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' }).catch(()=>{});
         globalLastUpdate = Date.now(); 
         
-        // Send DM
         await member.send('🏦 **Professor Network:** Congratulations! Your Advanced KYC has been approved. You have received the **Vault Verified** tag.').catch(() => {});
     } catch (e) { 
         console.log("External KYC approve error", e); 
