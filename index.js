@@ -372,7 +372,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ embeds: [modeEmbed], components: [modeButtons], ephemeral: true });
     }
 
-    // Step B: Mode selected -> UPDATE the SAME Private Message dynamically
+   // Step B: Mode selected -> UPDATE the SAME Private Message dynamically
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
@@ -381,6 +381,21 @@ client.on('interactionCreate', async interaction => {
         if (isVerifiedRoute && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             
             await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
+
+            // 🔥 NAYA UPDATE: Dashboard ke liye Firebase me entry 'Pending' mark karna
+            try {
+                await db.collection('users_kyc').doc(interaction.user.id).set({ 
+                    discordId: interaction.user.id, 
+                    username: interaction.user.username, 
+                    status: 'Pending', // <-- Isse dashboard turant catch kar lega
+                    kycType: 'Advanced (Vault Verified)', // Dashboard identify kar payega
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp() 
+                }, { merge: true }); // merge: true lagaya hai taaki basic details (Name wagera) delete na ho
+                
+                globalLastUpdate = Date.now(); 
+            } catch (error) {
+                console.error("DB Pending Update Error:", error);
+            }
 
             const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
             const channelPermissions = [
@@ -406,7 +421,7 @@ client.on('interactionCreate', async interaction => {
                     `To unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\n` +
                     `Please upload:\n` +
                     `1️⃣ **A clear photo of your National ID**\n` +
-                    `2️⃣ **A selfie of your **\n\n` +
+                    `2️⃣ **A selfie of you holding the ID**\n\n` +
                     `Send the images directly in this chat. Our Admin will review them shortly.`
                 )
                 .setFooter({ text: 'Professor Network - Secure KYC' });
@@ -425,6 +440,7 @@ client.on('interactionCreate', async interaction => {
             }, 15000);
             return;
         }
+
 
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
         
