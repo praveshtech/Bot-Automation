@@ -358,6 +358,34 @@ client.on('interactionCreate', async interaction => {
         await interaction.editReply({ embeds: [updatedEmbed], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
+        // 🔥 NAYA UPDATE: Exchange Desk ko clear karke wapas !p2p menu bhejna
+        const exchangeChannel = interaction.guild.channels.cache.find(c => c.name === 'exchange-desk' || c.name.includes('exchange'));
+        if (exchangeChannel) {
+            try {
+                // Purane messages delete karna
+                const fetchedMessages = await exchangeChannel.messages.fetch({ limit: 10 });
+                const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
+                for (const [id, msg] of botMessages) {
+                    await msg.delete().catch(() => {});
+                }
+                
+                // Naya !p2p wala menu bhejna
+                const setupEmbed = new EmbedBuilder()
+                    .setColor('#2b2d31')
+                    .setTitle('🏦 Exchange Desk (P2P)')
+                    .setDescription('Welcome to the Professor Network.\n\nSelect your trading method below to begin.')
+                    .setFooter({ text: 'Automated by Professor Network' });
+                    
+                const buttons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('start_p2p_with_kyc').setLabel('🛡️ P2P With KYC').setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId('start_p2p_without_kyc').setLabel('💸 P2P Without KYC').setStyle(ButtonStyle.Secondary)
+                );
+                await exchangeChannel.send({ embeds: [setupEmbed], components: [buttons] });
+            } catch (err) {
+                console.error("Exchange desk refresh error:", err);
+            }
+        }
+
         if (interaction.channel.name.startsWith('kyc-') && interaction.channel.name !== 'kyc-requests') {
             setTimeout(() => interaction.channel.delete().catch(()=> {}), 5000);
         }
