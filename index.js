@@ -418,7 +418,7 @@ client.on('interactionCreate', async interaction => {
             }
             userSelections.set(interaction.user.id, userState);
             
-            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
             if (userState.type === 'Sell') {
@@ -443,7 +443,7 @@ client.on('interactionCreate', async interaction => {
             const stepEmbed = new EmbedBuilder()
                 .setColor('#3498db')
                 .addFields(
-                    { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy Crypto' : '🔴 Sell Crypto'}`, inline: true },
+                    { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true },
                     { name: '💰 Amount', value: `$${userState.amount}`, inline: true },
                     { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true }
                 );
@@ -492,7 +492,7 @@ client.on('interactionCreate', async interaction => {
         userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
         userSelections.set(interaction.user.id, userState);
 
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy Crypto (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell Crypto (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
@@ -509,7 +509,7 @@ client.on('interactionCreate', async interaction => {
             .setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() })
             .setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`)
             .addFields(
-                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy Crypto' : '🔴 Sell Crypto'}`, inline: true },
+                { name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true },
                 { name: '💰 Amount', value: `$${userState.amount}`, inline: true }
             );
 
@@ -519,7 +519,7 @@ client.on('interactionCreate', async interaction => {
     // 🔥 MODAL 2: Dynamic Detail Form 
     if (interaction.isButton() && interaction.customId === 'proceed_to_details') {
         const userState = userSelections.get(interaction.user.id);
-        const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} Crypto`);
+        const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} USDT`);
         
         if (userState.type === 'Sell') {
             if (userState.step3 === 'IMPS') {
