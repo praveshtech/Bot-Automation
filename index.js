@@ -634,7 +634,7 @@ client.on('interactionCreate', async interaction => {
                 step3Dropdown.addOptions([
                     { label: 'IMPS (Bank Transfer)', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' },
                     { label: 'CDM (Cash Deposit)', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
-                    { label: 'CCW', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' }
+                    { label: 'CCW', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW Limit-20k INR' }
                 ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
