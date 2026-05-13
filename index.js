@@ -1340,7 +1340,10 @@ async function updateHeistLeaderboard(guild) {
             const medal = medals[i-1] || '🎖️';
             const rankName = data.level ? data.level.split('—')[1].trim() : 'Recruit';
             
-            desc += `${medal} **${i}.** <@${data.discordId}> — **${data.heistPoints} Pts** | Rank: ${rankName} | Vol: $${data.totalVolume.toLocaleString()}\n`;
+            // 🔥 NAYA UPDATE: Ab ID ki jagah proper Username print hoga
+            const displayUser = data.username ? `**@${data.username}**` : `<@${data.discordId}>`;
+            
+            desc += `${medal} **${i}.** ${displayUser} — **${data.heistPoints} Pts** | Rank: ${rankName} | Vol: $${data.totalVolume.toLocaleString()}\n`;
             i++;
         });
 
