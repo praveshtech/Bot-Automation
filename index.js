@@ -53,7 +53,7 @@ client.once('ready', () => {
     setInterval(() => {
         client.guilds.cache.forEach(guild => {
             updateWeeklyLeaderboard(guild);
-            updateHeistLeaderboard(guild); // Naya Heist Leaderboard Loop
+            updateHeistLeaderboard(guild);
         });
     }, 60 * 60 * 1000);
 });
@@ -158,7 +158,7 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 🔥 NAYA: HEIST POINTS LEADERBOARD COMMAND
+    // 🔥 HEIST POINTS LEADERBOARD COMMAND
     if (command === '!setupheistboard') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
@@ -264,29 +264,25 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.deferUpdate();
 
-        // 🔥 NAYA UPDATE: Bot ab pichle 15 messages check karega
         const messages = await interaction.channel.messages.fetch({ limit: 15 });
         const userMessages = messages.filter(m => m.author.id === expectedUserId);
 
         let reviewText = "";
         let imageAttachment = null;
 
-        // User ke sabhi messages mein se Text aur Photo alag-alag nikalna
         userMessages.forEach(m => {
             if (m.content.trim() !== '' && reviewText === "") {
-                reviewText = m.content; // Jo text mila use save kar lo
+                reviewText = m.content; 
             }
             if (m.attachments.size > 0 && !imageAttachment) {
-                imageAttachment = m.attachments.first(); // Jo photo mili use save kar lo
+                imageAttachment = m.attachments.first(); 
             }
         });
 
-        // Agar user ne na text bheja, na photo
         if (reviewText === "" && !imageAttachment) {
             return interaction.followUp({ content: '⚠️ Please write a message or upload a screenshot before clicking Confirm!', ephemeral: true });
         }
 
-        // Agar user ne sirf photo bheji aur text type nahi kiya (tab fallback use hoga)
         if (reviewText === "") {
             reviewText = "Awesome and fast trade! 🚀"; 
         }
@@ -418,7 +414,6 @@ client.on('interactionCreate', async interaction => {
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-        // 🔥 Yahan Admin bypass hata diya hai taaki Admin ka bhi KYC form open ho sake for testing
         if (isVerifiedRoute && !hasRole) {
             
             await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
@@ -634,7 +629,6 @@ client.on('interactionCreate', async interaction => {
                 step3Dropdown.addOptions([
                     { label: 'IMPS (Bank Transfer)', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' },
                     { label: 'CDM (Cash Deposit)', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
-                    // 🔥 NAYA UPDATE: CCW label mein Limit add kar di
                     { label: 'CCW (Limit 20k INR)', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' } 
                 ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
@@ -643,7 +637,6 @@ client.on('interactionCreate', async interaction => {
                     const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success);
                     components.push(new ActionRowBuilder().addComponents(nextButton));
                     
-                    // 🔥 NAYA UPDATE: Embed mein display karne ke liye text change
                     let displayMethod = userState.step3 === 'CCW' ? 'CCW (Limit 20k INR)' : userState.step3;
                     
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
@@ -806,11 +799,9 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-        // 🔥 FEE SYSTEM REVERTED: No Level Discounts, Just Normal Fees
         const fee = userState.isVerifiedTrade ? 0 : 3;
         const totalToCollect = Number(tradeAmount) + fee;
 
-        // 🔥 NAYA UPDATE: CCW Limit Display Logic
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (Limit 20k INR)' : userState.step3;
 
         try {
@@ -818,7 +809,6 @@ client.on('interactionCreate', async interaction => {
                 discordUserId: interaction.user.id, 
                 username: interaction.user.username, 
                 tradeType: userState.type, 
-                // Yahan DB mein save hote time limit add hogi
                 networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : userState.step2, 
                 amountUsd: Number(tradeAmount), 
                 fee: fee,
@@ -839,7 +829,6 @@ client.on('interactionCreate', async interaction => {
             `**2. How much amount ($)?**\n` +
             `> $${tradeAmount}\n` +
             `**3. Which Method?**\n` +
-            // Yahan user ko message mein limit dikhegi
             `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n` +
             `**Fee Structure:** $${fee} (Non-KYC Charge)\n` +
             `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
@@ -920,6 +909,7 @@ client.on('interactionCreate', async interaction => {
         } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
     }
 
+    // --- 🔥 MARK COMPLETE & FEEDBACK CREATION (WITH 2 HOUR AUTO-DELETE & DM LINK) ---
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
@@ -947,12 +937,59 @@ client.on('interactionCreate', async interaction => {
 
             await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
             
+            let feedbackChannelId = null;
+
+            if (isSuccess) {
+                try {
+                    const fbPerms = [
+                        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: ticketData.discordUserId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
+                    ];
+                    const feedbackChannel = await interaction.guild.channels.create({
+                        name: `feedback-${ticketData.username}`,
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: fbPerms,
+                        topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` 
+                    });
+
+                    feedbackChannelId = feedbackChannel.id;
+
+                    const fbEmbed = new EmbedBuilder()
+                        .setColor('#f1c40f')
+                        .setTitle('⭐ Give Your Feedback')
+                        .setDescription(`Hi <@${ticketData.discordUserId}>,\nYour transaction is completed successfully! Please share your experience to build community trust.\n\n📝 **Write a review message below**\n📸 **Upload a payment screenshot**\n\nWhen you are done, click the **Confirm** button to publish your review.\n\n*(⏳ This channel will auto-close in 2 hours)*`);
+
+                    const fbBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId(`confirm_feedback_${ticketData.discordUserId}`).setLabel('✅ Confirm & Publish').setStyle(ButtonStyle.Success)
+                    );
+
+                    await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [fbBtn] });
+
+                    // 2 HOURS AUTO-DELETE TIMER
+                    setTimeout(() => { 
+                        feedbackChannel.delete().catch(() => {}); 
+                    }, 2 * 60 * 60 * 1000); 
+
+                } catch (e) { console.error("Feedback room error:", e); }
+            }
+
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
+                let desc = `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been **${finalStatus}** by The Vault Admin.`;
+                
+                if (isSuccess) {
+                    desc += `\n\nThank you for trading with us! 🏦`;
+                    if (feedbackChannelId) {
+                        desc += `\n\n⭐ **Please drop your valuable feedback here:** <#${feedbackChannelId}>\n*(Click the link above to go directly to your feedback room)*`;
+                    }
+                } else {
+                    desc += `\n\nThis transaction was incomplete and has been cancelled.`;
+                }
+
                 const receiptEmbed = new EmbedBuilder()
                     .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
                     .setTitle(isSuccess ? '🧾 Transaction Completed' : '🚫 Transaction Cancelled')
-                    .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been **${finalStatus}** by The Vault Admin.\n\n${isSuccess ? 'Thank you for trading with us! 🏦' : 'This transaction was incomplete and has been cancelled.'}`)
+                    .setDescription(desc)
                     .setFooter({ text: 'Professor Network - Secure Terminal' });
                 
                 const serverLinkBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef')); 
@@ -1017,8 +1054,6 @@ client.on('interactionCreate', async interaction => {
 
             if (isSuccess) {
                 updateWeeklyLeaderboard(interaction.guild);
-                
-                // 🔥 NAYA: HEIST POINTS CALCULATION TRIGGER
                 await updateUserHeistPoints(ticketData.discordUserId, interaction.guild, ticketData.username);
             }
 
@@ -1038,32 +1073,6 @@ client.on('interactionCreate', async interaction => {
                     new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary)
                 );
                 await mainTicketChannel.send({ embeds: [setupEmbed], components: [buttons] });
-            }
-
-            if (isSuccess) {
-                try {
-                    const fbPerms = [
-                        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                        { id: ticketData.discordUserId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
-                    ];
-                    const feedbackChannel = await interaction.guild.channels.create({
-                        name: `feedback-${ticketData.username}`,
-                        type: ChannelType.GuildText,
-                        permissionOverwrites: fbPerms,
-                        topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` 
-                    });
-
-                    const fbEmbed = new EmbedBuilder()
-                        .setColor('#f1c40f')
-                        .setTitle('⭐ Give Your Feedback')
-                        .setDescription(`Hi <@${ticketData.discordUserId}>,\nYour transaction is completed successfully! Please share your experience to build community trust.\n\n📝 **Write a review message below**\n📸 **Upload a payment screenshot**\n\nWhen you are done, click the **Confirm** button to publish your review.`);
-
-                    const fbBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId(`confirm_feedback_${ticketData.discordUserId}`).setLabel('✅ Confirm & Publish').setStyle(ButtonStyle.Success)
-                    );
-
-                    await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [fbBtn] });
-                } catch (e) { console.error("Feedback room error:", e); }
             }
 
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
@@ -1138,7 +1147,7 @@ async function updateWeeklyLeaderboard(guild) {
     }
 }
 
-// 🔥 NAYA: HEIST POINTS CALCULATION & LEVEL SYSTEM
+// 🔥 HEIST POINTS CALCULATION & LEVEL SYSTEM
 async function updateUserHeistPoints(userId, guild, username) {
     try {
         const snapshot = await db.collection('p2p_tickets')
@@ -1184,14 +1193,12 @@ async function updateUserHeistPoints(userId, guild, username) {
                     if (!member.roles.cache.has(role.id)) {
                         await member.roles.add(role);
                         
-                        // 🔥 NAYA UPDATE: Send to specific 🎀・level-updates channel with @everyone and User tag
                         const lvlEmbed = new EmbedBuilder()
                             .setColor('#e74c3c')
                             .setTitle('💰 NEW RANK UNLOCKED!')
                             .setDescription(`Congratulations <@${userId}>! You've successfully reached **${targetLevel.name}** with **${points} Heist Points**.\n\nEnjoy your new perks and keep trading to reach the top!`)
                             .setFooter({ text: 'Professor Network - Auto Rank System', iconURL: client.user.displayAvatarURL() });
                         
-                        // Check if channel exists, if not, create it automatically
                         let levelChannel = guild.channels.cache.find(c => c.name === '🎀・level-updates' || c.name.includes('level-updates'));
                         
                         if (!levelChannel) {
@@ -1205,12 +1212,11 @@ async function updateUserHeistPoints(userId, guild, username) {
                             });
                         }
 
-                        // Send message with @everyone and User ping
                         await levelChannel.send({ 
                             content: `🔔 **Level Up Alert!** | @everyone | <@${userId}>`, 
                             embeds: [lvlEmbed] 
                         });
-                    } // <--- ⚠️ YAHAN WO BRACKET MISSING THA JO AB FIX HO GAYA HAI
+                    }
                 } else {
                     if (member.roles.cache.has(role.id)) {
                         await member.roles.remove(role);
@@ -1224,7 +1230,7 @@ async function updateUserHeistPoints(userId, guild, username) {
     } catch(e) { console.error("Heist Points Update Error:", e); }
 }
 
-// 🔥 NAYA: HEIST LEADERBOARD SYSTEM
+// 🔥 HEIST LEADERBOARD SYSTEM
 async function updateHeistLeaderboard(guild) {
     if (!guild) return;
     try {
@@ -1241,7 +1247,6 @@ async function updateHeistLeaderboard(guild) {
             const data = doc.data();
             const medals = ['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'];
             const medal = medals[i-1] || '🎖️';
-            // Extracts only the Rank name (e.g., "Recruit" from "Level 1 — Recruit")
             const rankName = data.level ? data.level.split('—')[1].trim() : 'Recruit';
             
             desc += `${medal} **${i}.** <@${data.discordId}> — **${data.heistPoints} Pts** | Rank: ${rankName} | Vol: $${data.totalVolume.toLocaleString()}\n`;
