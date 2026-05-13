@@ -1560,8 +1560,9 @@ app.post('/update-price', requireLogin, async (req, res) => {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
 
-        let priceChannel = guild.channels.cache.find(c => c.name === '📊・usdt-price-update');
-        if (!priceChannel) return res.send(`<script>alert("❌ Error: Channel #📊・usdt-price-update not found."); window.location.href="/";</script>`);
+        // 🔥 NAYA UPDATE: Naam hata kar direct Channel ID use kar rahe hain
+        let priceChannel = guild.channels.cache.get('1501502014809575425'); 
+        if (!priceChannel) return res.send(`<script>alert("❌ Error: Price Update Channel not found. Bot ko server me check karo."); window.location.href="/";</script>`);
 
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f') 
