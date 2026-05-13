@@ -163,11 +163,11 @@ client.on('messageCreate', async message => {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
         try {
-            let heistChannel = message.guild.channels.cache.find(c => c.name === '🏆・heist-leaderboard' || c.name === 'heist-leaderboard');
+            let heistChannel = message.guild.channels.cache.find(c => c.name === '✨・heist-points' || c.name === 'heist-leaderboard');
             
             if (!heistChannel) {
                 heistChannel = await message.guild.channels.create({ 
-                    name: '🏆・heist-leaderboard', 
+                    name: '✨・heist-points', 
                     type: ChannelType.GuildText, 
                     permissionOverwrites: [
                         { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
@@ -1201,7 +1201,7 @@ async function updateUserHeistPoints(userId, guild, username) {
 async function updateHeistLeaderboard(guild) {
     if (!guild) return;
     try {
-        const channel = guild.channels.cache.find(c => c.name === '🏆・heist-leaderboard' || c.name.includes('heist-leaderboard'));
+        const channel = guild.channels.cache.find(c => c.name === '✨・heist-points' || c.name.includes('heist-leaderboard'));
         if (!channel) return;
 
         const snapshot = await db.collection('user_stats').orderBy('heistPoints', 'desc').limit(10).get();
