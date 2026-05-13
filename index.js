@@ -889,11 +889,20 @@ client.on('interactionCreate', async interaction => {
             components: [actionButtonRow] 
         });
 
-        const revealButtonsRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('reveal_admin_details')
-                .setLabel('👤 View Transfer Details (User Only)')
-                .setStyle(ButtonStyle.Primary),
+        // 🔥 NAYA UPDATE: Condition lagayi hai ki "User Only" button sirf Sell me dikhe
+        const revealButtonsRow = new ActionRowBuilder();
+
+        if (userState.type === 'Sell') {
+            revealButtonsRow.addComponents(
+                new ButtonBuilder()
+                    .setCustomId('reveal_admin_details')
+                    .setLabel('👤 View Transfer Details (User Only)')
+                    .setStyle(ButtonStyle.Primary)
+            );
+        }
+
+        // Admin wala button dono mein same rahega
+        revealButtonsRow.addComponents(
             new ButtonBuilder()
                 .setCustomId('reveal_user_details')
                 .setLabel('👨‍💼 View User Details (Admin Only)')
