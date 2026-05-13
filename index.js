@@ -593,8 +593,22 @@ client.on('interactionCreate', async interaction => {
             userState.amount = null;
             userSelections.set(interaction.user.id, userState);
             
-            const amountModal = new ModalBuilder().setCustomId('amount_modal_popup').setTitle(`🏦 Trade Amount (${userState.type} Crypto)`);
-            const amountInput = new TextInputBuilder().setCustomId('trade_amount_input').setLabel('Enter Amount in USDT ($)').setPlaceholder('e.g. 5000').setStyle(TextInputStyle.Short).setRequired(true);
+            // 🔥 New UPDATE: Dynamic label based on Buy/Sell
+            let labelText = userState.type === 'Buy' 
+                ? 'Enter Amount in USDT ($) - minimum 100$' 
+                : 'Enter Amount in USDT ($) - minimum 50$';
+
+            const amountModal = new ModalBuilder()
+                .setCustomId('amount_modal_popup')
+                .setTitle(`🏦 Trade Amount (${userState.type} Crypto)`);
+                
+            const amountInput = new TextInputBuilder()
+                .setCustomId('trade_amount_input')
+                .setLabel(labelText)
+                .setPlaceholder('e.g. 5000')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+                
             amountModal.addComponents(new ActionRowBuilder().addComponents(amountInput));
             
             await interaction.showModal(amountModal);
