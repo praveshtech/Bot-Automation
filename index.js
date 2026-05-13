@@ -1472,7 +1472,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     }
 });
 
-const GUILD_ID = '1456297708892586057';
+const GUILD_ID = '1450915791338737757';
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
