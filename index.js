@@ -959,8 +959,9 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ **Access Denied:** Only the ticket creator can view this information.' });
                 }
                 
-                // 🔥 FIX: Sirf User ko dikhega (Ephemeral) aur long-press se copy hoga
-                await interaction.editReply({ content: `👇 **Long-press the box below to copy Admin Transfer Details:**\n\`\`\`text\n${data.adminTransferDetails}\n\`\`\`` });
+                // 🔥 NAYA FIX: 2 alag messages. Dusre me sirf address hoga taaki phone pe perfect copy ho.
+                await interaction.editReply({ content: `👇 **Long-press the message below to copy Admin Transfer Details:**` });
+                await interaction.followUp({ content: `${data.adminTransferDetails}`, ephemeral: true });
 
             } else {
                 await interaction.editReply({ content: '❌ Ticket data not found.' });
@@ -983,8 +984,9 @@ client.on('interactionCreate', async interaction => {
             if (ticketDoc.exists) {
                 const data = ticketDoc.data();
                 
-                // 🔥 FIX: Sirf Admin ko dikhega (Ephemeral) aur long-press se copy hoga
-                await interaction.editReply({ content: `👇 **Long-press the box below to copy User's Receiving Details:**\n\`\`\`text\n${data.userReceivingDetails}\n\`\`\`` });
+                // 🔥 NAYA FIX: 2 alag messages. Dusre me sirf address hoga taaki phone pe perfect copy ho.
+                await interaction.editReply({ content: `👇 **Long-press the message below to copy User's Receiving Details:**` });
+                await interaction.followUp({ content: `${data.userReceivingDetails}`, ephemeral: true });
 
             } else {
                 await interaction.editReply({ content: '❌ Ticket data not found.' });
