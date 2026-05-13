@@ -926,7 +926,7 @@ client.on('interactionCreate', async interaction => {
             revealButtonsRow.addComponents(
                 new ButtonBuilder()
                     .setCustomId('reveal_admin_details')
-                    .setLabel('👤 View Transfer Details (User Only)')
+                    .setLabel('👤 View Transfer Details (Only For User)')
                     .setStyle(ButtonStyle.Primary)
             );
         }
@@ -935,7 +935,7 @@ client.on('interactionCreate', async interaction => {
         revealButtonsRow.addComponents(
             new ButtonBuilder()
                 .setCustomId('reveal_user_details')
-                .setLabel('👨‍💼 View User Details (Admin Only)')
+                .setLabel('👨‍💼 View User Details (Only For Admin)')
                 .setStyle(ButtonStyle.Secondary)
         );
 
