@@ -959,9 +959,32 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ **Access Denied:** Only the ticket creator can view this information.' });
                 }
                 
-                // 🔥 NAYA UPDATE: User ko ephemeral message dikhayega, aur address seedha chat me bhej dega
-                await interaction.editReply({ content: '✅ Address has been sent in the chat below!' });
-                await interaction.channel.send({ content: `👇 **Tap the box below to copy Admin Transfer Details:**\n\`\`\`\n${data.adminTransferDetails}\n\`\`\`` });
+                // 🔥 FIX: Sirf User ko dikhega (Ephemeral) aur long-press se copy hoga
+                await interaction.editReply({ content: `👇 **Long-press the box below to copy Admin Transfer Details:**\n\`\`\`text\n${data.adminTransferDetails}\n\`\`\`` });
+
+            } else {
+                await interaction.editReply({ content: '❌ Ticket data not found.' });
+            }
+        } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
+    }
+
+    // --- 👨‍💼 REVEAL USER DETAILS (ADMIN CLICK) ---
+    if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
+        await interaction.deferReply({ ephemeral: true }); 
+        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
+        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+
+        if (!isProfessor && !isPalermo) {
+            return interaction.editReply({ content: '❌ **Access Denied:** Only Admins/Palermo can view user details.' });
+        }
+
+        try {
+            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+            if (ticketDoc.exists) {
+                const data = ticketDoc.data();
+                
+                // 🔥 FIX: Sirf Admin ko dikhega (Ephemeral) aur long-press se copy hoga
+                await interaction.editReply({ content: `👇 **Long-press the box below to copy User's Receiving Details:**\n\`\`\`text\n${data.userReceivingDetails}\n\`\`\`` });
 
             } else {
                 await interaction.editReply({ content: '❌ Ticket data not found.' });
