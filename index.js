@@ -801,17 +801,8 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-        // 🔥 NAYA: HEIST POINTS PERKS (FEE REDUCTION)
-        let fee = 3;
-        let perkMessage = "";
-        if (userState.isVerifiedTrade) {
-            fee = 0;
-        } else {
-            if (interaction.member.roles.cache.some(r => r.name.includes('Level 5'))) { fee = 0; perkMessage = "\n*(👑 Syndicate Perk: $0 Fee Applied!)*"; }
-            else if (interaction.member.roles.cache.some(r => r.name.includes('Level 4'))) { fee = 1; perkMessage = "\n*(💎 Elite Perk: $2 Fee Discount!)*"; }
-            else if (interaction.member.roles.cache.some(r => r.name.includes('Level 3'))) { fee = 2; perkMessage = "\n*(🥇 Insider Perk: $1 Fee Discount!)*"; }
-        }
-
+        // 🔥 FEE SYSTEM REVERTED: No Level Discounts, Just Normal Fees
+        const fee = userState.isVerifiedTrade ? 0 : 3;
         const totalToCollect = Number(tradeAmount) + fee;
 
         try {
@@ -835,12 +826,12 @@ client.on('interactionCreate', async interaction => {
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
             `**1. What is the action?**\n` +
-            `> ${userState.type} Crypto\n` +
+            `> ${userState.type} USDT\n` +
             `**2. How much amount ($)?**\n` +
             `> $${tradeAmount}\n` +
             `**3. Which Method?**\n` +
             `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + userState.step3 + ')' : userState.step2}\n\n` +
-            `**Fee Structure:** $${fee} ${perkMessage}\n` +
+            `**Fee Structure:** $${fee} (Non-KYC Charge)\n` +
             `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
             `**Please pay exactly: $${totalToCollect}**`;
 
