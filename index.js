@@ -634,7 +634,8 @@ client.on('interactionCreate', async interaction => {
                 step3Dropdown.addOptions([
                     { label: 'IMPS (Bank Transfer)', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' },
                     { label: 'CDM (Cash Deposit)', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
-                    { label: 'CCW', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW Limit-20k INR' }
+                    // 🔥 NAYA UPDATE: CCW label mein Limit add kar di
+                    { label: 'CCW (Limit 20k INR)', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' } 
                 ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
@@ -642,10 +643,13 @@ client.on('interactionCreate', async interaction => {
                     const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success);
                     components.push(new ActionRowBuilder().addComponents(nextButton));
                     
+                    // 🔥 NAYA UPDATE: Embed mein display karne ke liye text change
+                    let displayMethod = userState.step3 === 'CCW' ? 'CCW (Limit 20k INR)' : userState.step3;
+                    
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                              .setColor('#2ecc71')
                              .setDescription('Click the **Next** button below to securely enter your bank details.')
-                             .addFields({ name: '🏦 Receiving Method', value: `${userState.step3}`, inline: true });
+                             .addFields({ name: '🏦 Receiving Method', value: `${displayMethod}`, inline: true });
                              
                     await interaction.update({ content: '', embeds: [stepEmbed], components });
                 } else {
@@ -654,6 +658,7 @@ client.on('interactionCreate', async interaction => {
                              
                     await interaction.update({ content: '', embeds: [stepEmbed], components });
                 }
+            
             } else {
                 const nextButton = new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Wallet Details)').setStyle(ButtonStyle.Success);
                 components.push(new ActionRowBuilder().addComponents(nextButton));
@@ -805,12 +810,16 @@ client.on('interactionCreate', async interaction => {
         const fee = userState.isVerifiedTrade ? 0 : 3;
         const totalToCollect = Number(tradeAmount) + fee;
 
+        // 🔥 NAYA UPDATE: CCW Limit Display Logic
+        const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (Limit 20k INR)' : userState.step3;
+
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
                 discordUserId: interaction.user.id, 
                 username: interaction.user.username, 
                 tradeType: userState.type, 
-                networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${userState.step3}` : userState.step2, 
+                // Yahan DB mein save hote time limit add hogi
+                networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : userState.step2, 
                 amountUsd: Number(tradeAmount), 
                 fee: fee,
                 isVerifiedTrade: userState.isVerifiedTrade,
@@ -830,7 +839,8 @@ client.on('interactionCreate', async interaction => {
             `**2. How much amount ($)?**\n` +
             `> $${tradeAmount}\n` +
             `**3. Which Method?**\n` +
-            `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + userState.step3 + ')' : userState.step2}\n\n` +
+            // Yahan user ko message mein limit dikhegi
+            `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n` +
             `**Fee Structure:** $${fee} (Non-KYC Charge)\n` +
             `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
             `**Please pay exactly: $${totalToCollect}**`;
