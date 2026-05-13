@@ -419,7 +419,6 @@ client.on('interactionCreate', async interaction => {
             await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
 
             try {
-                // 🔥 NAYA UPDATE: KYC Category (Folder) dhoondho ya banao
                 let kycCategory = interaction.guild.channels.cache.find(c => 
                     (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory
                 );
@@ -451,11 +450,10 @@ client.on('interactionCreate', async interaction => {
                     channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
                 }
 
-                // 🔥 NAYA UPDATE: KYC Channel ab 'parent' (Category) ke andar banega
                 const kycChannel = await interaction.guild.channels.create({
                     name: `kyc-${interaction.user.username}`,
                     type: ChannelType.GuildText,
-                    parent: kycCategory.id, // Isse channel folder ke andar jayega
+                    parent: kycCategory.id,
                     permissionOverwrites: channelPermissions
                 });
 
@@ -528,7 +526,8 @@ client.on('interactionCreate', async interaction => {
         await interaction.editReply({ embeds: [updatedEmbed], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
-        const exchangeChannel = interaction.guild.channels.cache.find(c => c.name === 'exchange-desk' || c.name.includes('exchange'));
+        // 🔥 NAYA UPDATE: Auto-Refresh Fix - Ab specifically 'buy-sell' ya 'exchange' find karega
+        const exchangeChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
         if (exchangeChannel) {
             try {
                 const fetchedMessages = await exchangeChannel.messages.fetch({ limit: 10 });
@@ -782,6 +781,18 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.reply({ content: '🏦 Creating your secure P2P room...', ephemeral: true });
 
+        // 🔥 NAYA UPDATE: Open Tickets Category (Folder) dhoondho ya banao
+        let openTicketsCategory = interaction.guild.channels.cache.find(c => 
+            (c.name === '🤖 OPEN TICKETS' || c.name === 'OPEN TICKETS') && c.type === ChannelType.GuildCategory
+        );
+        
+        if (!openTicketsCategory) {
+            openTicketsCategory = await interaction.guild.channels.create({
+                name: '🤖 OPEN TICKETS',
+                type: ChannelType.GuildCategory
+            });
+        }
+
         const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
         const verifiedRole = interaction.guild.roles.cache.find(role => role.name === 'Vault Verified');
         
@@ -797,7 +808,12 @@ client.on('interactionCreate', async interaction => {
             channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages] });
         }
 
-        const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${interaction.user.username}`, type: ChannelType.GuildText, permissionOverwrites: channelPermissions });
+        const ticketChannel = await interaction.guild.channels.create({ 
+            name: `ticket-${interaction.user.username}`, 
+            type: ChannelType.GuildText, 
+            parent: openTicketsCategory.id, // 🔥 Isse channel open tickets folder ke andar jayega
+            permissionOverwrites: channelPermissions 
+        });
 
         let adminProvides = ""; let easyCopyText = ""; 
         if (userState.type === 'Sell') {
@@ -957,7 +973,6 @@ client.on('interactionCreate', async interaction => {
 
             if (isSuccess) {
                 try {
-                    // 🔥 NAYA UPDATE: Pehle "Feedback Tickets" naam ki Category (Folder) dhoondho ya banao
                     let feedbackCategory = interaction.guild.channels.cache.find(c => 
                         (c.name === 'Feedback Tickets' || c.name === 'Feedback Ticket') && c.type === ChannelType.GuildCategory
                     );
@@ -977,7 +992,7 @@ client.on('interactionCreate', async interaction => {
                     const feedbackChannel = await interaction.guild.channels.create({
                         name: `feedback-${ticketData.username}`,
                         type: ChannelType.GuildText,
-                        parent: feedbackCategory.id, // 🔥 NAYA UPDATE: Is line se channel folder ke andar jayega
+                        parent: feedbackCategory.id, 
                         permissionOverwrites: fbPerms,
                         topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` 
                     });
@@ -995,7 +1010,6 @@ client.on('interactionCreate', async interaction => {
 
                     await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [fbBtn] });
 
-                    // 2 HOURS AUTO-DELETE TIMER
                     setTimeout(() => { 
                         feedbackChannel.delete().catch(() => {}); 
                     }, 2 * 60 * 60 * 1000); 
@@ -1003,21 +1017,17 @@ client.on('interactionCreate', async interaction => {
                 } catch (e) { console.error("Feedback room error:", e); }
             }
 
-            // 🔥 DM SENDING LOGIC (New Professional Message)
-            // 🔥 DM SENDING LOGIC (Updated Success & Cancelled Messages)
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
                 let desc = "";
                 
                 if (isSuccess) {
-                    // Success Message
                     desc = `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦 Don't Forgot To Give Feedback`;
                     
                     if (feedbackChannelId) {
                         desc += `\n\n⭐ **Feedback Link:** <#${feedbackChannelId}>`;
                     }
                 } else {
-                    // 🔥 NAYA UPDATE: Premium Cancelled Message
                     desc = `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please open a new support ticket.`;
                 }
 
@@ -1070,7 +1080,6 @@ client.on('interactionCreate', async interaction => {
                     });
                 }
 
-                // 🔥 NAYA UPDATE: Premium Public Log Message
                 const publicEmbed = new EmbedBuilder()
                     .setColor('#2ecc71') 
                     .setTitle('✅ Secure Trade Completed')
@@ -1094,7 +1103,8 @@ client.on('interactionCreate', async interaction => {
                 await updateUserHeistPoints(ticketData.discordUserId, interaction.guild, ticketData.username);
             }
 
-            const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('exchange') || c.name.includes('ticket') || c.name.includes('p2p'));
+            // 🔥 NAYA UPDATE: Auto-Refresh Fix - Ab specifically 'buy-sell' ya 'exchange' find karega
+            const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
             if (mainTicketChannel) {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
                 const botMessages = fetchedMessages.filter(m => m.author.id === client.user.id);
@@ -1319,7 +1329,6 @@ async function approveUserKYC(userId, guild) {
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' }).catch(()=>{});
         globalLastUpdate = Date.now(); 
         
-        // 🔥 NAYA UPDATE: Premium DM Message
         const kycSuccessEmbed = new EmbedBuilder()
             .setColor('#2ecc71')
             .setTitle('🏦 Professor Network')
