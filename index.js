@@ -724,7 +724,7 @@ client.on('interactionCreate', async interaction => {
                     new ActionRowBuilder().addComponents(cdmMobNo)
                 );
             } else if (userState.step3 === 'CCW') {
-                const ccwRefNo = new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Reference Number').setPlaceholder('e.g. REF12345678').setStyle(TextInputStyle.Short).setRequired(true);
+                const ccwRefNo = new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Phone Number').setPlaceholder('e.g. 9876543210').setStyle(TextInputStyle.Short).setRequired(true);
                 const ccwAccName = new TextInputBuilder().setCustomId('ccw_account_name').setLabel('Account Holder Name').setPlaceholder('e.g. Pravesh Yadav').setStyle(TextInputStyle.Short).setRequired(true);
 
                 p2pModal.addComponents(
