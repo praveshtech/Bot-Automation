@@ -973,26 +973,32 @@ client.on('interactionCreate', async interaction => {
                 } catch (e) { console.error("Feedback room error:", e); }
             }
 
+            // 🔥 DM SENDING LOGIC (New Professional Message)
+            // 🔥 DM SENDING LOGIC (Updated Success & Cancelled Messages)
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
-                let desc = `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been **${finalStatus}** by The Vault Admin.`;
+                let desc = "";
                 
                 if (isSuccess) {
-                    desc += `\n\nThank you for trading with us! 🏦`;
+                    // Success Message
+                    desc = `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦 Don't Forgot To Give Feedback`;
+                    
                     if (feedbackChannelId) {
-                        desc += `\n\n⭐ **Please drop your valuable feedback here:** <#${feedbackChannelId}>\n*(Click the link above to go directly to your feedback room)*`;
+                        desc += `\n\n⭐ **Feedback Link:** <#${feedbackChannelId}>`;
                     }
                 } else {
-                    desc += `\n\nThis transaction was incomplete and has been cancelled.`;
+                    // 🔥 NAYA UPDATE: Premium Cancelled Message
+                    desc = `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please open a new support ticket.`;
                 }
 
                 const receiptEmbed = new EmbedBuilder()
                     .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
-                    .setTitle(isSuccess ? '🧾 Transaction Completed' : '🚫 Transaction Cancelled')
+                    .setTitle(isSuccess ? '✅ Transaction Completed' : '❌ Transaction Cancelled')
                     .setDescription(desc)
-                    .setFooter({ text: 'Professor Network - Secure Terminal' });
+                    .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
                 
                 const serverLinkBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef')); 
+                
                 await member.send({ embeds: [receiptEmbed], components: [serverLinkBtn] }).catch(()=> console.log("DM closed"));
             }
 
@@ -1034,12 +1040,13 @@ client.on('interactionCreate', async interaction => {
                     });
                 }
 
+                // 🔥 NAYA UPDATE: Premium Public Log Message
                 const publicEmbed = new EmbedBuilder()
                     .setColor('#2ecc71') 
                     .setTitle('✅ Secure Trade Completed')
-                    .setDescription(`Another successful transaction processed by **The Vault**! 🏦\n\n👤 **Trader:** <@${ticketData.discordUserId}>\n🔄 **Action:** ${ticketData.tradeType} Crypto\n💵 **Volume:** $${ticketData.amountUsd}\n💳 **Method:** ${ticketData.networkOrMethod}`)
+                    .setDescription(`Another successful transaction has been processed through Professor Network. 🏦\n\n👤 Trader: <@${ticketData.discordUserId}>\n💱 Action: ${ticketData.tradeType}\n💰 Volume: $${ticketData.amountUsd}\n🏦 Method: ${ticketData.networkOrMethod}\n\n⚡ Securely processed through the Professor Network exchange system.`)
                     .setTimestamp()
-                    .setFooter({ text: 'Professor Network - Trusted P2P', iconURL: client.user.displayAvatarURL() });
+                    .setFooter({ text: 'Professor Network • Trusted P2P Terminal', iconURL: client.user.displayAvatarURL() });
 
                 await publicLogChannel.send({ embeds: [publicEmbed] });
             }
@@ -1282,7 +1289,13 @@ async function approveUserKYC(userId, guild) {
         await db.collection('users_kyc').doc(userId).update({ status: 'Approved' }).catch(()=>{});
         globalLastUpdate = Date.now(); 
         
-        await member.send('🏦 **Professor Network:** Congratulations! Your Advanced KYC has been approved. You have received the **Vault Verified** tag.').catch(() => {});
+        // 🔥 NAYA UPDATE: Premium DM Message
+        const kycSuccessEmbed = new EmbedBuilder()
+            .setColor('#2ecc71')
+            .setTitle('🏦 Professor Network')
+            .setDescription('Your KYC verification has been successfully approved.\n\nYou have now received the **🏦 Vault Verified** role, unlocking:\n• $0 transaction fee  \n• Faster processing  \n• Higher trust status inside the network  \n\nWelcome to the verified side of the network. ⚡');
+
+        await member.send({ embeds: [kycSuccessEmbed] }).catch(() => {});
     } catch (e) { 
         console.log("External KYC approve error", e); 
     }
