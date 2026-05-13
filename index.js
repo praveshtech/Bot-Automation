@@ -1196,7 +1196,8 @@ async function updateWeeklyLeaderboard(guild) {
                 const diffDays = diffTime / (1000 * 60 * 60 * 24);
 
                 if (diffDays <= 7) { 
-                    const tag = data.discordUserId ? `<@${data.discordUserId}>` : data.username;
+                    // 🔥 NAYA UPDATE: Username ko Clickable Profile Link bana diya for Weekly Leaderboard
+                    const tag = (data.discordUserId && data.username) ? `[**@${data.username}**](https://discord.com/users/${data.discordUserId})` : (data.discordUserId ? `<@${data.discordUserId}>` : data.username);
                     const amount = data.amountUsd || 0;
                     userVolumes[tag] = (userVolumes[tag] || 0) + amount;
                 }
