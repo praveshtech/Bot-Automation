@@ -289,10 +289,11 @@ client.on('interactionCreate', async interaction => {
 
         let tradeInfo = interaction.channel.topic || "P2P Trade"; 
 
-        let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-reviews' || c.name === 'reviews');
+        // 🔥 NAYA UPDATE: Review channel ka naam update karke ⭐・transaction-reviews kar diya
+        let reviewChannel = interaction.guild.channels.cache.find(c => c.name === '⭐・transaction-reviews' || c.name.includes('transaction-reviews'));
         if (!reviewChannel) {
             reviewChannel = await interaction.guild.channels.create({
-                name: 'transaction-reviews',
+                name: '⭐・transaction-reviews',
                 type: ChannelType.GuildText,
                 permissionOverwrites: [
                     { id: interaction.guild.id, allow: [PermissionsBitField.Flags.ViewChannel], deny: [PermissionsBitField.Flags.SendMessages] },
@@ -1080,11 +1081,12 @@ client.on('interactionCreate', async interaction => {
             await logChannel.send({ embeds: [vaultEmbed] });
             
             if (isSuccess) {
-                let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === 'public-transaction-log');
+                // 🔥 NAYA UPDATE: Public log channel ka naam update karke ✅・completed-transactions kar diya
+                let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
                 
                 if (!publicLogChannel) {
                     publicLogChannel = await interaction.guild.channels.create({ 
-                        name: 'public-transaction-log', 
+                        name: '✅・completed-transactions', 
                         type: ChannelType.GuildText, 
                         permissionOverwrites: [
                             { id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
