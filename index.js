@@ -15,7 +15,7 @@ const {
     TextInputStyle, 
     PermissionsBitField,
     ChannelType,
-    AttachmentBuilder // ✅ Comma missing tha yahan, fix kar diya gaya hai
+    AttachmentBuilder
 } = require('discord.js');
 
 const admin = require('firebase-admin');
@@ -49,10 +49,11 @@ client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
 
-    // Background loop: Har 1 ghante me leaderboard refresh karega
+    // Background loop: Har 1 ghante me leaderboards refresh karega
     setInterval(() => {
         client.guilds.cache.forEach(guild => {
             updateWeeklyLeaderboard(guild);
+            updateHeistLeaderboard(guild); // Naya Heist Leaderboard Loop
         });
     }, 60 * 60 * 1000);
 });
@@ -61,10 +62,8 @@ client.once('ready', () => {
 // 🛠️ DISCORD COMMANDS (Admin Setup)
 // ==========================================
 client.on('messageCreate', async message => {
-    // Agar message kisi bot ne bheja hai, toh ignore karo
     if (message.author.bot) return;
 
-    // Command ko clean karna (taaki capital letters ya extra space se error na aaye)
     const command = message.content.trim().toLowerCase();
 
     // 🔥 P2P COMMAND
@@ -91,7 +90,7 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 🔥 VERIFY COMMAND (With Fancy Font)
+    // 🔥 VERIFY COMMAND
     if (command === '!verify') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
@@ -133,12 +132,11 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 🔥 LEADERBOARD COMMAND
+    // 🔥 WEEKLY LEADERBOARD COMMAND
     if (command === '!setupleaderboard') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         
         try {
-            // Naya naam yahan update kiya gaya hai
             let leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-ledger' || c.name === 'weekly-ledger');
             
             if (!leaderboardChannel) {
@@ -152,14 +150,40 @@ client.on('messageCreate', async message => {
                 });
             }
 
-            await message.reply({ content: `✅ Leaderboard setup in ${leaderboardChannel}. It will auto-update!`, ephemeral: true });
+            await message.reply({ content: `✅ Weekly Leaderboard setup in ${leaderboardChannel}. It will auto-update!`, ephemeral: true });
             await message.delete().catch(()=>{});
             updateWeeklyLeaderboard(message.guild);
         } catch (err) {
             console.error("❌ Error setting up leaderboard:", err);
         }
     }
-}); // ✅ Brackets ko sahi jagah close kiya gaya hai
+
+    // 🔥 NAYA: HEIST POINTS LEADERBOARD COMMAND
+    if (command === '!setupheistboard') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        
+        try {
+            let heistChannel = message.guild.channels.cache.find(c => c.name === '🏆・heist-leaderboard' || c.name === 'heist-leaderboard');
+            
+            if (!heistChannel) {
+                heistChannel = await message.guild.channels.create({ 
+                    name: '🏆・heist-leaderboard', 
+                    type: ChannelType.GuildText, 
+                    permissionOverwrites: [
+                        { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
+                    ] 
+                });
+            }
+
+            await message.reply({ content: `✅ Heist Points Leaderboard setup in ${heistChannel}. It will auto-update!`, ephemeral: true });
+            await message.delete().catch(()=>{});
+            updateHeistLeaderboard(message.guild);
+        } catch (err) {
+            console.error("❌ Error setting up heist leaderboard:", err);
+        }
+    }
+});
 
 // ==========================================
 // 🖱️ INTERACTION LOGIC
@@ -357,8 +381,6 @@ client.on('interactionCreate', async interaction => {
     }
 
     // --- 🔥 DYNAMIC 1-MESSAGE P2P TRADE FLOW ---
-    
-    // ✅ Step A: Public button click -> Open 1 Private Message with Modes (Yeh wala block missing tha)
     if (interaction.isButton() && interaction.customId === 'start_p2p_trade') {
         const modeEmbed = new EmbedBuilder()
             .setColor('#3498db')
@@ -373,25 +395,24 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ embeds: [modeEmbed], components: [modeButtons], ephemeral: true });
     }
 
-   // Step B: Mode selected -> UPDATE the SAME Private Message dynamically
     if (interaction.isButton() && (interaction.customId === 'start_p2p_with_kyc' || interaction.customId === 'start_p2p_without_kyc')) {
         
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-        if (isVerifiedRoute && !hasRole && !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+        // 🔥 Yahan Admin bypass hata diya hai taaki Admin ka bhi KYC form open ho sake for testing
+        if (isVerifiedRoute && !hasRole) {
             
             await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
 
-            // 🔥 NAYA UPDATE: Dashboard ke liye Firebase me entry 'Pending' mark karna
             try {
                 await db.collection('users_kyc').doc(interaction.user.id).set({ 
                     discordId: interaction.user.id, 
                     username: interaction.user.username, 
-                    status: 'Pending', // <-- Isse dashboard turant catch kar lega
-                    kycType: 'Advanced (Vault Verified)', // Dashboard identify kar payega
+                    status: 'Pending', 
+                    kycType: 'Advanced (Vault Verified)', 
                     updatedAt: admin.firestore.FieldValue.serverTimestamp() 
-                }, { merge: true }); // merge: true lagaya hai taaki basic details (Name wagera) delete na ho
+                }, { merge: true }); 
                 
                 globalLastUpdate = Date.now(); 
             } catch (error) {
@@ -442,7 +463,6 @@ client.on('interactionCreate', async interaction => {
             return;
         }
 
-
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
         
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
@@ -454,7 +474,7 @@ client.on('interactionCreate', async interaction => {
         const step1Embed = new EmbedBuilder()
             .setColor('#3498db')
             .setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() })
-            .setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC ($3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
+            .setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC (Up to $3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
 
         await interaction.update({ content: '', embeds: [step1Embed], components: [row1] });
     }
@@ -763,7 +783,17 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
 
-        const fee = userState.isVerifiedTrade ? 0 : 3;
+        // 🔥 NAYA: HEIST POINTS PERKS (FEE REDUCTION)
+        let fee = 3;
+        let perkMessage = "";
+        if (userState.isVerifiedTrade) {
+            fee = 0;
+        } else {
+            if (interaction.member.roles.cache.some(r => r.name.includes('Level 5'))) { fee = 0; perkMessage = "\n*(👑 Syndicate Perk: $0 Fee Applied!)*"; }
+            else if (interaction.member.roles.cache.some(r => r.name.includes('Level 4'))) { fee = 1; perkMessage = "\n*(💎 Elite Perk: $2 Fee Discount!)*"; }
+            else if (interaction.member.roles.cache.some(r => r.name.includes('Level 3'))) { fee = 2; perkMessage = "\n*(🥇 Insider Perk: $1 Fee Discount!)*"; }
+        }
+
         const totalToCollect = Number(tradeAmount) + fee;
 
         try {
@@ -792,7 +822,7 @@ client.on('interactionCreate', async interaction => {
             `> $${tradeAmount}\n` +
             `**3. Which Method?**\n` +
             `> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + userState.step3 + ')' : userState.step2}\n\n` +
-            `**Fee Structure:** $${fee} (Non-KYC Charge)\n` +
+            `**Fee Structure:** $${fee} ${perkMessage}\n` +
             `▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n` +
             `**Please pay exactly: $${totalToCollect}**`;
 
@@ -968,6 +998,9 @@ client.on('interactionCreate', async interaction => {
 
             if (isSuccess) {
                 updateWeeklyLeaderboard(interaction.guild);
+                
+                // 🔥 NAYA: HEIST POINTS CALCULATION TRIGGER
+                await updateUserHeistPoints(ticketData.discordUserId, interaction.guild, ticketData.username);
             }
 
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('exchange') || c.name.includes('ticket') || c.name.includes('p2p'));
@@ -1022,11 +1055,13 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// --- 🏆 AUTO-UPDATE LEADERBOARD ENGINE ---
+// ==========================================
+// 🏆 AUTO-UPDATE LEADERBOARD ENGINES
+// ==========================================
+
 async function updateWeeklyLeaderboard(guild) {
     if (!guild) return;
     try {
-        // Naya naam yahan bhi update kiya gaya hai
         const channel = guild.channels.cache.find(c => c.name === '📈・weekly-ledger' || c.name.includes('weekly-ledger'));
         if (!channel) return; 
 
@@ -1082,6 +1117,114 @@ async function updateWeeklyLeaderboard(guild) {
     } catch (error) {
         console.error("Auto Leaderboard Update Error:", error);
     }
+}
+
+// 🔥 NAYA: HEIST POINTS CALCULATION & LEVEL SYSTEM
+async function updateUserHeistPoints(userId, guild, username) {
+    try {
+        const snapshot = await db.collection('p2p_tickets')
+            .where('discordUserId', '==', userId)
+            .where('status', '==', 'Completed')
+            .get();
+
+        let totalVolume = 0;
+        snapshot.forEach(doc => totalVolume += (doc.data().amountUsd || 0));
+
+        // 10 Points per $100 traded
+        const points = Math.floor(totalVolume / 10);
+
+        const LEVELS = [
+            { name: '👑 Level 5 — Syndicate', minPoints: 5000 },
+            { name: '💎 Level 4 — Elite', minPoints: 1500 },
+            { name: '🥇 Level 3 — Insider', minPoints: 500 },
+            { name: '🥈 Level 2 — Operator', minPoints: 100 },
+            { name: '🥉 Level 1 — Recruit', minPoints: 0 }
+        ];
+
+        let targetLevel = LEVELS.find(l => points >= l.minPoints);
+        if(!targetLevel) targetLevel = LEVELS[4]; // Default to Recruit
+
+        await db.collection('user_stats').doc(userId).set({
+            discordId: userId,
+            username: username,
+            totalVolume: totalVolume,
+            heistPoints: points,
+            level: targetLevel.name,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        const member = await guild.members.fetch(userId).catch(()=>null);
+        if (member) {
+            for (const lvl of LEVELS) {
+                let role = guild.roles.cache.find(r => r.name === lvl.name);
+                if (!role) {
+                    role = await guild.roles.create({ name: lvl.name, color: '#e74c3c' });
+                }
+                
+                if (lvl.name === targetLevel.name) {
+                    if (!member.roles.cache.has(role.id)) {
+                        await member.roles.add(role);
+                        
+                        // Congratulate in General Chat
+                        const lvlEmbed = new EmbedBuilder()
+                            .setColor('#e74c3c')
+                            .setTitle('💰 NEW RANK UNLOCKED!')
+                            .setDescription(`Congratulations <@${userId}>! You've successfully reached **${targetLevel.name}** with **${points} Heist Points**.\n\nEnjoy your new perks and keep trading to reach the top!`)
+                            .setFooter({ text: 'Professor Network - Auto Rank System' });
+                        
+                        const generalChannel = guild.channels.cache.find(c => c.name.includes('general') || c.name.includes('chat'));
+                        if (generalChannel) await generalChannel.send({ embeds: [lvlEmbed] });
+                    }
+                } else {
+                    if (member.roles.cache.has(role.id)) {
+                        await member.roles.remove(role);
+                    }
+                }
+            }
+        }
+        
+        updateHeistLeaderboard(guild);
+
+    } catch(e) { console.error("Heist Points Update Error:", e); }
+}
+
+// 🔥 NAYA: HEIST LEADERBOARD SYSTEM
+async function updateHeistLeaderboard(guild) {
+    if (!guild) return;
+    try {
+        const channel = guild.channels.cache.find(c => c.name === '🏆・heist-leaderboard' || c.name.includes('heist-leaderboard'));
+        if (!channel) return;
+
+        const snapshot = await db.collection('user_stats').orderBy('heistPoints', 'desc').limit(10).get();
+        
+        let desc = 'These are the Top 10 Syndicate Members ranked by total Heist Points:\n\n';
+        if (snapshot.empty) desc += '*No stats recorded yet.*';
+        
+        let i = 1;
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            const medals = ['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'];
+            const medal = medals[i-1] || '🎖️';
+            // Extracts only the Rank name (e.g., "Recruit" from "Level 1 — Recruit")
+            const rankName = data.level ? data.level.split('—')[1].trim() : 'Recruit';
+            
+            desc += `${medal} **${i}.** <@${data.discordId}> — **${data.heistPoints} Pts** | Rank: ${rankName} | Vol: $${data.totalVolume.toLocaleString()}\n`;
+            i++;
+        });
+
+        const embed = new EmbedBuilder()
+            .setColor('#e74c3c')
+            .setTitle('💰 THE VAULT | HEIST POINTS LEADERBOARD')
+            .setDescription(desc)
+            .setTimestamp()
+            .setFooter({ text: 'Updates Automatically | Professor Network', iconURL: client.user.displayAvatarURL() });
+
+        const messages = await channel.messages.fetch({ limit: 10 });
+        const botMsg = messages.find(m => m.author.id === client.user.id);
+        if (botMsg) await botMsg.edit({ embeds: [embed] });
+        else await channel.send({ embeds: [embed] });
+
+    } catch (e) { console.error("Heist Leaderboard Error:", e); }
 }
 
 async function approveUserKYC(userId, guild) {
@@ -1247,7 +1390,6 @@ app.get('/api/check-updates', requireLogin, (req, res) => {
 
 app.get('/', requireLogin, async (req, res) => {
     try {
-        // 🔥 NAYA UPDATE: Bot ab directly aapke GUILD_ID wale server ka data nikalega
         const guild = client.guilds.cache.get(GUILD_ID); 
         const liveMembers = guild ? guild.memberCount : 0;
         
