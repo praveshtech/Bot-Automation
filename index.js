@@ -264,15 +264,33 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.deferUpdate();
 
-        const messages = await interaction.channel.messages.fetch({ limit: 10 });
-        const userMsg = messages.find(m => m.author.id === expectedUserId && (m.content !== '' || m.attachments.size > 0));
+        // 🔥 NAYA UPDATE: Bot ab pichle 15 messages check karega
+        const messages = await interaction.channel.messages.fetch({ limit: 15 });
+        const userMessages = messages.filter(m => m.author.id === expectedUserId);
 
-        if (!userMsg) {
+        let reviewText = "";
+        let imageAttachment = null;
+
+        // User ke sabhi messages mein se Text aur Photo alag-alag nikalna
+        userMessages.forEach(m => {
+            if (m.content.trim() !== '' && reviewText === "") {
+                reviewText = m.content; // Jo text mila use save kar lo
+            }
+            if (m.attachments.size > 0 && !imageAttachment) {
+                imageAttachment = m.attachments.first(); // Jo photo mili use save kar lo
+            }
+        });
+
+        // Agar user ne na text bheja, na photo
+        if (reviewText === "" && !imageAttachment) {
             return interaction.followUp({ content: '⚠️ Please write a message or upload a screenshot before clicking Confirm!', ephemeral: true });
         }
 
-        let reviewText = userMsg.content || "Awesome and fast trade! 🚀";
-        let imageAttachment = userMsg.attachments.size > 0 ? userMsg.attachments.first() : null;
+        // Agar user ne sirf photo bheji aur text type nahi kiya (tab fallback use hoga)
+        if (reviewText === "") {
+            reviewText = "Awesome and fast trade! 🚀"; 
+        }
+
         let tradeInfo = interaction.channel.topic || "P2P Trade"; 
 
         let reviewChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-reviews' || c.name === 'reviews');
