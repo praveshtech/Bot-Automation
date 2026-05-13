@@ -693,7 +693,7 @@ client.on('interactionCreate', async interaction => {
             // 🔥 NAYA UPDATE: Modal ke andar wale dropdown list ke naam change
             step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
         } else {
-            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI', value: 'UPI', emoji: '📱' }, { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
+            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'Cardless Cash Withdrawals (CCW)', value: 'CCW', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
         }
 
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
