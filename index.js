@@ -614,10 +614,11 @@ client.on('interactionCreate', async interaction => {
             
             if (userState.type === 'Sell') {
                 step2Dropdown.addOptions([
-                    { label: 'TRC20 (Tron)', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, 
-                    { label: 'ERC20 (Ethereum)', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, 
-                    { label: 'BEP20 (Binance)', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, 
-                    { label: 'BTC (Bitcoin)', value: 'BTC', emoji: '🪙', default: userState.step2 === 'BTC' }
+                    // 🔥 NAYA UPDATE: Dropdown ke naam change kar diye hain
+                    { label: 'USDT Trc20', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, 
+                    { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, 
+                    { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, 
+                    { label: 'USDC Erc20', value: 'USDC', emoji: '🪙', default: userState.step2 === 'USDC' }
                 ]);
             } else {
                 step2Dropdown.addOptions([
@@ -689,7 +690,8 @@ client.on('interactionCreate', async interaction => {
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
-            step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'TRC20 (Tron)', value: 'TRC20', emoji: '🔗' }, { label: 'ERC20 (Ethereum)', value: 'ERC20', emoji: '💎' }, { label: 'BEP20 (Binance)', value: 'BEP20', emoji: '🟡' }, { label: 'BTC (Bitcoin)', value: 'BTC', emoji: '🪙' }]);
+            // 🔥 NAYA UPDATE: Modal ke andar wale dropdown list ke naam change
+            step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
         } else {
             step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI', value: 'UPI', emoji: '📱' }, { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
         }
@@ -818,10 +820,12 @@ client.on('interactionCreate', async interaction => {
         let adminProvides = ""; let easyCopyText = ""; 
         if (userState.type === 'Sell') {
             let walletAddress = "Waiting for Admin to provide address.";
-            if (userState.step2 === 'TRC20') walletAddress = "TABCDEF1234567890YOURTRC20WALLETADDRESS";
-            if (userState.step2 === 'ERC20') walletAddress = "0xABCDEF1234567890YOURERC20WALLETADDRESS";
-            if (userState.step2 === 'BEP20') walletAddress = "0xBEP20ADDRESSEXAMPLE";
-            if (userState.step2 === 'BTC') walletAddress = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa";
+            // 🔥 NAYA UPDATE: Real Wallet Addresses Add Kar Diye Hain
+            if (userState.step2 === 'TRC20') walletAddress = "TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie";
+            if (userState.step2 === 'ERC20') walletAddress = "0x72c4956337A815FD03Ca960ca09543b6f049Fa42";
+            if (userState.step2 === 'BEP20') walletAddress = "0x72c4956337A815FD03Ca960ca09543b6f049Fa42";
+            if (userState.step2 === 'USDC') walletAddress = "0x72c4956337A815FD03Ca960ca09543b6f049Fa42";
+            
             adminProvides = `**Admin's Crypto Address:**\n\`\`\`${walletAddress}\`\`\``; easyCopyText = walletAddress; 
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
