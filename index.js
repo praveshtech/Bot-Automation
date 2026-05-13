@@ -684,17 +684,32 @@ client.on('interactionCreate', async interaction => {
 
     if (interaction.isModalSubmit() && interaction.customId === 'amount_modal_popup') {
         const userState = userSelections.get(interaction.user.id);
-        userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
+        const inputAmount = interaction.fields.getTextInputValue('trade_amount_input');
+        const numericAmount = Number(inputAmount);
+
+        // 🔥 NAYA UPDATE: Minimum Limit Validation
+        if (isNaN(numericAmount) || numericAmount <= 0) {
+            return interaction.reply({ content: '❌ **Invalid Amount!** Please enter a valid number.', ephemeral: true });
+        }
+
+        if (userState.type === 'Buy' && numericAmount < 100) {
+            return interaction.reply({ content: '❌ **Minimum Limit Alert:** The minimum amount for **Buy USDT** is **$100**.\n\nPlease click "Start Trade" again to enter a valid amount.', ephemeral: true });
+        }
+
+        if (userState.type === 'Sell' && numericAmount < 50) {
+            return interaction.reply({ content: '❌ **Minimum Limit Alert:** The minimum amount for **Sell USDT** is **$50**.\n\nPlease click "Start Trade" again to enter a valid amount.', ephemeral: true });
+        }
+
+        userState.amount = inputAmount;
         userSelections.set(interaction.user.id, userState);
 
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
-            // 🔥 NAYA UPDATE: Modal ke andar wale dropdown list ke naam change
             step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
         } else {
-            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'Cardless Cash Withdrawals (CCW)', value: 'CCW', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
+            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI', value: 'UPI', emoji: '📱' }, { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
         }
 
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
