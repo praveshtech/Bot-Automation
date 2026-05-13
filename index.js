@@ -622,8 +622,8 @@ client.on('interactionCreate', async interaction => {
                 ]);
             } else {
                 step2Dropdown.addOptions([
-                    { label: 'UPI', value: 'UPI', emoji: '📱', default: userState.step2 === 'UPI' }, 
-                    { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦', default: userState.step2 === 'IMPS' }, 
+                    { label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱', default: userState.step2 === 'UPI[CCW]' }, 
+                    { label: 'Cardless Cash Withdrawals(CCW)', value: 'CCW', emoji: '🏦', default: userState.step2 === 'CCW' }, 
                     { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }
                 ]);
             }
