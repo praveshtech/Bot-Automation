@@ -948,6 +948,7 @@ client.on('interactionCreate', async interaction => {
         userSelections.delete(interaction.user.id);
     }
 
+    // --- 👤 REVEAL ADMIN DETAILS (USER CLICK) ---
     if (interaction.isButton() && interaction.customId === 'reveal_admin_details') {
         await interaction.deferReply({ ephemeral: true }); 
         try {
@@ -957,7 +958,36 @@ client.on('interactionCreate', async interaction => {
                 if (interaction.user.id !== data.discordUserId) {
                     return interaction.editReply({ content: '❌ **Access Denied:** Only the ticket creator can view this information.' });
                 }
-                await interaction.editReply({ content: `**Admin Transfer Details (Copy below):**\n\n${data.adminTransferDetails}` });
+                
+                // 🔥 NAYA UPDATE: User ko ephemeral message dikhayega, aur address seedha chat me bhej dega
+                await interaction.editReply({ content: '✅ Address has been sent in the chat below!' });
+                await interaction.channel.send({ content: `👇 **Tap the box below to copy Admin Transfer Details:**\n\`\`\`\n${data.adminTransferDetails}\n\`\`\`` });
+
+            } else {
+                await interaction.editReply({ content: '❌ Ticket data not found.' });
+            }
+        } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
+    }
+
+    // --- 👨‍💼 REVEAL USER DETAILS (ADMIN CLICK) ---
+    if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
+        await interaction.deferReply({ ephemeral: true }); 
+        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
+        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+
+        if (!isProfessor && !isPalermo) {
+            return interaction.editReply({ content: '❌ **Access Denied:** Only Admins/Palermo can view user details.' });
+        }
+
+        try {
+            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+            if (ticketDoc.exists) {
+                const data = ticketDoc.data();
+                
+                // 🔥 NAYA UPDATE: Admin ko ephemeral message dikhayega, aur details seedha chat me bhej dega
+                await interaction.editReply({ content: '✅ User details have been sent in the chat below!' });
+                await interaction.channel.send({ content: `👇 **Tap the box below to copy User's Receiving Details:**\n\`\`\`\n${data.userReceivingDetails}\n\`\`\`` });
+
             } else {
                 await interaction.editReply({ content: '❌ Ticket data not found.' });
             }
@@ -1472,7 +1502,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     }
 });
 
-const GUILD_ID = '1450915791338737757';
+const GUILD_ID = '1456297708892586057';
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
