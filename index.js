@@ -1505,8 +1505,8 @@ app.post('/update-price', requireLogin, async (req, res) => {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
 
-        let priceChannel = guild.channels.cache.find(c => c.name === '🚨USDT-price-update');
-        if (!priceChannel) return res.send(`<script>alert("❌ Error: Channel #🚨USDT-price-update not found."); window.location.href="/";</script>`);
+        let priceChannel = guild.channels.cache.find(c => c.name === '🚨usdt-price-update');
+        if (!priceChannel) return res.send(`<script>alert("❌ Error: Channel #🚨usdt-price-update not found."); window.location.href="/";</script>`);
 
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f') 
