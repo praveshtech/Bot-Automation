@@ -419,6 +419,18 @@ client.on('interactionCreate', async interaction => {
             await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
 
             try {
+                // 🔥 NAYA UPDATE: KYC Category (Folder) dhoondho ya banao
+                let kycCategory = interaction.guild.channels.cache.find(c => 
+                    (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory
+                );
+                
+                if (!kycCategory) {
+                    kycCategory = await interaction.guild.channels.create({
+                        name: '📢 KYC REQUESTS',
+                        type: ChannelType.GuildCategory
+                    });
+                }
+
                 await db.collection('users_kyc').doc(interaction.user.id).set({ 
                     discordId: interaction.user.id, 
                     username: interaction.user.username, 
@@ -428,51 +440,55 @@ client.on('interactionCreate', async interaction => {
                 }, { merge: true }); 
                 
                 globalLastUpdate = Date.now(); 
+
+                const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
+                const channelPermissions = [
+                    { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                    { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
+                ];
+                
+                if (palermoRole) {
+                    channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
+                }
+
+                // 🔥 NAYA UPDATE: KYC Channel ab 'parent' (Category) ke andar banega
+                const kycChannel = await interaction.guild.channels.create({
+                    name: `kyc-${interaction.user.username}`,
+                    type: ChannelType.GuildText,
+                    parent: kycCategory.id, // Isse channel folder ke andar jayega
+                    permissionOverwrites: channelPermissions
+                });
+
+                const kycEmbed = new EmbedBuilder()
+                    .setColor('#3498db')
+                    .setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() })
+                    .setDescription(
+                        `Welcome ${interaction.user.toString()}!\n\n` +
+                        `To unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\n` +
+                        `Please upload:\n` +
+                        `1️⃣ **A clear photo of your National ID**\n` +
+                        `2️⃣ **A selfie of you holding the ID**\n\n` +
+                        `Send the images directly in this chat. Our Admin will review them shortly.`
+                    )
+                    .setFooter({ text: 'Professor Network - Secure KYC' });
+
+                const kycAdminButtons = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success),
+                    new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger)
+                );
+
+                await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
+
+                await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
+                
+                setTimeout(() => {
+                    interaction.deleteReply().catch(() => {});
+                }, 15000);
+
             } catch (error) {
-                console.error("DB Pending Update Error:", error);
+                console.error("KYC Room Creation Error:", error);
+                await interaction.editReply({ content: '❌ Room create karne mein error aaya. Please contact admin.' });
             }
-
-            const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
-            const channelPermissions = [
-                { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
-            ];
-            
-            if (palermoRole) {
-                channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
-            }
-
-            const kycChannel = await interaction.guild.channels.create({
-                name: `kyc-${interaction.user.username}`,
-                type: ChannelType.GuildText,
-                permissionOverwrites: channelPermissions
-            });
-
-            const kycEmbed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() })
-                .setDescription(
-                    `Welcome ${interaction.user.toString()}!\n\n` +
-                    `To unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\n` +
-                    `Please upload:\n` +
-                    `1️⃣ **A clear photo of your National ID**\n` +
-                    `2️⃣ **A selfie of you holding the ID**\n\n` +
-                    `Send the images directly in this chat. Our Admin will review them shortly.`
-                )
-                .setFooter({ text: 'Professor Network - Secure KYC' });
-
-            const kycAdminButtons = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger)
-            );
-
-            await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
-
-            await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
-            
-            setTimeout(() => {
-                interaction.deleteReply().catch(() => {});
-            }, 15000);
             return;
         }
 
@@ -941,13 +957,27 @@ client.on('interactionCreate', async interaction => {
 
             if (isSuccess) {
                 try {
+                    // 🔥 NAYA UPDATE: Pehle "Feedback Tickets" naam ki Category (Folder) dhoondho ya banao
+                    let feedbackCategory = interaction.guild.channels.cache.find(c => 
+                        (c.name === 'Feedback Tickets' || c.name === 'Feedback Ticket') && c.type === ChannelType.GuildCategory
+                    );
+                    
+                    if (!feedbackCategory) {
+                        feedbackCategory = await interaction.guild.channels.create({
+                            name: 'Feedback Tickets',
+                            type: ChannelType.GuildCategory
+                        });
+                    }
+
                     const fbPerms = [
                         { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
                         { id: ticketData.discordUserId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
                     ];
+                    
                     const feedbackChannel = await interaction.guild.channels.create({
                         name: `feedback-${ticketData.username}`,
                         type: ChannelType.GuildText,
+                        parent: feedbackCategory.id, // 🔥 NAYA UPDATE: Is line se channel folder ke andar jayega
                         permissionOverwrites: fbPerms,
                         topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` 
                     });
