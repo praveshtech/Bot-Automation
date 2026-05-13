@@ -829,8 +829,8 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Crypto Address:**\n\`\`\`${walletAddress}\`\`\``; easyCopyText = walletAddress; 
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
-            if (userState.step2 === 'UPI') paymentDetails = "admin@upi";
-            if (userState.step2 === 'IMPS') paymentDetails = "Bank: SBI\nAcc: 123456789\nIFSC: SBIN0001234";
+            if (userState.step2 === 'UPI[CCW]') paymentDetails = "admin@upi";
+            if (userState.step2 === 'CCW') paymentDetails = "Bank: SBI\nAcc: 123456789\nIFSC: SBIN0001234";
             if (userState.step2 === 'CDM') paymentDetails = "Cash Deposit Acc: 9876543210 (HDFC)";
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
         }
