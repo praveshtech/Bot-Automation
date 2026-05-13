@@ -1174,16 +1174,33 @@ async function updateUserHeistPoints(userId, guild, username) {
                     if (!member.roles.cache.has(role.id)) {
                         await member.roles.add(role);
                         
-                        // Congratulate in General Chat
+                        // 🔥 NAYA UPDATE: Send to specific 🎀・level-updates channel with @everyone and User tag
                         const lvlEmbed = new EmbedBuilder()
                             .setColor('#e74c3c')
                             .setTitle('💰 NEW RANK UNLOCKED!')
                             .setDescription(`Congratulations <@${userId}>! You've successfully reached **${targetLevel.name}** with **${points} Heist Points**.\n\nEnjoy your new perks and keep trading to reach the top!`)
-                            .setFooter({ text: 'Professor Network - Auto Rank System' });
+                            .setFooter({ text: 'Professor Network - Auto Rank System', iconURL: client.user.displayAvatarURL() });
                         
-                        const generalChannel = guild.channels.cache.find(c => c.name.includes('general') || c.name.includes('chat'));
-                        if (generalChannel) await generalChannel.send({ embeds: [lvlEmbed] });
-                    }
+                        // Check if channel exists, if not, create it automatically
+                        let levelChannel = guild.channels.cache.find(c => c.name === '🎀・level-updates' || c.name.includes('level-updates'));
+                        
+                        if (!levelChannel) {
+                            levelChannel = await guild.channels.create({
+                                name: '🎀・level-updates',
+                                type: ChannelType.GuildText,
+                                permissionOverwrites: [
+                                    { id: guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] },
+                                    { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }
+                                ]
+                            });
+                        }
+
+                        // Send message with @everyone and User ping
+                        await levelChannel.send({ 
+                            content: `🔔 **Level Up Alert!** | @everyone | <@${userId}>`, 
+                            embeds: [lvlEmbed] 
+                        });
+                    } // <--- ⚠️ YAHAN WO BRACKET MISSING THA JO AB FIX HO GAYA HAI
                 } else {
                     if (member.roles.cache.has(role.id)) {
                         await member.roles.remove(role);
