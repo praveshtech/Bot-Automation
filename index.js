@@ -723,7 +723,7 @@ client.on('interactionCreate', async interaction => {
         if (userState.type === 'Sell') {
             step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
         } else {
-            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI', value: 'UPI', emoji: '📱' }, { label: 'IMPS/Bank Transfer', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
+            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'Cashless Cash Withdrawals (CCW)', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
         }
 
         const row1 = new ActionRowBuilder().addComponents(typeDropdown);
@@ -859,7 +859,7 @@ client.on('interactionCreate', async interaction => {
             adminProvides = `**Admin's Crypto Address:**\n\`\`\`${walletAddress}\`\`\``; easyCopyText = walletAddress; 
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
-            if (userState.step2 === 'UPI[CCW]') paymentDetails = "admin@upi";
+            if (userState.step2 === 'UPI[CCW]') paymentDetails = "Talk to Admin for UPI Details";
             if (userState.step2 === 'CCW') paymentDetails = "Bank: SBI\nAcc: 123456789\nIFSC: SBIN0001234";
             if (userState.step2 === 'CDM') paymentDetails = "Cash Deposit Acc: 9876543210 (HDFC)";
             adminProvides = `**Admin's Bank/Payment Details:**\n\`\`\`${paymentDetails}\`\`\``; easyCopyText = paymentDetails; 
