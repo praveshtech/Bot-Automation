@@ -331,7 +331,7 @@ client.on('interactionCreate', async interaction => {
             .setTitle('🚨 MEGA FLASH DEAL 🚨')
             .setDescription(`**${msg}**\n\n━━━━━━━━━━━━━━━━━━━━\n⏰ **Exact End Time:** <t:${endTime}:T>\n⏳ **Countdown:** <t:${endTime}:R>\n━━━━━━━━━━━━━━━━━━━━`)
             .setColor('#ff0000') 
-            .setFooter({ text: 'The Vault P2P', iconURL: client.user.displayAvatarURL() });
+            .setFooter({ text: 'Professor Network-Trusted P2P', iconURL: client.user.displayAvatarURL() });
 
         await interaction.reply({ content: '✅ Deal Successfully Posted!', ephemeral: true });
         
@@ -999,7 +999,7 @@ client.on('interactionCreate', async interaction => {
         } catch (error) { console.error("Firebase Error: ", error); }
 
         const cinematicDescription = 
-            `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **The Vault**.\n` +
+            `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
             `**1. What is the action?**\n` +
             `> ${userState.type} USDT\n` +
@@ -1678,7 +1678,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f') 
             .setTitle('📈 USDT Market Price Update')
-            .setDescription('**The Vault** has updated the real-time P2P exchange rates. Current market prices are active immediately.')
+            .setDescription('**Professor Network** has updated the real-time P2P exchange rates. Current market prices are active immediately.')
             .addFields(
                 { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true },
                 { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }
