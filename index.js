@@ -90,25 +90,34 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // --- ⚡ FLASH DEAL SETUP COMMAND ---
+   // --- ⚡ FLASH DEAL SETUP COMMAND ---
     if (message.content === '!flash') {
         // Sirf Admin use kar sake isliye check laga rahe hain
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
 
+        // 🥷 NINJA HACK: Admin ka '!flash' message turant delete kar do taaki koi aur na dekhe
+        await message.delete().catch(() => {});
+
         const setupEmbed = new EmbedBuilder()
-            .setTitle('⚡ Flash Deal Control Panel')
-            .setDescription('Click the button below to open the deal creator form.')
-            .setColor('#facc15');
+            .setTitle('⚡ Flash Deal Setup')
+            .setDescription('Click below to create deal. (Visible for 15 seconds only)')
+            .setColor('#2b2d31'); // Dark color taaki chat me mix ho jaye
 
         const dealBtn = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('open_flash_modal')
                 .setLabel('Create Flash Deal')
-                .setStyle(ButtonStyle.Danger) // Red color button
+                .setStyle(ButtonStyle.Danger)
                 .setEmoji('⚡')
         );
 
-        await message.reply({ embeds: [setupEmbed], components: [dealBtn] });
+        // Message ko variable me save kar rahe hain taaki delete kar sakein
+        const setupMsg = await message.channel.send({ embeds: [setupEmbed], components: [dealBtn] });
+
+        // Agar admin 15 second tak click na kare, toh safety ke liye button auto-delete ho jayega
+        setTimeout(() => {
+            setupMsg.delete().catch(() => {});
+        }, 15000);
     }
 
     // 🔥 VERIFY COMMAND
@@ -275,7 +284,7 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- 🔘 BUTTON CLICK: OPEN POPUP FORM ---
+   // --- 🔘 BUTTON CLICK: OPEN POPUP FORM ---
     if (interaction.isButton() && interaction.customId === 'open_flash_modal') {
         const modal = new ModalBuilder()
             .setCustomId('submit_flash_deal')
@@ -299,7 +308,35 @@ client.on('interactionCreate', async interaction => {
         const row2 = new ActionRowBuilder().addComponents(dealTime);
 
         modal.addComponents(row1, row2);
-        await interaction.showModal(modal); // Ye popup khol dega
+        
+        // Pehle popup form kholo
+        await interaction.showModal(modal); 
+
+        // 🥷 NINJA HACK: Form khulte hi channel se 'Create Flash Deal' wale button ko hamesha ke liye delete kar do!
+        await interaction.message.delete().catch(() => {});
+    }
+
+    // --- 🚀 MODAL SUBMIT: POST THE DEAL ---
+    if (interaction.isModalSubmit() && interaction.customId === 'submit_flash_deal') {
+        const msg = interaction.fields.getTextInputValue('deal_msg');
+        const hours = parseFloat(interaction.fields.getTextInputValue('deal_hours'));
+
+        if (isNaN(hours)) {
+            return interaction.reply({ content: '❌ Put Number Only  (Like 2, 5, 24).', ephemeral: true });
+        }
+
+        const endTime = Math.floor(Date.now() / 1000) + (hours * 60 * 60);
+
+        const flashEmbed = new EmbedBuilder()
+            .setTitle('🚨 MEGA FLASH DEAL 🚨')
+            .setDescription(`**${msg}**\n\n━━━━━━━━━━━━━━━━━━━━\n⏰ **Exact End Time:** <t:${endTime}:T>\n⏳ **Countdown:** <t:${endTime}:R>\n━━━━━━━━━━━━━━━━━━━━`)
+            .setColor('#ff0000') 
+            .setFooter({ text: 'The Vault P2P', iconURL: client.user.displayAvatarURL() });
+
+        await interaction.reply({ content: '✅ Deal Successfully Posted!', ephemeral: true });
+        
+        // Final message channel me sabko dikhega
+        await interaction.channel.send({ content: '@everyone', embeds: [flashEmbed] });
     }
 
     // --- 🚀 MODAL SUBMIT: POST THE DEAL ---
@@ -309,7 +346,7 @@ client.on('interactionCreate', async interaction => {
 
         // Check agar kisine number ki jagah text daal diya
         if (isNaN(hours)) {
-            return interaction.reply({ content: '❌ Bhai, time mein sirf number daalna hai (jaise 2, 5, 24).', ephemeral: true });
+            return interaction.reply({ content: '❌ Put Number Only  (Like 2, 5, 24).', ephemeral: true });
         }
 
         // ⏱️ Magic Timer Logic (Current time + Ghante)
