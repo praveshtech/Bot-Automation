@@ -1638,7 +1638,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     }
 });
 
-const GUILD_ID = '1456297708892586057';
+const GUILD_ID = '1450915791338737757';
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
@@ -1672,7 +1672,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
         if (!guild) return res.send(`<script>alert("❌ Error: Discord server not found. Check GUILD_ID."); window.location.href="/";</script>`);
 
         // 🔥 NAYA UPDATE: Naam hata kar direct Channel ID use kar rahe hain
-        let priceChannel = guild.channels.cache.get('1501502014809575425'); 
+        let priceChannel = guild.channels.cache.get('1503666351594799205'); 
         if (!priceChannel) return res.send(`<script>alert("❌ Error: Price Update Channel not found. Bot ko server me check karo."); window.location.href="/";</script>`);
 
         const priceEmbed = new EmbedBuilder()
