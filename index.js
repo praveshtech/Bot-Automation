@@ -356,7 +356,7 @@ client.on('interactionCreate', async interaction => {
             .setTitle('🚨 MEGA FLASH DEAL 🚨')
             .setDescription(`${msg}\n\n⏳ **Offer Ends:** <t:${endTime}:R>`)
             .setColor('#ff0000') // Red alert color
-            .setFooter({ text: 'The Vault P2P', iconURL: client.user.displayAvatarURL() });
+            .setFooter({ text: 'Professor Network-Trusted P2P', iconURL: client.user.displayAvatarURL() });
 
         // Admin ko chup-chaap confirmation dega
         await interaction.reply({ content: '✅ Deal Successfully Posted!', ephemeral: true });
