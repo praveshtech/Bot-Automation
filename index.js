@@ -90,6 +90,27 @@ client.on('messageCreate', async message => {
         }
     }
 
+    // --- ⚡ FLASH DEAL SETUP COMMAND ---
+    if (message.content === '!flash') {
+        // Sirf Admin use kar sake isliye check laga rahe hain
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+
+        const setupEmbed = new EmbedBuilder()
+            .setTitle('⚡ Flash Deal Control Panel')
+            .setDescription('Click the button below to open the deal creator form.')
+            .setColor('#facc15');
+
+        const dealBtn = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('open_flash_modal')
+                .setLabel('Create Flash Deal')
+                .setStyle(ButtonStyle.Danger) // Red color button
+                .setEmoji('⚡')
+        );
+
+        await message.reply({ embeds: [setupEmbed], components: [dealBtn] });
+    }
+
     // 🔥 VERIFY COMMAND
     if (command === '!verify') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
@@ -252,6 +273,59 @@ client.on('interactionCreate', async interaction => {
             console.error("Dashboard Sync Error:", error);
             await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true });
         }
+    }
+
+    // --- 🔘 BUTTON CLICK: OPEN POPUP FORM ---
+    if (interaction.isButton() && interaction.customId === 'open_flash_modal') {
+        const modal = new ModalBuilder()
+            .setCustomId('submit_flash_deal')
+            .setTitle('Publish Flash Deal');
+
+        // Text likhne ki jagah
+        const dealMessage = new TextInputBuilder()
+            .setCustomId('deal_msg')
+            .setLabel("Deal Message (ex: USDT is now 88 INR!)")
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(true);
+
+        // Time (Hours) daalne ki jagah
+        const dealTime = new TextInputBuilder()
+            .setCustomId('deal_hours')
+            .setLabel("Valid for how many hours? (ex: 2 or 2.5)")
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
+
+        const row1 = new ActionRowBuilder().addComponents(dealMessage);
+        const row2 = new ActionRowBuilder().addComponents(dealTime);
+
+        modal.addComponents(row1, row2);
+        await interaction.showModal(modal); // Ye popup khol dega
+    }
+
+    // --- 🚀 MODAL SUBMIT: POST THE DEAL ---
+    if (interaction.isModalSubmit() && interaction.customId === 'submit_flash_deal') {
+        const msg = interaction.fields.getTextInputValue('deal_msg');
+        const hours = parseFloat(interaction.fields.getTextInputValue('deal_hours'));
+
+        // Check agar kisine number ki jagah text daal diya
+        if (isNaN(hours)) {
+            return interaction.reply({ content: '❌ Bhai, time mein sirf number daalna hai (jaise 2, 5, 24).', ephemeral: true });
+        }
+
+        // ⏱️ Magic Timer Logic (Current time + Ghante)
+        const endTime = Math.floor(Date.now() / 1000) + (hours * 60 * 60);
+
+        const flashEmbed = new EmbedBuilder()
+            .setTitle('🚨 MEGA FLASH DEAL 🚨')
+            .setDescription(`${msg}\n\n⏳ **Offer Ends:** <t:${endTime}:R>`)
+            .setColor('#ff0000') // Red alert color
+            .setFooter({ text: 'The Vault P2P', iconURL: client.user.displayAvatarURL() });
+
+        // Admin ko chup-chaap confirmation dega
+        await interaction.reply({ content: '✅ Deal Successfully Posted!', ephemeral: true });
+        
+        // Channel mein sabko mention karke message aur timer bhej dega
+        await interaction.channel.send({ content: '@everyone', embeds: [flashEmbed] });
     }
 
    // --- 🌟 FEEDBACK SYSTEM CONFIRM BUTTON ---
