@@ -52,6 +52,7 @@
             <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update</button>
             <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings</button>
             <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC</button>
+            <button onclick="showTab('wallet-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-wallet mr-4 text-lg"></i> Wallet Addresses</button>
         </nav>
 
         <div class="p-6 border-t border-slate-800/50">
@@ -337,6 +338,60 @@
                 </div>
             </div>
         </section>
+
+        <section id="wallet-view" class="hidden-section fade-in">
+            <div class="max-w-4xl grid grid-cols-1 gap-8">
+                <div class="glass-panel p-5 sm:p-8 border-t-4 border-purple-500 relative overflow-hidden">
+                    <i class="fa-brands fa-bitcoin absolute -right-6 -bottom-6 text-[12rem] text-slate-800/40 z-0"></i>
+                    <div class="relative z-10">
+                        <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-purple-500 text-glow"><i class="fa-solid fa-wallet mr-2"></i> Admin Payment & Wallet Details</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">USDT (TRC20)</h4>
+                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
+                                    <span class="font-mono text-sm text-green-400 truncate pr-2">TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie</span>
+                                    <button onclick="copyToClipboard('TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">ERC20 / BEP20 / USDC</h4>
+                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
+                                    <span class="font-mono text-sm text-green-400 truncate pr-2">0x72c4956337A815FD03Ca960ca09543b6f049Fa42</span>
+                                    <button onclick="copyToClipboard('0x72c4956337A815FD03Ca960ca09543b6f049Fa42')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">UPI [CCW]</h4>
+                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
+                                    <span class="font-mono text-sm text-green-400 truncate pr-2">Talk to Admin for UPI Details</span>
+                                    <button onclick="copyToClipboard('Talk to Admin for UPI Details')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">CCW Bank Details</h4>
+                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
+                                    <span class="font-mono text-xs text-green-400 whitespace-pre-wrap">Bank: SBI<br>Acc: 123456789<br>IFSC: SBIN0001234</span>
+                                    <button onclick="copyToClipboard('Bank: SBI\nAcc: 123456789\nIFSC: SBIN0001234')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner md:col-span-2">
+                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Cash Deposit (CDM)</h4>
+                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
+                                    <span class="font-mono text-sm text-green-400 truncate pr-2">Cash Deposit Acc: 9876543210 (HDFC)</span>
+                                    <button onclick="copyToClipboard('Cash Deposit Acc: 9876543210 (HDFC)')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <div id="txModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
@@ -473,13 +528,42 @@
         }
 
         function showTab(tabId, btn) {
-            document.getElementById('dashboard-view').classList.add('hidden-section'); document.getElementById('settings-view').classList.add('hidden-section'); document.getElementById('price-view').classList.add('hidden-section'); document.getElementById('kyc-view').classList.add('hidden-section'); 
+            document.getElementById('dashboard-view').classList.add('hidden-section'); 
+            document.getElementById('settings-view').classList.add('hidden-section'); 
+            document.getElementById('price-view').classList.add('hidden-section'); 
+            document.getElementById('kyc-view').classList.add('hidden-section'); 
+            document.getElementById('wallet-view').classList.add('hidden-section'); 
+            
             const selectedTab = document.getElementById(tabId);
             selectedTab.classList.remove('hidden-section'); selectedTab.classList.remove('fade-in'); void selectedTab.offsetWidth; selectedTab.classList.add('fade-in');
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active')); btn.classList.add('active');
-            const titles = { 'dashboard-view': 'Executive Analytics', 'settings-view': 'Vault Settings', 'kyc-view': 'Verified Users Database', 'price-view': 'Market Prices' };
+            
+            const titles = { 
+                'dashboard-view': 'Executive Analytics', 
+                'settings-view': 'Vault Settings', 
+                'kyc-view': 'Verified Users Database', 
+                'price-view': 'Market Prices',
+                'wallet-view': 'Secure Wallet Details' 
+            };
             document.getElementById('page-title').innerText = titles[tabId];
             if (window.innerWidth < 1024) toggleSidebar();
+        }
+
+        // --- 📋 COPY TO CLIPBOARD FUNCTION ---
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Copied to clipboard!',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                    customClass: { popup: 'border border-slate-700 shadow-xl' }
+                });
+            });
         }
 
         function openTxModal(index) {
