@@ -357,8 +357,7 @@
                                 <th class="py-4 px-6">User Details</th>
                                 <th class="py-4 px-6">Name</th>
                                 <th class="py-4 px-6">Status</th>
-                                <th class="py-4 px-6 text-right">Documents</th>
-                            </tr>
+                                <th class="py-4 px-6 text-right">Actions</th>                            </tr>
                         </thead>
                         <tbody class="text-sm font-medium">
                             <% allKycUsers.forEach(user => { %>
@@ -373,14 +372,19 @@
                                         <%= user.status %>
                                     </span>
                                 </td>
-                                <td class="py-4 px-6 text-right">
-                                    <% if(user.idPhoto || user.selfiePhoto) { %>
-                                        <button onclick="openDocs('<%= user.username %>', '<%= user.idPhoto %>', '<%= user.selfiePhoto %>')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-4 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                                            <i class="fa-solid fa-image mr-1"></i> View Photos
+                                <td class="py-4 px-6">
+                                    <div class="flex items-center justify-end space-x-3">
+                                        <% if(user.idPhoto || user.selfiePhoto) { %>
+                                            <button onclick="event.stopPropagation(); openDocs('<%= user.username %>', '<%= user.idPhoto %>', '<%= user.selfiePhoto %>')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                                                <i class="fa-solid fa-image mr-1"></i> Photos
+                                            </button>
+                                        <% } else { %>
+                                            <span class="text-slate-600 text-xs italic font-bold">No Photos</span>
+                                        <% } %>
+                                        <button onclick="event.stopPropagation(); deleteKyc('<%= user.discordId %>')" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 w-8 h-8 rounded-lg flex items-center justify-center transition duration-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]" title="Delete User">
+                                            <i class="fa-solid fa-trash-can"></i>
                                         </button>
-                                    <% } else { %>
-                                        <span class="text-slate-600 text-xs italic font-bold">No Photos</span>
-                                    <% } %>
+                                    </div>
                                 </td>
                             </tr>
                             <% }) %>
@@ -790,6 +794,28 @@
                     alert(`Error: ${result.error}`);
                 }
             } catch (e) { alert("API Connection Error!"); }
+        }
+
+        async function deleteKyc(userId) {
+            if(!confirm("⚠️ DANGER: Are you sure you want to permanently delete this user's KYC record?")) return;
+            
+            try {
+                const response = await fetch('/api/kyc-delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert("✅ KYC record deleted successfully!");
+                    window.location.reload();
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (e) { 
+                alert("API Connection Error!"); 
+            }
         }
 
         // --- CHARTS LOGIC ---

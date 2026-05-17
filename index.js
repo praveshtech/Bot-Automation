@@ -751,6 +751,17 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
+app.post('/api/kyc-delete', requireLogin, async (req, res) => {
+    const { userId } = req.body;
+    try {
+        await db.collection('users_kyc').doc(userId).delete();
+        globalLastUpdate = Date.now(); 
+        res.json({ success: true });
+    } catch (e) { 
+        res.json({ success: false, error: e.message }); 
+    }
+});
+
 app.post('/update-price', requireLogin, async (req, res) => {
     const { buyPrice, sellPrice } = req.body; 
     try {
