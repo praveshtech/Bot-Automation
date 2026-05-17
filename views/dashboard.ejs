@@ -100,6 +100,9 @@
             <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
                 <i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings
             </button>
+            <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
+                <i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC
+            </button>
         </nav>
 
         <div class="p-6 border-t border-slate-800/50">
@@ -339,6 +342,84 @@
                 </div>
             </div>
         </section>
+
+        <section id="kyc-view" class="hidden-section fade-in">
+            <div class="glass-panel p-6 border-t-4 border-blue-500 relative overflow-hidden">
+                <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-blue-500 text-glow"><i class="fa-solid fa-users mr-2"></i> Verified Users Database</h3>
+                
+                <div class="overflow-x-auto w-full custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-slate-800/30">
+                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-700/50">
+                                <th class="py-4 px-6">User Details</th>
+                                <th class="py-4 px-6">Name</th>
+                                <th class="py-4 px-6">Status</th>
+                                <th class="py-4 px-6 text-right">Documents</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm font-medium">
+                            <% allKycUsers.forEach(user => { %>
+                            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                                <td class="py-4 px-6 text-gray-200">
+                                    <div class="font-bold text-base"><%= user.discordContact || user.username %></div>
+                                    <div class="text-[10px] text-slate-500 uppercase tracking-widest">ID: <%= user.discordId %></div>
+                                </td>
+                                <td class="py-4 px-6 text-slate-300"><%= user.name || 'N/A' %></td>
+                                <td class="py-4 px-6">
+                                    <span class="px-3 py-1.5 rounded-md text-[10px] font-black tracking-widest uppercase <%= user.status === 'Approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' %>">
+                                        <%= user.status %>
+                                    </span>
+                                </td>
+                                <td class="py-4 px-6 text-right">
+                                    <% if(user.idPhoto || user.selfiePhoto) { %>
+                                        <button onclick="openDocs('<%= user.username %>', '<%= user.idPhoto %>', '<%= user.selfiePhoto %>')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-4 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                                            <i class="fa-solid fa-image mr-1"></i> View Photos
+                                        </button>
+                                    <% } else { %>
+                                        <span class="text-slate-600 text-xs italic font-bold">No Photos</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <div id="photoModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeDocs()"></div>
+            <div class="glass-panel relative z-10 w-full max-w-4xl p-6 border-t-4 border-blue-500 transform transition-all duration-300" id="photoModalContent">
+                <button onclick="closeDocs()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+                
+                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight mb-6 flex items-center" id="docModalTitle">
+                    <i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> User Documents
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 rounded">National ID</h4>
+                        <img id="idImg" src="" class="w-full rounded-lg object-contain h-64 sm:h-80" alt="National ID">
+                    </div>
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 rounded">Selfie</h4>
+                        <img id="selfieImg" src="" class="w-full rounded-lg object-contain h-64 sm:h-80" alt="Selfie">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function openDocs(username, idPhoto, selfiePhoto) {
+                document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> ${username}'s KYC Documents`;
+                document.getElementById('idImg').src = idPhoto || 'https://via.placeholder.com/400x300?text=No+ID+Found';
+                document.getElementById('selfieImg').src = selfiePhoto || 'https://via.placeholder.com/400x300?text=No+Selfie+Found';
+                document.getElementById('photoModal').classList.remove('hidden');
+            }
+            function closeDocs() {
+                document.getElementById('photoModal').classList.add('hidden');
+            }
+        </script>
 
         <section id="price-view" class="hidden-section fade-in">
             <div class="max-w-4xl grid grid-cols-1 gap-8">
@@ -596,6 +677,7 @@
             const titles = { 
                 'dashboard-view': 'Executive Analytics', 
                 'settings-view': 'Vault Settings',
+                'kyc-view': 'Verified Users Database',
                 'price-view': 'Market Prices'
             };
             document.getElementById('page-title').innerText = titles[tabId];

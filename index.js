@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
+const axios = require('axios');
 const { 
     Client, 
     GatewayIntentBits, 
@@ -25,11 +26,30 @@ const serviceAccount = require('./serviceAccountKey.json');
 // 1. FIREBASE SETUP
 // ==========================================
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: "bot-automation-01.firebasestorage.app" 
 });
 const db = admin.firestore(); 
+const bucket = admin.storage().bucket(); 
 
 let globalLastUpdate = Date.now();
+
+async function uploadImageToFirebase(imageUrl, userId, type) {
+    try {
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const buffer = Buffer.from(response.data, 'utf-8');
+        const fileName = `kyc_documents/${userId}_${type}_${Date.now()}.png`;
+        const file = bucket.file(fileName);
+        
+        await file.save(buffer, { contentType: 'image/png' });
+        
+        const [url] = await file.getSignedUrl({ action: 'read', expires: '01-01-2100' });
+        return url;
+    } catch (error) {
+        console.error(`Error uploading ${type} for ${userId}:`, error);
+        return null;
+    }
+}
 
 // ==========================================
 // 2. DISCORD BOT INIT
@@ -339,32 +359,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.channel.send({ content: '@everyone', embeds: [flashEmbed] });
     }
 
-    // --- 🚀 MODAL SUBMIT: POST THE DEAL ---
-    if (interaction.isModalSubmit() && interaction.customId === 'submit_flash_deal') {
-        const msg = interaction.fields.getTextInputValue('deal_msg');
-        const hours = parseFloat(interaction.fields.getTextInputValue('deal_hours'));
-
-        // Check agar kisine number ki jagah text daal diya
-        if (isNaN(hours)) {
-            return interaction.reply({ content: '❌ Put Number Only  (Like 2, 5, 24).', ephemeral: true });
-        }
-
-        // ⏱️ Magic Timer Logic (Current time + Ghante)
-        const endTime = Math.floor(Date.now() / 1000) + (hours * 60 * 60);
-
-        const flashEmbed = new EmbedBuilder()
-            .setTitle('🚨 MEGA FLASH DEAL 🚨')
-            .setDescription(`${msg}\n\n⏳ **Offer Ends:** <t:${endTime}:R>`)
-            .setColor('#ff0000') // Red alert color
-            .setFooter({ text: 'Professor Network-Trusted P2P', iconURL: client.user.displayAvatarURL() });
-
-        // Admin ko chup-chaap confirmation dega
-        await interaction.reply({ content: '✅ Deal Successfully Posted!', ephemeral: true });
-        
-        // Channel mein sabko mention karke message aur timer bhej dega
-        await interaction.channel.send({ content: '@everyone', embeds: [flashEmbed] });
-    }
-
    // --- 🌟 FEEDBACK SYSTEM CONFIRM BUTTON ---
     if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
         const expectedUserId = interaction.customId.replace('confirm_feedback_', '');
@@ -651,6 +645,25 @@ client.on('interactionCreate', async interaction => {
         }
 
         await interaction.deferUpdate(); 
+
+        // 🌟 NEW IMAGE UPLOAD LOGIC 🌟
+        await interaction.followUp({ content: '⏳ Saving photos to secure database... Please wait.', ephemeral: true });
+        
+        const messages = await interaction.channel.messages.fetch({ limit: 50 });
+        let attachments = [];
+        messages.forEach(msg => {
+            msg.attachments.forEach(att => attachments.push(att.url));
+        });
+
+        let idPhotoUrl = attachments.length > 0 ? await uploadImageToFirebase(attachments[0], userId, 'ID') : null;
+        let selfieUrl = attachments.length > 1 ? await uploadImageToFirebase(attachments[1], userId, 'Selfie') : null;
+
+        await db.collection('users_kyc').doc(userId).update({
+            idPhoto: idPhotoUrl,
+            selfiePhoto: selfieUrl
+        }).catch(err => console.error("Error saving photo urls: ", err));
+        // 🌟 END IMAGE UPLOAD LOGIC 🌟
+
         await approveUserKYC(userId, interaction.guild);
         
         const oldEmbed = interaction.message.embeds[0];
@@ -659,7 +672,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.editReply({ embeds: [updatedEmbed], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
-        // 🔥 NAYA UPDATE: Auto-Refresh Fix - Ab specifically 'buy-sell' ya 'exchange' find karega
         const exchangeChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
         if (exchangeChannel) {
             try {
@@ -1002,23 +1014,6 @@ client.on('interactionCreate', async interaction => {
 
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (Limit 20k INR)' : userState.step3;
 
-        try {
-            await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
-                discordUserId: interaction.user.id, 
-                username: interaction.user.username, 
-                tradeType: userState.type, 
-                networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : userState.step2, 
-                amountUsd: Number(tradeAmount), 
-                fee: fee,
-                isVerifiedTrade: userState.isVerifiedTrade,
-                userReceivingDetails: userDetails, 
-                adminTransferDetails: easyCopyText, 
-                status: 'Open', 
-                createdAt: admin.firestore.FieldValue.serverTimestamp() 
-            });
-            globalLastUpdate = Date.now(); 
-        } catch (error) { console.error("Firebase Error: ", error); }
-
         const cinematicDescription = 
             `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n` +
             `Please follow the instructions below so we can complete your trade as quickly as possible.\n\n` +
@@ -1076,6 +1071,23 @@ client.on('interactionCreate', async interaction => {
             components: [revealButtonsRow] 
         });
 
+        try {
+            await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
+                discordUserId: interaction.user.id, 
+                username: interaction.user.username, 
+                tradeType: userState.type, 
+                networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : userState.step2, 
+                amountUsd: Number(tradeAmount), 
+                fee: fee,
+                isVerifiedTrade: userState.isVerifiedTrade,
+                userReceivingDetails: userDetails, 
+                adminTransferDetails: easyCopyText, 
+                status: 'Open', 
+                createdAt: admin.firestore.FieldValue.serverTimestamp() 
+            });
+            globalLastUpdate = Date.now(); 
+        } catch (error) { console.error("Firebase Error: ", error); }
+
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
     }
@@ -1116,55 +1128,10 @@ client.on('interactionCreate', async interaction => {
             if (ticketDoc.exists) {
                 const data = ticketDoc.data();
                 
-                // 🔥 NAYA FIX: 2 alag messages. Dusre me sirf address hoga taaki phone pe perfect copy ho.
-                await interaction.editReply({ content: `👇 **Long-press the message below to copy User's Receiving Details:**` });
-                await interaction.followUp({ content: `${data.userReceivingDetails}`, ephemeral: true });
-
-            } else {
-                await interaction.editReply({ content: '❌ Ticket data not found.' });
-            }
-        } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
-    }
-
-    // --- 👨‍💼 REVEAL USER DETAILS (ADMIN CLICK) ---
-    if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
-        await interaction.deferReply({ ephemeral: true }); 
-        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
-        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-
-        if (!isProfessor && !isPalermo) {
-            return interaction.editReply({ content: '❌ **Access Denied:** Only Admins/Palermo can view user details.' });
-        }
-
-        try {
-            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
-            if (ticketDoc.exists) {
-                const data = ticketDoc.data();
-                
                 // 🔥 NAYA UPDATE: Admin ko ephemeral message dikhayega, aur details seedha chat me bhej dega
                 await interaction.editReply({ content: '✅ User details have been sent in the chat below!' });
                 await interaction.channel.send({ content: `👇 **Tap the box below to copy User's Receiving Details:**\n\`\`\`\n${data.userReceivingDetails}\n\`\`\`` });
 
-            } else {
-                await interaction.editReply({ content: '❌ Ticket data not found.' });
-            }
-        } catch (err) { console.error(err); await interaction.editReply({ content: '❌ Error fetching details.' }); }
-    }
-
-    if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
-        await interaction.deferReply({ ephemeral: true }); 
-        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
-        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-
-        if (!isProfessor && !isPalermo) {
-            return interaction.editReply({ content: '❌ **Access Denied:** Only Admins/Palermo can view user details.' });
-        }
-
-        try {
-            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
-            if (ticketDoc.exists) {
-                const data = ticketDoc.data();
-                await interaction.editReply({ content: `**User's Receiving Details (Copy below):**\n\n${data.userReceivingDetails}` });
             } else {
                 await interaction.editReply({ content: '❌ Ticket data not found.' });
             }
@@ -1724,7 +1691,11 @@ app.get('/', requireLogin, async (req, res) => {
         
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
         const pendingTicketsSnap = await db.collection('p2p_tickets').where('status', '==', 'Open').get();
-        
+        // Naya: Saare KYC users ka data dashboard ke liye lana
+        const allKycSnap = await db.collection('users_kyc').get();
+        const allKycUsers = [];
+        allKycSnap.forEach(doc => allKycUsers.push({ id: doc.id, ...doc.data() }));
+
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
         const pendingKycList = [];
         pendingKycSnap.forEach(doc => { 
@@ -1790,7 +1761,8 @@ app.get('/', requireLogin, async (req, res) => {
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders,
             pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
             pendingKycList, buyVol, sellVol, recentFeed,
-            monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData)
+            monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData),
+            allKycUsers
         });
     } catch (error) { 
         res.send("Dashboard Error: " + error.message); 
