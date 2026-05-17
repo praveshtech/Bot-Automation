@@ -211,6 +211,7 @@ client.on('interactionCreate', async interaction => {
     // --- 🛡️ 1. AUTO-KYC BASIC LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
+        // 🔥 FIX 1: User Verification Check
         if (existingKyc.exists && existingKyc.data().name) {
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (basicRole && !interaction.member.roles.cache.has(basicRole.id)) await interaction.member.roles.add(basicRole).catch(console.error);
@@ -227,7 +228,9 @@ client.on('interactionCreate', async interaction => {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists && existingKyc.data().name) return interaction.editReply({ content: `✅ **Action Denied:** Your profile is already **Registered**.` });
             
+            // 🔥 FIX 2: Merge True & Basic Flag
             await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: interaction.fields.getTextInputValue('kyc_name'), discordContact: interaction.fields.getTextInputValue('kyc_discord_contact'), paymentInfo: 'N/A', basicVerified: true, createdAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+            
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (!basicRole) basicRole = await interaction.guild.roles.create({ name: 'Verified', color: '#3498db' });
             await interaction.member.roles.add(basicRole).catch(console.error);
@@ -248,13 +251,19 @@ client.on('interactionCreate', async interaction => {
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
         if (isVerifiedRoute && !hasRole) {
+            
+            // --- 🛑 SPAM PROTECTION: Double Lock ---
             try {
+                const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
+                const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
+                
                 const existingKycDoc = await db.collection('users_kyc').doc(interaction.user.id).get();
-                if (existingKycDoc.exists && existingKycDoc.data().status === 'Pending') {
-                    const existingChannel = interaction.guild.channels.cache.find(c => c.name.toLowerCase() === `kyc-${interaction.user.username.toLowerCase()}`);
-                    let replyMsg = '❌ **Action Denied:** Your KYC request is already **Pending**.\nPlease wait for an Admin to review it.';
-                    if (existingChannel) replyMsg += `\n\n👉 **Go to your open ticket here:** ${existingChannel}`;
-                    return interaction.update({ content: replyMsg, embeds: [], components: [] });
+                const isPendingInDB = existingKycDoc.exists && existingKycDoc.data().status === 'Pending';
+
+                if (existingChannel || isPendingInDB) {
+                    let replyMsg = '❌ **Action Denied:** Your KYC verification is already in progress.\nPlease wait for an Admin to review your documents.';
+                    if (existingChannel) replyMsg += `\n\n👉 **Head over to your open room here:** ${existingChannel}`;
+                    return interaction.reply({ content: replyMsg, ephemeral: true }); // Using .reply instead of .update
                 }
             } catch (err) { console.error("Spam Check Error:", err); }
 
@@ -764,17 +773,25 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
 
 app.post('/update-price', requireLogin, async (req, res) => {
     const { buyPrice, sellPrice } = req.body; 
+    const sendModernAlert = (title, text, icon) => {
+        res.send(`
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
+            <body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK', customClass: { popup: 'border border-slate-700 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]' }}).then(() => { window.location.href = "/"; });</script></body>
+        `);
+    };
+
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-        if (!guild) return res.send(`<script>alert("❌ Error: Discord server not found."); window.location.href="/";</script>`);
+        if (!guild) return sendModernAlert("❌ Error", "Discord server not found.", "error");
         let priceChannel = guild.channels.cache.get('1503666351594799205'); 
-        if (!priceChannel) return res.send(`<script>alert("❌ Error: Price Update Channel not found."); window.location.href="/";</script>`);
+        if (!priceChannel) return sendModernAlert("❌ Error", "Price Update Channel not found.", "error");
 
         const priceEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 USDT Market Price Update').setDescription('**Professor Network** has updated the real-time P2P exchange rates.').addFields({ name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
         await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
-        res.send(`<script>alert("✅ Market Price Broadcasted!"); window.location.href="/";</script>`);
-    } catch (error) { res.send(`<script>alert("❌ Error: ${error.message}"); window.location.href="/";</script>`); }
+        sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
+    } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
 app.get('/api/check-updates', requireLogin, (req, res) => { res.json({ timestamp: globalLastUpdate }); });
@@ -790,7 +807,6 @@ app.get('/', requireLogin, async (req, res) => {
         const allKycUsers = [];
         allKycSnap.forEach(doc => {
             const data = doc.data();
-            // 🔥 FIX 3: Sirf P2P with KYC wale log hi list me aayenge
             if (data.kycType === 'Advanced (Vault Verified)') allKycUsers.push({ id: doc.id, ...data });
         });
 

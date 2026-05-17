@@ -6,69 +6,30 @@
     <title>The Vault | Premium Executive Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     
     <style>
-        body { 
-            font-family: 'Outfit', sans-serif;
-            background-color: #0b1120;
-            background-image: radial-gradient(circle at top right, #1e293b, #0b1120);
-            color: #f8fafc;
-        }
-
+        body { font-family: 'Outfit', sans-serif; background-color: #0b1120; background-image: radial-gradient(circle at top right, #1e293b, #0b1120); color: #f8fafc; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; border: 2px solid #0f172a; }
         ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
-
-        .glass-panel {
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 1.25rem;
-            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-        }
-        
-        .glass-panel:hover {
-            border-color: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6);
-        }
-
+        .glass-panel { background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1.25rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
+        .glass-panel:hover { border-color: rgba(255, 255, 255, 0.1); transform: translateY(-2px); box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6); }
         .sidebar-link { transition: all 0.3s ease; border-right: 4px solid transparent; }
         .sidebar-link:hover { background: rgba(255, 255, 255, 0.03); transform: translateX(4px); }
-        .sidebar-link.active {
-            background: linear-gradient(90deg, rgba(220,38,38,0.0) 0%, rgba(220,38,38,0.15) 100%);
-            border-right: 4px solid #ef4444;
-            color: #ef4444;
-            text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
-        }
-
+        .sidebar-link.active { background: linear-gradient(90deg, rgba(220,38,38,0.0) 0%, rgba(220,38,38,0.15) 100%); border-right: 4px solid #ef4444; color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
         .text-glow { text-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
         .text-glow-green { text-shadow: 0 0 15px rgba(34, 197, 94, 0.5); }
-
         .fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        @keyframes fadeIn {
-            0% { opacity: 0; transform: translateY(15px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-
+        @keyframes fadeIn { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
         .hidden-section { display: none; }
         tbody tr { transition: all 0.2s ease; }
         tbody tr:hover { background: rgba(239, 68, 68, 0.1) !important; transform: scale(1.01); }
-
-        #sidebar-overlay {
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-        #sidebar-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-        
+        #sidebar-overlay { transition: opacity 0.3s ease; pointer-events: none; }
+        #sidebar-overlay.active { opacity: 1; pointer-events: auto; }
         .custom-scrollbar::-webkit-scrollbar { height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(52, 211, 153, 0.3); border-radius: 4px; }
@@ -81,65 +42,42 @@
 
     <aside id="sidebar" class="w-64 bg-slate-900/95 border-r border-slate-800/50 flex flex-col fixed h-full z-50 shadow-[5px_0_30px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 transform -translate-x-full lg:translate-x-0">
         <div class="p-8 relative">
-            <h1 class="text-3xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-700 flex items-center text-glow">
-                <i class="fa-solid fa-building-columns mr-3 text-red-600"></i> Vault
-            </h1>
+            <h1 class="text-3xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-700 flex items-center text-glow"><i class="fa-solid fa-building-columns mr-3 text-red-600"></i> Vault</h1>
             <div class="mt-2 text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold ml-10">Admin Control</div>
-            <button onclick="toggleSidebar()" class="lg:hidden absolute top-8 right-6 text-slate-400 hover:text-red-500 transition duration-300">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
+            <button onclick="toggleSidebar()" class="lg:hidden absolute top-8 right-6 text-slate-400 hover:text-red-500 transition duration-300"><i class="fa-solid fa-xmark text-xl"></i></button>
         </div>
 
         <nav class="flex-1 mt-6 px-4 space-y-3">
-            <button onclick="showTab('dashboard-view', this)" class="sidebar-link active w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
-                <i class="fa-solid fa-chart-line mr-4 text-lg"></i> Dashboard
-            </button>
-            <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
-                <i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update
-            </button>
-            <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
-                <i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings
-            </button>
-            <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg">
-                <i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC
-            </button>
+            <button onclick="showTab('dashboard-view', this)" class="sidebar-link active w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-chart-line mr-4 text-lg"></i> Dashboard</button>
+            <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update</button>
+            <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings</button>
+            <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC</button>
         </nav>
 
         <div class="p-6 border-t border-slate-800/50">
-            <a href="/logout" onclick="return confirm('🔒 ALERT: Are you sure you want to lock the vault and logout?');" class="flex items-center justify-center px-4 py-3 text-sm font-bold uppercase tracking-widest text-red-400 hover:text-white bg-red-950/30 hover:bg-red-600/80 rounded-xl transition-all duration-300 shadow-[0_0_10px_rgba(220,38,38,0.1)] hover:shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-red-900/50">
+            <button onclick="confirmLogout()" class="w-full flex items-center justify-center px-4 py-3 text-sm font-bold uppercase tracking-widest text-red-400 hover:text-white bg-red-950/30 hover:bg-red-600/80 rounded-xl transition-all duration-300 shadow-[0_0_10px_rgba(220,38,38,0.1)] hover:shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-red-900/50">
                 <i class="fa-solid fa-power-off mr-3"></i> Lock Vault
-            </a>
+            </button>
         </div>
     </aside>
 
     <main class="flex-1 w-full lg:ml-64 p-4 sm:p-6 md:p-10 min-h-screen">
-        
         <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 fade-in">
             <div class="flex items-center gap-4">
-                <button id="menu-toggle-btn" onclick="toggleSidebar()" class="lg:hidden w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300">
-                    <i id="menu-arrow-icon" class="fa-solid fa-chevron-right text-lg"></i>
-                </button>
-            
+                <button id="menu-toggle-btn" onclick="toggleSidebar()" class="lg:hidden w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300"><i id="menu-arrow-icon" class="fa-solid fa-chevron-right text-lg"></i></button>
                 <div>
                     <h2 id="page-title" class="text-2xl sm:text-3xl font-black text-gray-100 tracking-tight">Executive Analytics</h2>
                     <p class="text-slate-400 text-xs sm:text-sm font-medium mt-1">Real-time Professor Network Monitoring</p>
                 </div>
             </div>
-            
             <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <div class="glass-panel px-4 py-2 flex items-center space-x-3 border-slate-700/50 text-xs font-bold uppercase tracking-wider">
                     <div class="flex items-center space-x-2">
-                        <button onclick="toggleSmartSync()" id="refresh-toggle-btn" class="text-green-500 hover:text-green-400 transition">
-                            <i id="refresh-icon" class="fa-solid fa-bolt animate-pulse"></i>
-                        </button>
+                        <button onclick="toggleSmartSync()" id="refresh-toggle-btn" class="text-green-500 hover:text-green-400 transition"><i id="refresh-icon" class="fa-solid fa-bolt animate-pulse"></i></button>
                         <span>Smart Sync: <span id="sync-status" class="text-green-400">Active</span></span>
                     </div>
                 </div>
-
-                <a href="/export-ledger" class="glass-panel justify-center px-4 py-2.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/20 hover:border-emerald-500/50 transition flex items-center text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-                    <i class="fa-solid fa-file-excel mr-2 text-base"></i> Export
-                </a>
-          
+                <a href="/export-ledger" class="glass-panel justify-center px-4 py-2.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/20 hover:border-emerald-500/50 transition flex items-center text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-file-excel mr-2 text-base"></i> Export</a>
                 <div class="glass-panel px-4 py-2.5 flex items-center justify-center space-x-3 border-slate-700/50">
                     <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
                     <span class="text-xs font-black uppercase tracking-widest text-slate-300">Live DB</span>
@@ -156,7 +94,6 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 text-white animate-counter" data-target="<%= liveMembers %>" data-prefix="">0</p>
                 </div>
-    
                 <div class="glass-panel p-6 border-l-4 border-green-500">
                     <div class="flex justify-between items-start">
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Daily Vol (24h)</h3>
@@ -164,7 +101,6 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green animate-counter" data-target="<%= dailyVol %>" data-prefix="$">0</p>
                 </div>
-                
                 <div class="glass-panel p-6 border-l-4 border-red-500 <%= pendingTickets > 0 ? 'shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/50' : '' %>">
                     <div class="flex justify-between items-start">
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Tickets</h3>
@@ -172,7 +108,6 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingTickets > 0 ? 'text-red-500 text-glow animate-pulse' : 'text-gray-300' %> animate-counter" data-target="<%= pendingTickets %>" data-prefix="">0</p>
                 </div>
-                
                 <div onclick="openKycModal()" class="glass-panel p-6 border-l-4 border-yellow-500 cursor-pointer <%= pendingKyc > 0 ? 'shadow-[0_0_20px_rgba(234,179,8,0.25)] border-yellow-500/50 hover:bg-yellow-500/5' : '' %>">
                     <div class="flex justify-between items-start">
                         <div class="flex flex-col">
@@ -204,7 +139,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 fade-in">
-                
                 <div class="glass-panel p-4 sm:p-6 relative overflow-hidden flex flex-col h-full">
                     <div class="flex-1 flex flex-col">
                         <div class="flex items-center mb-4 relative z-10">
@@ -213,7 +147,6 @@
                         </div>
                         <div class="relative flex-1 min-h-[160px] w-full z-10"><canvas id="monthlyBarChart"></canvas></div>
                     </div>
-
                     <div class="mt-6 pt-5 border-t border-slate-700/50 shrink-0">
                         <div class="flex items-center mb-3 relative z-10">
                             <div class="p-1.5 bg-sky-500/10 rounded-lg mr-3"><i class="fa-solid fa-calendar-week text-sky-400 text-xs"></i></div>
@@ -228,40 +161,18 @@
                         <div class="p-2 bg-emerald-500/10 rounded-lg mr-3"><i class="fa-solid fa-calendar-days text-emerald-400"></i></div>
                         <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Trading Activity</h4>
                     </div>
-                    
                     <div class="flex items-center justify-between mb-5 relative z-10 text-slate-100">
-                        <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300">
-                            <i class="fa-solid fa-chevron-left"></i>
-                        </button>
+                        <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300"><i class="fa-solid fa-chevron-left"></i></button>
                         <div id="calendar-month-year" class="font-black text-lg tracking-tight"></div>
-                        <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300">
-                            <i class="fa-solid fa-chevron-right"></i>
-                        </button>
+                        <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
-
                     <div class="relative z-10 pb-4 overflow-x-auto overflow-y-hidden custom-scrollbar">
-                        <div class="grid grid-cols-7 text-center text-[10px] text-slate-500 font-bold mb-3 pl-1 whitespace-nowrap">
-                            <span>Sun</span>
-                            <span>Mon</span>
-                            <span>Tue</span>
-                            <span>Wed</span>
-                            <span>Thu</span>
-                            <span>Fri</span>
-                            <span>Sat</span>
-                        </div>
-                        <div id="calendar-heatmap-grid" class="grid grid-cols-7 grid-flow-row gap-[5px] sm:gap-[6px] h-auto">
-                        </div>
+                        <div class="grid grid-cols-7 text-center text-[10px] text-slate-500 font-bold mb-3 pl-1 whitespace-nowrap"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+                        <div id="calendar-heatmap-grid" class="grid grid-cols-7 grid-flow-row gap-[5px] sm:gap-[6px] h-auto"></div>
                     </div>
-                    
                     <div class="mt-2 pt-3 border-t border-slate-700/50 flex justify-end items-center text-[10px] text-slate-400 uppercase font-bold gap-2 relative z-10">
-                        <span>Less</span>
-                        <div class="w-3 h-3 rounded-[2px] bg-slate-800/80 border border-slate-700"></div>
-                        <div class="w-3 h-3 rounded-[2px] bg-emerald-900 border border-emerald-800"></div>
-                        <div class="w-3 h-3 rounded-[2px] bg-emerald-600 border border-emerald-500"></div>
-                        <div class="w-3 h-3 rounded-[2px] bg-emerald-400 border border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>
-                        <span>More</span>
+                        <span>Less</span><div class="w-3 h-3 rounded-[2px] bg-slate-800/80 border border-slate-700"></div><div class="w-3 h-3 rounded-[2px] bg-emerald-900 border border-emerald-800"></div><div class="w-3 h-3 rounded-[2px] bg-emerald-600 border border-emerald-500"></div><div class="w-3 h-3 rounded-[2px] bg-emerald-400 border border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div><span>More</span>
                     </div>
-
                     <div id="heatmap-tooltip" class="fixed hidden bg-slate-900/95 backdrop-blur-md border border-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-2xl z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px] whitespace-nowrap transition-opacity duration-200 opacity-0">
                         <span id="tooltip-date" class="text-slate-400 block text-[9px] uppercase tracking-widest mb-1"></span>
                         <span id="tooltip-vol" class="text-green-400 font-black text-sm"></span>
@@ -272,21 +183,13 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
                 <div class="glass-panel p-0 lg:col-span-2 overflow-hidden">
                     <div class="p-6 border-b border-slate-700/50 flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="p-2 bg-red-500/10 rounded-lg mr-3"><i class="fa-solid fa-bolt text-red-400"></i></div>
-                            <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Live Feed</h4>
-                        </div>
+                        <div class="flex items-center"><div class="p-2 bg-red-500/10 rounded-lg mr-3"><i class="fa-solid fa-bolt text-red-400"></i></div><h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Live Feed</h4></div>
                         <span class="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-widest"><i class="fa-solid fa-hand-pointer mr-1"></i> Tap to view</span>
                     </div>
                     <div class="overflow-x-auto w-full">
                         <table class="w-full text-left whitespace-nowrap min-w-[500px] lg:min-w-0">
                             <thead class="bg-slate-800/30">
-                                <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest">
-                                    <th class="py-4 px-6">User</th>
-                                    <th class="py-4 px-6">Action</th>
-                                    <th class="py-4 px-6">Method</th>
-                                    <th class="py-4 px-6 text-right">Amount (USD)</th>
-                                </tr>
+                                <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
                             </thead>
                             <tbody class="text-sm font-medium">
                                 <% if (recentFeed.length === 0) { %>
@@ -294,17 +197,8 @@
                                 <% } else { %>
                                     <% recentFeed.forEach((trade, index) => { %>
                                         <tr class="border-b border-slate-800/50 cursor-pointer group" onclick="openTxModal(<%= index %>)">
-                                            <td class="py-4 px-6 text-gray-200 flex items-center group-hover:text-white transition">
-                                                <div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center mr-3 text-xs font-black text-slate-400 group-hover:bg-red-600 group-hover:text-white transition"><%= trade.username.charAt(0).toUpperCase() %></div>
-                                                <%= trade.username %>
-                                            </td>
-                                            <td class="py-4 px-6">
-                                                <% if (trade.tradeType === 'Buy') { %>
-                                                    <span class="bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span>
-                                                <% } else { %>
-                                                    <span class="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span>
-                                                <% } %>
-                                            </td>
+                                            <td class="py-4 px-6 text-gray-200 flex items-center group-hover:text-white transition"><div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center mr-3 text-xs font-black text-slate-400 group-hover:bg-red-600 group-hover:text-white transition"><%= trade.username.charAt(0).toUpperCase() %></div><%= trade.username %></td>
+                                            <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span><% } else { %><span class="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span><% } %></td>
                                             <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
                                             <td class="py-4 px-6 text-right font-black text-gray-100 text-base group-hover:text-red-400 transition">$<%= trade.amountUsd.toLocaleString() %></td>
                                         </tr>
@@ -316,26 +210,16 @@
                 </div>
 
                 <div class="glass-panel p-6">
-                    <div class="flex items-center mb-6">
-                        <div class="p-2 bg-yellow-500/10 rounded-lg mr-3"><i class="fa-solid fa-crown text-yellow-400"></i></div>
-                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Top Whales</h4>
-                    </div>
+                    <div class="flex items-center mb-6"><div class="p-2 bg-yellow-500/10 rounded-lg mr-3"><i class="fa-solid fa-crown text-yellow-400"></i></div><h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Top Whales</h4></div>
                     <div class="space-y-3">
-                        <% if (topTraders.length === 0) { %>
-                            <p class="text-slate-500 italic text-center text-sm py-4">Awaiting volume...</p>
-                        <% } %>
+                        <% if (topTraders.length === 0) { %><p class="text-slate-500 italic text-center text-sm py-4">Awaiting volume...</p><% } %>
                         <% topTraders.forEach((trader, index) => { %>
                             <div class="flex justify-between items-center p-4 bg-slate-800/40 hover:bg-slate-700/50 rounded-xl border border-white/5 transition duration-300 group">
                                 <div class="flex items-center space-x-3">
-                                    <% if (index === 0) { %>
-                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center font-black text-black shadow-[0_0_10px_rgba(234,179,8,0.5)] text-xs">1</div>
-                                    <% } else if (index === 1) { %>
-                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center font-black text-black text-xs">2</div>
-                                    <% } else if (index === 2) { %>
-                                        <div class="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center font-black text-white text-xs">3</div>
-                                    <% } else { %>
-                                        <div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-bold text-gray-400 text-xs"><%= index + 1 %></div>
-                                    <% } %>
+                                    <% if (index === 0) { %><div class="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center font-black text-black shadow-[0_0_10px_rgba(234,179,8,0.5)] text-xs">1</div>
+                                    <% } else if (index === 1) { %><div class="w-7 h-7 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center font-black text-black text-xs">2</div>
+                                    <% } else if (index === 2) { %><div class="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center font-black text-white text-xs">3</div>
+                                    <% } else { %><div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-bold text-gray-400 text-xs"><%= index + 1 %></div><% } %>
                                     <span class="font-bold text-slate-300 group-hover:text-white transition"><%= trader.username %></span>
                                 </div>
                                 <span class="font-black text-green-400 bg-green-500/10 px-2 py-1 rounded text-sm">$<%= trader.totalVolume.toLocaleString() %></span>
@@ -349,41 +233,25 @@
         <section id="kyc-view" class="hidden-section fade-in">
             <div class="glass-panel p-6 border-t-4 border-blue-500 relative overflow-hidden">
                 <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-blue-500 text-glow"><i class="fa-solid fa-users mr-2"></i> Verified Users Database</h3>
-                
                 <div class="overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap">
                         <thead class="bg-slate-800/30">
-                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-700/50">
-                                <th class="py-4 px-6">User Details</th>
-                                <th class="py-4 px-6">Name</th>
-                                <th class="py-4 px-6">Status</th>
-                                <th class="py-4 px-6 text-right">Actions</th>                            </tr>
+                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-700/50"><th class="py-4 px-6">User Details</th><th class="py-4 px-6">Name</th><th class="py-4 px-6">Status</th><th class="py-4 px-6 text-right">Actions</th></tr>
                         </thead>
                         <tbody class="text-sm font-medium">
                             <% allKycUsers.forEach(user => { %>
-                            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" onclick="openUserModal('<%= user.id %>')">
                                 <td class="py-4 px-6 text-gray-200">
-                                    <div class="font-bold text-base"><%= user.discordContact || user.username %></div>
-                                    <div class="text-[10px] text-slate-500 uppercase tracking-widest">ID: <%= user.discordId %></div>
+                                    <div class="font-bold text-base"><%= user.discordContact || user.username %></div><div class="text-[10px] text-slate-500 uppercase tracking-widest">ID: <%= user.discordId %></div>
                                 </td>
                                 <td class="py-4 px-6 text-slate-300"><%= user.name || 'N/A' %></td>
-                                <td class="py-4 px-6">
-                                    <span class="px-3 py-1.5 rounded-md text-[10px] font-black tracking-widest uppercase <%= user.status === 'Approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' %>">
-                                        <%= user.status %>
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6">
+                                <td class="py-4 px-6"><span class="px-3 py-1.5 rounded-md text-[10px] font-black tracking-widest uppercase <%= user.status === 'Approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : (user.status === 'Rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20') %>"><%= user.status %></span></td>
+                                <td class="py-4 px-6 text-right">
                                     <div class="flex items-center justify-end space-x-3">
                                         <% if(user.idPhoto || user.selfiePhoto) { %>
-                                            <button onclick="event.stopPropagation(); openDocs('<%= user.username %>', '<%= user.idPhoto %>', '<%= user.selfiePhoto %>')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
-                                                <i class="fa-solid fa-image mr-1"></i> Photos
-                                            </button>
-                                        <% } else { %>
-                                            <span class="text-slate-600 text-xs italic font-bold">No Photos</span>
-                                        <% } %>
-                                        <button onclick="event.stopPropagation(); deleteKyc('<%= user.discordId %>')" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 w-8 h-8 rounded-lg flex items-center justify-center transition duration-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]" title="Delete User">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
+                                            <button onclick="event.stopPropagation(); openDocs('<%= user.username %>', '<%= user.idPhoto %>', '<%= user.selfiePhoto %>')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.1)]"><i class="fa-solid fa-image mr-1"></i> Photos</button>
+                                        <% } else { %><span class="text-slate-600 text-xs italic font-bold mr-2">No Photos</span><% } %>
+                                        <button onclick="event.stopPropagation(); deleteKyc('<%= user.discordId %>')" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 w-8 h-8 rounded-lg flex items-center justify-center transition duration-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]" title="Delete User"><i class="fa-solid fa-trash-can"></i></button>
                                     </div>
                                 </td>
                             </tr>
@@ -394,39 +262,41 @@
             </div>
         </section>
 
-        <div id="photoModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeDocs()"></div>
-            <div class="glass-panel relative z-10 w-full max-w-4xl p-6 border-t-4 border-blue-500 transform transition-all duration-300" id="photoModalContent">
-                <button onclick="closeDocs()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-                
-                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight mb-6 flex items-center" id="docModalTitle">
-                    <i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> User Documents
-                </h3>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
-                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 rounded">National ID</h4>
-                        <img id="idImg" src="" class="w-full rounded-lg object-contain h-64 sm:h-80" alt="National ID">
+        <div id="userDetailsModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeUserModal()"></div>
+            <div class="glass-panel relative z-10 w-full max-w-lg p-6 border-t-4 border-blue-500 transform scale-95 opacity-0 transition-all duration-300" id="userDetailsModalContent">
+                <button onclick="closeUserModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
+                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-700 to-blue-900 flex justify-center items-center mr-4 text-2xl font-black text-white shadow-inner border border-blue-600" id="ud-avatar">U</div>
+                    <div><h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="ud-name">User Name</h3><p class="text-[10px] sm:text-xs font-bold text-blue-400 uppercase tracking-widest mt-1" id="ud-username">@username</p></div>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 shadow-inner">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Discord ID</p><p class="font-mono text-sm text-slate-300" id="ud-id">123456789</p></div>
+                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Status</p><p class="font-black text-sm" id="ud-status">Approved</p></div>
+                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">KYC Level</p><p class="font-bold text-sm text-slate-300" id="ud-type">Advanced (Vault Verified)</p></div>
+                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Record Date</p><p class="font-bold text-sm text-slate-300" id="ud-date">N/A</p></div>
+                        </div>
                     </div>
-                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner">
-                        <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 rounded">Selfie</h4>
-                        <img id="selfieImg" src="" class="w-full rounded-lg object-contain h-64 sm:h-80" alt="Selfie">
+                    <div class="bg-[#050b14] p-4 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 shadow-inner">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center"><i class="fa-solid fa-message mr-2"></i> Additional Info</p><span id="ud-info">No additional info provided.</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <script>
-            function openDocs(username, idPhoto, selfiePhoto) {
-                document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> ${username}'s KYC Documents`;
-                document.getElementById('idImg').src = idPhoto || 'https://via.placeholder.com/400x300?text=No+ID+Found';
-                document.getElementById('selfieImg').src = selfiePhoto || 'https://via.placeholder.com/400x300?text=No+Selfie+Found';
-                document.getElementById('photoModal').classList.remove('hidden');
-            }
-            function closeDocs() {
-                document.getElementById('photoModal').classList.add('hidden');
-            }
-        </script>
+        <div id="photoModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
+            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeDocs()"></div>
+            <div class="glass-panel relative z-10 w-full max-w-4xl p-6 border-t-4 border-blue-500 transform transition-all duration-300" id="photoModalContent">
+                <button onclick="closeDocs()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight mb-6 flex items-center" id="docModalTitle"><i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> User Documents</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner"><h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 rounded">National ID</h4><img id="idImg" src="" class="w-full rounded-lg object-contain h-64 sm:h-80" alt="National ID"></div>
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner"><h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 rounded">Selfie</h4><img id="selfieImg" src="" class="w-full rounded-lg object-contain h-64 sm:h-80" alt="Selfie"></div>
+                </div>
+            </div>
+        </div>
 
         <section id="price-view" class="hidden-section fade-in">
             <div class="max-w-4xl grid grid-cols-1 gap-8">
@@ -434,23 +304,12 @@
                     <div class="relative z-10">
                         <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-green-500 text-glow-green"><i class="fa-solid fa-bolt mr-2"></i> Update USDT Market Price</h3>
                         <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Broadcast new P2P trading rates directly to the Discord #📊・usdt-price-update channel.</p>
-                        
                         <form action="/update-price" method="POST" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                                <div>
-                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🟢 Buy Price (₹)</label>
-                                    <input type="number" step="0.01" name="buyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition" placeholder="e.g. 88.50" required>
-                                </div>
-                                <div>
-                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🔴 Sell Price (₹)</label>
-                                    <input type="number" step="0.01" name="sellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 87.20" required>
-                                </div>
+                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🟢 Buy Price (₹)</label><input type="number" step="0.01" name="buyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition" placeholder="e.g. 88.50" required></div>
+                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🔴 Sell Price (₹)</label><input type="number" step="0.01" name="sellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 87.20" required></div>
                             </div>
-                            <div class="pt-6 border-t border-slate-800/50 mt-4">
-                                <button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)]">
-                                    Broadcast to Discord 🚀
-                                </button>
-                            </div>
+                            <div class="pt-6 border-t border-slate-800/50 mt-4"><button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)]">Broadcast to Discord 🚀</button></div>
                         </form>
                     </div>
                 </div>
@@ -464,39 +323,20 @@
                     <div class="relative z-10">
                         <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-red-500 text-glow">Vault Security Control</h3>
                         <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Update your administrative credentials to maintain operational security.</p>
-                        
                         <form action="/update-credentials" method="POST" class="space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                                <div>
-                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Admin ID</label>
-                                    <div class="relative">
-                                        <i class="fa-solid fa-user-astronaut absolute left-4 top-4 text-slate-500"></i>
-                                        <input type="text" name="new_username" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New Username" required>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Passcode</label>
-                                    <div class="relative">
-                                        <i class="fa-solid fa-key absolute left-4 top-4 text-slate-500"></i>
-                                        <input type="password" name="new_password" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New passcode" required>
-                                    </div>
-                                </div>
+                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Admin ID</label><div class="relative"><i class="fa-solid fa-user-astronaut absolute left-4 top-4 text-slate-500"></i><input type="text" name="new_username" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New Username" required></div></div>
+                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Passcode</label><div class="relative"><i class="fa-solid fa-key absolute left-4 top-4 text-slate-500"></i><input type="password" name="new_password" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New passcode" required></div></div>
                             </div>
-                            
                             <div class="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-6 mt-4">
-                                <p class="text-xs text-slate-400 font-medium flex items-center bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20">
-                                    <i class="fa-solid fa-circle-exclamation mr-2 text-red-500"></i> Note: You will be logged out immediately after updating.
-                                </p>
-                                <button type="submit" class="w-full md:w-auto bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]">
-                                    <i class="fa-solid fa-lock mr-2"></i> Save & Lock Vault
-                                </button>
+                                <p class="text-xs text-slate-400 font-medium flex items-center bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-circle-exclamation mr-2 text-red-500"></i> Note: You will be logged out immediately after updating.</p>
+                                <button type="submit" class="w-full md:w-auto bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]"><i class="fa-solid fa-lock mr-2"></i> Save & Lock Vault</button>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
         </section>
-
     </main>
 
     <div id="txModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
@@ -505,92 +345,100 @@
             <button onclick="closeTxModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
             <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex justify-center items-center mr-4 text-lg font-black text-white shadow-inner border border-slate-600" id="modal-avatar">U</div>
-                <div>
-                    <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="modal-username">Username</h3>
-                    <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1" id="modal-date">Date & Time</p>
-                </div>
+                <div><h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="modal-username">Username</h3><p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1" id="modal-date">Date & Time</p></div>
             </div>
             <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                    <p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Action & Method</p>
-                    <p class="font-black text-sm sm:text-lg" id="modal-action">BUY / UPI</p>
-                </div>
-                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                    <p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Amount</p>
-                    <p class="font-black text-lg sm:text-2xl text-white text-glow" id="modal-amount">$0.00</p>
-                </div>
+                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner"><p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Action & Method</p><p class="font-black text-sm sm:text-lg" id="modal-action">BUY / UPI</p></div>
+                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner"><p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Amount</p><p class="font-black text-lg sm:text-2xl text-white text-glow" id="modal-amount">$0.00</p></div>
             </div>
             <div>
                 <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center"><i class="fa-solid fa-file-invoice mr-2"></i> User Provided Details</p>
                 <div class="bg-[#050b14] p-4 sm:p-5 rounded-xl border border-slate-700 text-xs sm:text-sm font-medium text-green-400 whitespace-pre-wrap font-mono shadow-inner max-h-40 overflow-y-auto" id="modal-details">Loading...</div>
             </div>
-            <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase">
-                <span>Closed By: <span id="modal-closedBy" class="text-slate-300">Admin</span></span>
-                <span class="text-red-500"><i class="fa-solid fa-shield-check mr-1"></i> Vault Secured</span>
-            </div>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase"><span>Closed By: <span id="modal-closedBy" class="text-slate-300">Admin</span></span><span class="text-red-500"><i class="fa-solid fa-shield-check mr-1"></i> Vault Secured</span></div>
         </div>
     </div>
 
     <div id="kycModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeKycModal()"></div>
         <div class="glass-panel relative z-10 w-full max-w-2xl p-5 sm:p-8 border-t-4 border-yellow-500 transform scale-95 opacity-0 transition-all duration-300" id="kycModalContent">
-            
-            <button onclick="closeKycModal()" class="absolute top-5 right-5 text-slate-400 hover:text-yellow-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-            
+            <button onclick="closeKycModal()" class="absolute top-5 right-5 text-slate-400 hover:text-yellow-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
             <div class="mb-6 border-b border-slate-700/50 pb-4">
-                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center">
-                    <i class="fa-solid fa-user-shield text-yellow-500 mr-3"></i> Pending KYC Reviews
-                </h3>
+                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center"><i class="fa-solid fa-user-shield text-yellow-500 mr-3"></i> Pending KYC Reviews</h3>
                 <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Review and action the verification requests.</p>
             </div>
-            
             <div class="space-y-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1" id="kyc-list-wrapper">
                 <% if (pendingKycList.length === 0) { %>
-                    <div class="text-center py-10 text-slate-500 italic">
-                        <i class="fa-solid fa-circle-check text-4xl text-green-500/20 mb-3 block"></i>
-                        No pending KYC requests. All clear!
-                    </div>
+                    <div class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-circle-check text-4xl text-green-500/20 mb-3 block"></i>No pending KYC requests. All clear!</div>
                 <% } else { %>
                     <% pendingKycList.forEach(kyc => { %>
                         <div class="bg-slate-900/60 p-4 sm:p-5 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition duration-300 hover:border-slate-700" id="kyc-row-<%= kyc.discordId %>">
                             <div class="flex-1 w-full">
-                                <div class="flex items-center space-x-3 mb-2">
-                                    <span class="bg-yellow-500/10 text-yellow-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pending</span>
-                                    <span class="text-xs font-black text-slate-400">ID: <%= kyc.discordContact %></span>
-                                </div>
-                                <h4 class="font-bold text-white text-sm sm:text-base">Alias: <span class="text-yellow-400"><%= kyc.name %></span></h4>
-                                <p class="text-xs text-slate-400 mt-1">Tag: @<%= kyc.username %></p>
-                                <div class="bg-[#050b14]/50 border border-slate-800/80 p-2.5 rounded-lg mt-3 text-xs text-slate-300 font-mono overflow-x-auto">
-                                    <span class="text-slate-500 font-bold block mb-1">Details:</span>
-                                    <%= kyc.paymentInfo %>
-                                </div>
+                                <div class="flex items-center space-x-3 mb-2"><span class="bg-yellow-500/10 text-yellow-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pending</span><span class="text-xs font-black text-slate-400">ID: <%= kyc.discordContact %></span></div>
+                                <h4 class="font-bold text-white text-sm sm:text-base">Alias: <span class="text-yellow-400"><%= kyc.name %></span></h4><p class="text-xs text-slate-400 mt-1">Tag: @<%= kyc.username %></p>
+                                <div class="bg-[#050b14]/50 border border-slate-800/80 p-2.5 rounded-lg mt-3 text-xs text-slate-300 font-mono overflow-x-auto"><span class="text-slate-500 font-bold block mb-1">Details:</span><%= kyc.paymentInfo %></div>
                             </div>
                             <div class="flex md:flex-col gap-2 w-full md:w-auto">
-                                <button onclick="actionKyc('<%= kyc.discordId %>', 'approve')" class="flex-1 md:flex-initial w-full md:w-28 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg transition-all shadow-[0_0_10px_rgba(34,197,94,0.1)]">
-                                    Approve
-                                </button>
-                                <button onclick="actionKyc('<%= kyc.discordId %>', 'reject')" class="flex-1 md:flex-initial w-full md:w-28 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg border border-red-500/10 transition-all">
-                                    Reject
-                                </button>
+                                <button onclick="actionKyc('<%= kyc.discordId %>', 'approve')" class="flex-1 md:flex-initial w-full md:w-28 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg transition-all shadow-[0_0_10px_rgba(34,197,94,0.1)]">Approve</button>
+                                <button onclick="actionKyc('<%= kyc.discordId %>', 'reject')" class="flex-1 md:flex-initial w-full md:w-28 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg border border-red-500/10 transition-all">Reject</button>
                             </div>
                         </div>
                     <% }) %>
                 <% } %>
             </div>
-            
-            <div class="mt-6 pt-4 border-t border-slate-700/50 text-right text-[10px] text-slate-500 font-black uppercase tracking-widest">
-                <i class="fa-solid fa-clock-rotate-left mr-1"></i> Waiting Queue: <%= pendingKyc %>
-            </div>
+            <div class="mt-6 pt-4 border-t border-slate-700/50 text-right text-[10px] text-slate-500 font-black uppercase tracking-widest"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Waiting Queue: <%= pendingKyc %></div>
         </div>
     </div>
 
     <script>
         const recentTrades = <%- JSON.stringify(recentFeed || []) %>;
+        const allKycData = <%- JSON.stringify(allKycUsers || []).replace(/</g, '\\u003c') %>;
     </script>
 
     <script>
+        // --- 🚀 MODERN ALERT SETUP ---
+        const VaultAlert = Swal.mixin({
+            background: '#0f172a', color: '#f8fafc',
+            customClass: { popup: 'border border-slate-700 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)]', confirmButton: 'font-black uppercase tracking-widest px-6 py-2.5 rounded-lg', cancelButton: 'font-bold uppercase tracking-widest px-6 py-2.5 rounded-lg' }
+        });
+
+        function confirmLogout() {
+            VaultAlert.fire({
+                title: 'Lock Vault?', text: 'Are you sure you want to securely lock the system and logout?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: '<i class="fa-solid fa-lock mr-2"></i> Yes, Lock It!'
+            }).then((result) => { if (result.isConfirmed) { window.location.href = '/logout'; } });
+        }
+
+        async function actionKyc(userId, action) {
+            const actionText = action === 'approve' ? 'Approve' : 'Reject';
+            const btnColor = action === 'approve' ? '#22c55e' : '#ef4444';
+            const result = await VaultAlert.fire({ title: `${actionText} KYC?`, text: `Are you sure you want to ${action} this user's verification?`, icon: 'question', showCancelButton: true, confirmButtonColor: btnColor, cancelButtonColor: '#334155', confirmButtonText: `Yes, ${actionText}` });
+            if(!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(action === 'approve' ? '/api/kyc-approve' : '/api/kyc-reject', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
+                const apiResult = await response.json();
+                if (apiResult.success) {
+                    await VaultAlert.fire({ title: 'Success!', text: `User KYC ${action}d!`, icon: 'success', confirmButtonColor: '#3b82f6' });
+                    const row = document.getElementById(`kyc-row-${userId}`);
+                    if(row) { row.style.transition = 'all 0.5s ease'; row.style.opacity = '0'; row.style.transform = 'translateY(15px)'; setTimeout(() => { row.remove(); }, 500); }
+                    setTimeout(() => { window.location.reload(); }, 1000);
+                } else { VaultAlert.fire('Error', apiResult.error, 'error'); }
+            } catch (e) { VaultAlert.fire('Error', 'API Connection Error!', 'error'); }
+        }
+
+        async function deleteKyc(userId) {
+            const result = await VaultAlert.fire({ title: 'Permanently Delete?', text: "⚠️ DANGER: Are you sure you want to delete this user's KYC record?", icon: 'error', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#334155', confirmButtonText: '<i class="fa-solid fa-trash-can mr-2"></i> Delete' });
+            if (!result.isConfirmed) return;
+            try {
+                const response = await fetch('/api/kyc-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
+                const apiResult = await response.json();
+                if (apiResult.success) {
+                    await VaultAlert.fire({ title: 'Deleted!', text: 'KYC record wiped.', icon: 'success', confirmButtonColor: '#3b82f6' });
+                    window.location.reload();
+                } else { VaultAlert.fire('Error', apiResult.error, 'error'); }
+            } catch (e) { VaultAlert.fire('Error', 'API Connection Error!', 'error'); }
+        }
+
         // --- 🔥 ZERO-READ SMART REFRESH SYSTEM 🔥 ---
         let currentServerTime = Date.now();
         let isSyncPaused = false;
@@ -602,464 +450,131 @@
                     try {
                         const response = await fetch('/api/check-updates');
                         const data = await response.json();
-                        
-                        if (data.timestamp > currentServerTime) {
-                            console.log("New data detected! Refreshing dashboard...");
-                            window.location.reload();
-                        }
-                    } catch (error) {
-                        console.log("Update check paused/failed.");
-                    }
+                        if (data.timestamp > currentServerTime) { console.log("New data detected! Refreshing..."); window.location.reload(); }
+                    } catch (error) { console.log("Update check paused/failed."); }
                 }
             }, 5000);
         }
 
         function toggleSmartSync() {
-            const icon = document.getElementById('refresh-icon');
-            const statusText = document.getElementById('sync-status');
-            isSyncPaused = !isSyncPaused;
-
-            if (isSyncPaused) {
-                icon.className = 'fa-solid fa-pause text-slate-500';
-                statusText.innerText = 'Paused';
-                statusText.className = 'text-slate-500';
-            } else {
-                icon.className = 'fa-solid fa-bolt text-green-500 animate-pulse';
-                statusText.innerText = 'Active';
-                statusText.className = 'text-green-400';
-                currentServerTime = Date.now(); 
-            }
+            const icon = document.getElementById('refresh-icon'); const statusText = document.getElementById('sync-status'); isSyncPaused = !isSyncPaused;
+            if (isSyncPaused) { icon.className = 'fa-solid fa-pause text-slate-500'; statusText.innerText = 'Paused'; statusText.className = 'text-slate-500'; } 
+            else { icon.className = 'fa-solid fa-bolt text-green-500 animate-pulse'; statusText.innerText = 'Active'; statusText.className = 'text-green-400'; currentServerTime = Date.now(); }
         }
 
-        function pauseOnModalOpen() {
-            isSyncPaused = true;
-            document.getElementById('refresh-icon').className = 'fa-solid fa-pause text-slate-500';
-            document.getElementById('sync-status').innerText = 'Paused';
-            document.getElementById('sync-status').className = 'text-slate-500';
-        }
-
-        function resumeOnModalClose() {
-            isSyncPaused = false;
-            document.getElementById('refresh-icon').className = 'fa-solid fa-bolt text-green-500 animate-pulse';
-            document.getElementById('sync-status').innerText = 'Active';
-            document.getElementById('sync-status').className = 'text-green-400';
-            currentServerTime = Date.now();
-        }
-
+        function pauseOnModalOpen() { isSyncPaused = true; document.getElementById('refresh-icon').className = 'fa-solid fa-pause text-slate-500'; document.getElementById('sync-status').innerText = 'Paused'; document.getElementById('sync-status').className = 'text-slate-500'; }
+        function resumeOnModalClose() { isSyncPaused = false; document.getElementById('refresh-icon').className = 'fa-solid fa-bolt text-green-500 animate-pulse'; document.getElementById('sync-status').innerText = 'Active'; document.getElementById('sync-status').className = 'text-green-400'; currentServerTime = Date.now(); }
         startSmartSync();
 
-        // --- SIDEBAR TOGGLE ---
         function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            const arrowIcon = document.getElementById('menu-arrow-icon');
-            const toggleBtn = document.getElementById('menu-toggle-btn');
-            const isOpen = !sidebar.classList.contains('-translate-x-full');
-            if (isOpen) {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.remove('active');
-                overlay.classList.add('opacity-0');
-                arrowIcon.className = 'fa-solid fa-chevron-right text-lg';
-            } else {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.add('active');
-                overlay.classList.remove('opacity-0');
-                arrowIcon.className = 'fa-solid fa-chevron-left text-lg';
-            }
+            const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebar-overlay'); const arrowIcon = document.getElementById('menu-arrow-icon');
+            if (!sidebar.classList.contains('-translate-x-full')) { sidebar.classList.add('-translate-x-full'); overlay.classList.remove('active'); overlay.classList.add('opacity-0'); arrowIcon.className = 'fa-solid fa-chevron-right text-lg'; } 
+            else { sidebar.classList.remove('-translate-x-full'); overlay.classList.add('active'); overlay.classList.remove('opacity-0'); arrowIcon.className = 'fa-solid fa-chevron-left text-lg'; }
         }
 
         function showTab(tabId, btn) {
-            document.getElementById('dashboard-view').classList.add('hidden-section');
-            document.getElementById('settings-view').classList.add('hidden-section');
-            document.getElementById('price-view').classList.add('hidden-section');
-            document.getElementById('kyc-view').classList.add('hidden-section'); // 🔥 YEH WALI LINE ADD KI GAYI HAI
-            
+            document.getElementById('dashboard-view').classList.add('hidden-section'); document.getElementById('settings-view').classList.add('hidden-section'); document.getElementById('price-view').classList.add('hidden-section'); document.getElementById('kyc-view').classList.add('hidden-section'); 
             const selectedTab = document.getElementById(tabId);
-            selectedTab.classList.remove('hidden-section');
-            selectedTab.classList.remove('fade-in');
-            void selectedTab.offsetWidth; 
-            selectedTab.classList.add('fade-in');
-            
-            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            btn.classList.add('active');
-            
-            const titles = { 
-                'dashboard-view': 'Executive Analytics', 
-                'settings-view': 'Vault Settings',
-                'kyc-view': 'Verified Users Database',
-                'price-view': 'Market Prices'
-            };
+            selectedTab.classList.remove('hidden-section'); selectedTab.classList.remove('fade-in'); void selectedTab.offsetWidth; selectedTab.classList.add('fade-in');
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active')); btn.classList.add('active');
+            const titles = { 'dashboard-view': 'Executive Analytics', 'settings-view': 'Vault Settings', 'kyc-view': 'Verified Users Database', 'price-view': 'Market Prices' };
             document.getElementById('page-title').innerText = titles[tabId];
-            if (window.innerWidth < 1024) {
-                toggleSidebar();
-            }
+            if (window.innerWidth < 1024) toggleSidebar();
         }
 
-        // --- TRANSACTION DETAIL MODAL LOGIC ---
         function openTxModal(index) {
             pauseOnModalOpen();
             const trade = recentTrades[index];
             if(!trade) return;
-            document.getElementById('modal-avatar').innerText = trade.username.charAt(0).toUpperCase();
-            document.getElementById('modal-username').innerText = trade.username;
-            
-            let dateStr = "Date Not Available";
-            if (trade.closedAt && trade.closedAt._seconds) {
-                dateStr = new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
-            }
+            document.getElementById('modal-avatar').innerText = trade.username.charAt(0).toUpperCase(); document.getElementById('modal-username').innerText = trade.username;
+            let dateStr = "Date Not Available"; if (trade.closedAt && trade.closedAt._seconds) dateStr = new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
             document.getElementById('modal-date').innerText = dateStr;
-
             const actionEl = document.getElementById('modal-action');
-            if(trade.tradeType === 'Buy') {
-                actionEl.innerHTML = `<span class="text-green-400"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
-            } else {
-                actionEl.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
-            }
-
+            if(trade.tradeType === 'Buy') actionEl.innerHTML = `<span class="text-green-400"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
+            else actionEl.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
             document.getElementById('modal-amount').innerText = '$' + (trade.amountUsd ? trade.amountUsd.toLocaleString() : '0');
-            document.getElementById('modal-details').innerText = trade.userReceivingDetails || "No details provided by the user.";
-            document.getElementById('modal-closedBy').innerText = trade.closedBy || "Admin";
-
-            const modal = document.getElementById('txModal');
-            const content = document.getElementById('txModalContent');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
+            document.getElementById('modal-details').innerText = trade.userReceivingDetails || "No details provided by the user."; document.getElementById('modal-closedBy').innerText = trade.closedBy || "Admin";
+            const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent');
+            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
         }
-
         function closeTxModal() {
-            resumeOnModalClose();
-            const modal = document.getElementById('txModal');
-            const content = document.getElementById('txModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            resumeOnModalClose(); const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent');
+            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // --- PENDING KYC MODAL POPUP LOGIC ---
-        function openKycModal() {
-            pauseOnModalOpen();
-            const modal = document.getElementById('kycModal');
-            const content = document.getElementById('kycModalContent');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
+        function openKycModal() { pauseOnModalOpen(); const modal = document.getElementById('kycModal'); const content = document.getElementById('kycModalContent'); modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10); }
+        function closeKycModal() { resumeOnModalClose(); const modal = document.getElementById('kycModal'); const content = document.getElementById('kycModalContent'); content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300); }
 
-        function closeKycModal() {
-            resumeOnModalClose();
-            const modal = document.getElementById('kycModal');
-            const content = document.getElementById('kycModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        function openUserModal(docId) {
+            pauseOnModalOpen(); const user = allKycData.find(u => u.id === docId); if(!user) return;
+            document.getElementById('ud-avatar').innerText = (user.name || user.username || 'U').charAt(0).toUpperCase();
+            document.getElementById('ud-name').innerText = user.name || 'Name Not Provided'; document.getElementById('ud-username').innerText = '@' + (user.username || user.discordContact || 'Unknown'); document.getElementById('ud-id').innerText = user.discordId || 'N/A';
+            const statusEl = document.getElementById('ud-status'); statusEl.innerText = user.status || 'Pending'; statusEl.className = 'font-black text-sm ' + (user.status === 'Approved' ? 'text-green-400' : (user.status === 'Rejected' ? 'text-red-400' : 'text-yellow-400'));
+            document.getElementById('ud-type').innerText = user.kycType || 'Basic Verification'; document.getElementById('ud-info').innerText = user.paymentInfo && user.paymentInfo !== 'N/A' ? user.paymentInfo : 'No additional information recorded.';
+            let dateStr = "Not Available"; if (user.createdAt && user.createdAt._seconds) dateStr = new Date(user.createdAt._seconds * 1000).toLocaleDateString('en-IN'); else if (user.updatedAt && user.updatedAt._seconds) dateStr = new Date(user.updatedAt._seconds * 1000).toLocaleDateString('en-IN');
+            document.getElementById('ud-date').innerText = dateStr;
+            const modal = document.getElementById('userDetailsModal'); const content = document.getElementById('userDetailsModalContent');
+            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
         }
+        function closeUserModal() { resumeOnModalClose(); const modal = document.getElementById('userDetailsModal'); const content = document.getElementById('userDetailsModalContent'); content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300); }
 
-        // --- API INTERACTION ---
-        async function actionKyc(userId, action) {
-            const endpoint = action === 'approve' ? '/api/kyc-approve' : '/api/kyc-reject';
-            const confirmationMsg = `Are you sure you want to ${action} this user's KYC verification request?`;
-            
-            if(!confirm(confirmationMsg)) return;
-            try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    alert(`✅ User KYC successfully ${action}d!`);
-                    const row = document.getElementById(`kyc-row-${userId}`);
-                    if(row) {
-                        row.style.transition = 'all 0.5s ease';
-                        row.style.opacity = '0';
-                        row.style.transform = 'translateY(15px)';
-                        setTimeout(() => {
-                            row.remove();
-                            const wrapper = document.getElementById('kyc-list-wrapper');
-                            if(wrapper && wrapper.children.length === 0) {
-                                wrapper.innerHTML = `<div class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-circle-check text-4xl text-green-500/20 mb-3 block"></i>No pending KYC requests. All clear!</div>`;
-                            }
-                        }, 500);
-                    }
-                    setTimeout(() => { window.location.reload(); }, 1000);
-                } else {
-                    alert(`Error: ${result.error}`);
-                }
-            } catch (e) { alert("API Connection Error!"); }
-        }
+        function openDocs(username, idPhoto, selfiePhoto) { document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> ${username}'s KYC Documents`; document.getElementById('idImg').src = idPhoto || 'https://via.placeholder.com/400x300?text=No+ID+Found'; document.getElementById('selfieImg').src = selfiePhoto || 'https://via.placeholder.com/400x300?text=No+Selfie+Found'; document.getElementById('photoModal').classList.remove('hidden'); }
+        function closeDocs() { document.getElementById('photoModal').classList.add('hidden'); }
 
-        async function deleteKyc(userId) {
-            if(!confirm("⚠️ DANGER: Are you sure you want to permanently delete this user's KYC record?")) return;
-            
-            try {
-                const response = await fetch('/api/kyc-delete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId })
-                });
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert("✅ KYC record deleted successfully!");
-                    window.location.reload();
-                } else {
-                    alert(`Error: ${result.error}`);
-                }
-            } catch (e) { 
-                alert("API Connection Error!"); 
-            }
-        }
-
-        // --- CHARTS LOGIC ---
         const ctxBar = document.getElementById('volumeChart').getContext('2d');
         const gradientLine = ctxBar.createLinearGradient(0, 0, 0, 300);
-        gradientLine.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); 
-        gradientLine.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
-        new Chart(ctxBar, {
-            type: 'line', 
-            data: {
-                labels: ['Daily (24h)', 'Weekly (7d)', 'Monthly (30d)'],
-                datasets: [{
-                    label: 'Revenue ($)',
-                    data: [Number('<%= dailyVol %>'), Number('<%= weeklyVol %>'), Number('<%= monthlyVol %>')],
-                    borderColor: '#ef4444', 
-                    backgroundColor: gradientLine, 
-                    borderWidth: 3, fill: true, tension: 0.4, 
-                    pointBackgroundColor: '#0f172a', pointBorderColor: '#ef4444',
-                    pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7
-                }]
-            },
-            options: { 
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { 
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } }, border: { display: false } },
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } }
-                }
-            }
-        });
-        const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
-        const buyV = Number('<%= buyVol %>');
-        const sellV = Number('<%= sellVol %>');
-        new Chart(ctxDoughnut, {
-            type: 'doughnut',
-            data: {
-                labels: ['Buy (INR in)', 'Sell (Crypto out)'],
-                datasets: [{
-                    data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV],
-                    backgroundColor: ['#22c55e', '#ef4444'], borderColor: '#0f172a', borderWidth: 5
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false, cutout: '75%',
-                plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family:'Outfit', weight:'600', size: 12 }, padding: 20 } } }
-            }
-        });
-        const calData = <%- calendarData %>; 
+        gradientLine.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); gradientLine.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+        new Chart(ctxBar, { type: 'line', data: { labels: ['Daily (24h)', 'Weekly (7d)', 'Monthly (30d)'], datasets: [{ label: 'Revenue ($)', data: [Number('<%= dailyVol %>'), Number('<%= weeklyVol %>'), Number('<%= monthlyVol %>')], borderColor: '#ef4444', backgroundColor: gradientLine, borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#0f172a', pointBorderColor: '#ef4444', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } }, border: { display: false } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } } } } });
 
-        // --- 📊 NAYA: MONTHLY BAR CHART ---
-        const monthlyCtx = document.getElementById('monthlyBarChart').getContext('2d');
-        const monthDataRaw = <%- monthWiseData %>;
-        
-        new Chart(monthlyCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [{
-                    label: 'Volume ($)',
-                    data: monthDataRaw,
-                    backgroundColor: 'rgba(99, 102, 241, 0.5)', 
-                    borderColor: 'rgba(99, 102, 241, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    hoverBackgroundColor: 'rgba(99, 102, 241, 0.8)'
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } } },
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } }
-                }
-            }
-        });
-        // --- 📊 NAYA: CURRENT WEEK (MON-SUN) MINI CHART ---
-        const weeklyCtx = document.getElementById('weeklyBarChart').getContext('2d');
-        const currentWeekData = [0, 0, 0, 0, 0, 0, 0];
-        
-        const todayForWeek = new Date();
-        const dayOfWeek = todayForWeek.getDay();
+        const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
+        const buyV = Number('<%= buyVol %>'), sellV = Number('<%= sellVol %>');
+        new Chart(ctxDoughnut, { type: 'doughnut', data: { labels: ['Buy (INR in)', 'Sell (Crypto out)'], datasets: [{ data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV], backgroundColor: ['#22c55e', '#ef4444'], borderColor: '#0f172a', borderWidth: 5 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family:'Outfit', weight:'600', size: 12 }, padding: 20 } } } } });
+
+        const calData = <%- calendarData %>, monthDataRaw = <%- monthWiseData %>;
+        new Chart(document.getElementById('monthlyBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Volume ($)', data: monthDataRaw, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgba(99, 102, 241, 1)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(99, 102, 241, 0.8)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } } } } });
+
+        const currentWeekData = [0, 0, 0, 0, 0, 0, 0], todayForWeek = new Date(), dayOfWeek = todayForWeek.getDay();
         const diffToMonday = todayForWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
         const mondayDate = new Date(todayForWeek.setDate(diffToMonday));
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(mondayDate);
-            d.setDate(mondayDate.getDate() + i);
-            const yStr = d.getFullYear();
-            const mStr = String(d.getMonth() + 1).padStart(2, '0');
-            const dayStr = String(d.getDate()).padStart(2, '0');
-            const dateKey = `${yStr}-${mStr}-${dayStr}`;
-            currentWeekData[i] = calData[dateKey] || 0;
-        }
+        for (let i = 0; i < 7; i++) { const d = new Date(mondayDate); d.setDate(mondayDate.getDate() + i); currentWeekData[i] = calData[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`] || 0; }
+        new Chart(document.getElementById('weeklyBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Volume ($)', data: currentWeekData, backgroundColor: 'rgba(14, 165, 233, 0.4)', borderColor: 'rgba(14, 165, 233, 0.8)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(14, 165, 233, 1)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return '$' + context.raw.toLocaleString(); } } } }, scales: { y: { display: false, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '700', size: 10 } }, border: { display: false } } } } });
 
-        new Chart(weeklyCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                datasets: [{
-                    label: 'Volume ($)',
-                    data: currentWeekData,
-                    backgroundColor: 'rgba(14, 165, 233, 0.4)', 
-                    borderColor: 'rgba(14, 165, 233, 0.8)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    hoverBackgroundColor: 'rgba(14, 165, 233, 1)'
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: function(context) { return '$' + context.raw.toLocaleString(); } } }
-                },
-                scales: {
-                    y: { display: false, beginAtZero: true }, 
-                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '700', size: 10 } }, border: { display: false } }
-                }
-            }
-        });
-        // --- 📅 ADVANCED TRADING JOURNAL CALENDAR ENGINE ---
-        const calendarGridContainer = document.getElementById('calendar-heatmap-grid');
-        const monthYearLabel = document.getElementById('calendar-month-year');
-        const tooltip = document.getElementById('heatmap-tooltip');
-        const tDate = document.getElementById('tooltip-date');
-        const tVol = document.getElementById('tooltip-vol');
-        const todayObj = new Date();
-        let currentMonth = todayObj.getMonth();
-        let currentYear = todayObj.getFullYear();
-        function isSameDay(d1, d2) {
-            return d1.getFullYear() === d2.getFullYear() &&
-                   d1.getMonth() === d2.getMonth() &&
-                   d1.getDate() === d2.getDate();
-        }
+        const calendarGridContainer = document.getElementById('calendar-heatmap-grid'), monthYearLabel = document.getElementById('calendar-month-year'), tooltip = document.getElementById('heatmap-tooltip'), tDate = document.getElementById('tooltip-date'), tVol = document.getElementById('tooltip-vol'), todayObj = new Date();
+        let currentMonth = todayObj.getMonth(), currentYear = todayObj.getFullYear();
+        function isSameDay(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
 
-        window.changeMonth = function(delta) {
-            currentMonth += delta;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            } else if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            renderCalendar(currentMonth, currentYear);
-        }
+        window.changeMonth = function(delta) { currentMonth += delta; if (currentMonth > 11) { currentMonth = 0; currentYear++; } else if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
 
         function renderCalendar(month, year) {
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            monthYearLabel.innerText = `${monthNames[month]} ${year}`;
-
-            const firstDayOfMonth = new Date(year, month, 1).getDay(); 
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const heatmapHTML = [];
-
-            const prevMonthDate = new Date(year, month, 0); 
-            const prevMonthDays = prevMonthDate.getDate();
-            for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-                heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40">
-                    <span class="font-bold text-[9px] self-center">${prevMonthDays - i}</span>
-                </div>`);
-            }
-            
+            monthYearLabel.innerText = `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month]} ${year}`;
+            const firstDayOfMonth = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate(), heatmapHTML = [], prevMonthDate = new Date(year, month, 0), prevMonthDays = prevMonthDate.getDate();
+            for (let i = firstDayOfMonth - 1; i >= 0; i--) heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40"><span class="font-bold text-[9px] self-center">${prevMonthDays - i}</span></div>`);
             for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber++) {
-                const d = new Date(year, month, dayNumber);
-                const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                const vol = calData[dateKey] || 0;
-
+                const d = new Date(year, month, dayNumber), vol = calData[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`] || 0;
                 const todayClass = isSameDay(d, todayObj) ? "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : "";
-
-                let colorClass = "bg-slate-800/60 border-slate-700/50 text-slate-300"; 
-                let volTextHTML = "";
-                if (vol > 0 && vol <= 500) {
-                    colorClass = "bg-emerald-900 border-emerald-800 hover:border-emerald-400 text-slate-300";
-                    volTextHTML = `<span class="font-black text-glow-green text-green-400 text-[9px] self-center">$${vol.toLocaleString()}</span>`;
-                } else if (vol > 500 && vol <= 2000) {
-                    colorClass = "bg-emerald-600 border-emerald-500 hover:border-white text-slate-100";
-                    volTextHTML = `<span class="font-black text-glow-green text-green-300 text-[9px] self-center">$${vol.toLocaleString()}</span>`;
-                } else if (vol > 2000) {
-                    colorClass = "bg-emerald-400 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)] hover:border-white text-glow-green text-white";
-                    volTextHTML = `<span class="font-black text-glow-green text-green-100 text-[9px] self-center">$${vol.toLocaleString()}</span>`;
-                }
-
-                heatmapHTML.push(`<div class="calendar-day p-1.5 flex flex-col justify-between aspect-square border rounded-md transition duration-200 cursor-pointer ${todayClass} ${colorClass}" data-date="${d.toDateString()}" data-vol="$${vol.toLocaleString()}">
-                    <span class="font-black text-xs self-center">${dayNumber}</span>
-                    ${volTextHTML}
-                </div>`);
+                let colorClass = "bg-slate-800/60 border-slate-700/50 text-slate-300", volTextHTML = "";
+                if (vol > 0 && vol <= 500) { colorClass = "bg-emerald-900 border-emerald-800 hover:border-emerald-400 text-slate-300"; volTextHTML = `<span class="font-black text-glow-green text-green-400 text-[9px] self-center">$${vol.toLocaleString()}</span>`; } 
+                else if (vol > 500 && vol <= 2000) { colorClass = "bg-emerald-600 border-emerald-500 hover:border-white text-slate-100"; volTextHTML = `<span class="font-black text-glow-green text-green-300 text-[9px] self-center">$${vol.toLocaleString()}</span>`; } 
+                else if (vol > 2000) { colorClass = "bg-emerald-400 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)] hover:border-white text-glow-green text-white"; volTextHTML = `<span class="font-black text-glow-green text-green-100 text-[9px] self-center">$${vol.toLocaleString()}</span>`; }
+                heatmapHTML.push(`<div class="calendar-day p-1.5 flex flex-col justify-between aspect-square border rounded-md transition duration-200 cursor-pointer ${todayClass} ${colorClass}" data-date="${d.toDateString()}" data-vol="$${vol.toLocaleString()}"><span class="font-black text-xs self-center">${dayNumber}</span>${volTextHTML}</div>`);
             }
-
-            const totalCells = heatmapHTML.length;
-            const cellsToPad = (7 * (Math.ceil(totalCells / 7))) - totalCells;
-            for (let i = 1; i <= cellsToPad; i++) {
-                heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40">
-                    <span class="font-bold text-[9px] self-center">${i}</span>
-                </div>`);
-            }
+            const cellsToPad = (7 * (Math.ceil(heatmapHTML.length / 7))) - heatmapHTML.length;
+            for (let i = 1; i <= cellsToPad; i++) heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40"><span class="font-bold text-[9px] self-center">${i}</span></div>`);
             
             calendarGridContainer.innerHTML = heatmapHTML.join('');
             document.querySelectorAll('.calendar-day').forEach(box => {
-                box.addEventListener('mouseenter', (e) => {
-                    tDate.innerText = box.getAttribute('data-date');
-                    tVol.innerText = 'Volume: ' + box.getAttribute('data-vol');
-                    
-                    const rect = box.getBoundingClientRect();
-                    tooltip.style.left = (rect.left + rect.width / 2) + 'px';
-                    tooltip.style.top = (rect.top - 8) + 'px';
-                    
-                    tooltip.classList.remove('hidden');
-                    setTimeout(() => tooltip.classList.remove('opacity-0'), 10);
-                });
-                box.addEventListener('mouseleave', () => {
-                    tooltip.classList.add('opacity-0');
-                    setTimeout(() => tooltip.classList.add('hidden'), 200);
-                });
+                box.addEventListener('mouseenter', () => { tDate.innerText = box.getAttribute('data-date'); tVol.innerText = 'Volume: ' + box.getAttribute('data-vol'); const rect = box.getBoundingClientRect(); tooltip.style.left = (rect.left + rect.width / 2) + 'px'; tooltip.style.top = (rect.top - 8) + 'px'; tooltip.classList.remove('hidden'); setTimeout(() => tooltip.classList.remove('opacity-0'), 10); });
+                box.addEventListener('mouseleave', () => { tooltip.classList.add('opacity-0'); setTimeout(() => tooltip.classList.add('hidden'), 200); });
             });
         }
-        
         renderCalendar(currentMonth, currentYear);
-        // --- 🔢 NAYA: NUMBER COUNTER ANIMATION ---
+
         document.addEventListener("DOMContentLoaded", () => {
-            const counters = document.querySelectorAll('.animate-counter');
-            
-            counters.forEach(counter => {
-                const target = +counter.getAttribute('data-target');
-                const prefix = counter.getAttribute('data-prefix') || '';
-                
-                if (target === 0) {
-                    counter.innerText = prefix + '0';
-                    return;
-                }
-                
-                const duration = 1500; 
-                const increment = target / (duration / 16); 
-                let current = 0;
-                
-                const updateCounter = () => {
-                    current += increment;
-                    if (current < target) {
-                        counter.innerText = prefix + Math.ceil(current).toLocaleString();
-                        requestAnimationFrame(updateCounter);
-                    } else {
-                        counter.innerText = prefix + target.toLocaleString();
-                    }
-                };
+            document.querySelectorAll('.animate-counter').forEach(counter => {
+                const target = +counter.getAttribute('data-target'), prefix = counter.getAttribute('data-prefix') || '';
+                if (target === 0) return counter.innerText = prefix + '0';
+                let current = 0; const increment = target / (1500 / 16);
+                const updateCounter = () => { current += increment; if (current < target) { counter.innerText = prefix + Math.ceil(current).toLocaleString(); requestAnimationFrame(updateCounter); } else { counter.innerText = prefix + target.toLocaleString(); } };
                 updateCounter();
             });
         });
