@@ -119,6 +119,7 @@
                 <button id="menu-toggle-btn" onclick="toggleSidebar()" class="lg:hidden w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300">
                     <i id="menu-arrow-icon" class="fa-solid fa-chevron-right text-lg"></i>
                 </button>
+            
                 <div>
                     <h2 id="page-title" class="text-2xl sm:text-3xl font-black text-gray-100 tracking-tight">Executive Analytics</h2>
                     <p class="text-slate-400 text-xs sm:text-sm font-medium mt-1">Real-time Professor Network Monitoring</p>
@@ -138,6 +139,7 @@
                 <a href="/export-ledger" class="glass-panel justify-center px-4 py-2.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/20 hover:border-emerald-500/50 transition flex items-center text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                     <i class="fa-solid fa-file-excel mr-2 text-base"></i> Export
                 </a>
+          
                 <div class="glass-panel px-4 py-2.5 flex items-center justify-center space-x-3 border-slate-700/50">
                     <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
                     <span class="text-xs font-black uppercase tracking-widest text-slate-300">Live DB</span>
@@ -154,6 +156,7 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 text-white animate-counter" data-target="<%= liveMembers %>" data-prefix="">0</p>
                 </div>
+    
                 <div class="glass-panel p-6 border-l-4 border-green-500">
                     <div class="flex justify-between items-start">
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Daily Vol (24h)</h3>
@@ -161,6 +164,7 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green animate-counter" data-target="<%= dailyVol %>" data-prefix="$">0</p>
                 </div>
+                
                 <div class="glass-panel p-6 border-l-4 border-red-500 <%= pendingTickets > 0 ? 'shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/50' : '' %>">
                     <div class="flex justify-between items-start">
                         <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Tickets</h3>
@@ -168,6 +172,7 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingTickets > 0 ? 'text-red-500 text-glow animate-pulse' : 'text-gray-300' %> animate-counter" data-target="<%= pendingTickets %>" data-prefix="">0</p>
                 </div>
+                
                 <div onclick="openKycModal()" class="glass-panel p-6 border-l-4 border-yellow-500 cursor-pointer <%= pendingKyc > 0 ? 'shadow-[0_0_20px_rgba(234,179,8,0.25)] border-yellow-500/50 hover:bg-yellow-500/5' : '' %>">
                     <div class="flex justify-between items-start">
                         <div class="flex flex-col">
@@ -201,7 +206,6 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 fade-in">
                 
                 <div class="glass-panel p-4 sm:p-6 relative overflow-hidden flex flex-col h-full">
-                    
                     <div class="flex-1 flex flex-col">
                         <div class="flex items-center mb-4 relative z-10">
                             <div class="p-2 bg-indigo-500/10 rounded-lg mr-3"><i class="fa-solid fa-chart-column text-indigo-400"></i></div>
@@ -217,7 +221,6 @@
                         </div>
                         <div class="relative h-32 z-10 w-full"><canvas id="weeklyBarChart"></canvas></div>
                     </div>
-                    
                 </div>
 
                 <div class="glass-panel p-4 sm:p-6 relative overflow-hidden">
@@ -247,7 +250,7 @@
                             <span>Sat</span>
                         </div>
                         <div id="calendar-heatmap-grid" class="grid grid-cols-7 grid-flow-row gap-[5px] sm:gap-[6px] h-auto">
-                            </div>
+                        </div>
                     </div>
                     
                     <div class="mt-2 pt-3 border-t border-slate-700/50 flex justify-end items-center text-[10px] text-slate-400 uppercase font-bold gap-2 relative z-10">
@@ -665,6 +668,7 @@
             document.getElementById('dashboard-view').classList.add('hidden-section');
             document.getElementById('settings-view').classList.add('hidden-section');
             document.getElementById('price-view').classList.add('hidden-section');
+            document.getElementById('kyc-view').classList.add('hidden-section'); // 🔥 YEH WALI LINE ADD KI GAYI HAI
             
             const selectedTab = document.getElementById(tabId);
             selectedTab.classList.remove('hidden-section');
@@ -674,6 +678,7 @@
             
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
             btn.classList.add('active');
+            
             const titles = { 
                 'dashboard-view': 'Executive Analytics', 
                 'settings-view': 'Vault Settings',
@@ -815,7 +820,6 @@
                 }
             }
         });
-
         const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
         const buyV = Number('<%= buyVol %>');
         const sellV = Number('<%= sellVol %>');
@@ -833,7 +837,6 @@
                 plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family:'Outfit', weight:'600', size: 12 }, padding: 20 } } }
             }
         });
-
         const calData = <%- calendarData %>; 
 
         // --- 📊 NAYA: MONTHLY BAR CHART ---
@@ -863,16 +866,14 @@
                 }
             }
         });
-
         // --- 📊 NAYA: CURRENT WEEK (MON-SUN) MINI CHART ---
         const weeklyCtx = document.getElementById('weeklyBarChart').getContext('2d');
         const currentWeekData = [0, 0, 0, 0, 0, 0, 0];
         
         const todayForWeek = new Date();
-        const dayOfWeek = todayForWeek.getDay(); 
+        const dayOfWeek = todayForWeek.getDay();
         const diffToMonday = todayForWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
         const mondayDate = new Date(todayForWeek.setDate(diffToMonday));
-
         for (let i = 0; i < 7; i++) {
             const d = new Date(mondayDate);
             d.setDate(mondayDate.getDate() + i);
@@ -909,18 +910,15 @@
                 }
             }
         });
-
         // --- 📅 ADVANCED TRADING JOURNAL CALENDAR ENGINE ---
         const calendarGridContainer = document.getElementById('calendar-heatmap-grid');
         const monthYearLabel = document.getElementById('calendar-month-year');
         const tooltip = document.getElementById('heatmap-tooltip');
         const tDate = document.getElementById('tooltip-date');
         const tVol = document.getElementById('tooltip-vol');
-        
         const todayObj = new Date();
         let currentMonth = todayObj.getMonth();
         let currentYear = todayObj.getFullYear();
-
         function isSameDay(d1, d2) {
             return d1.getFullYear() === d2.getFullYear() &&
                    d1.getMonth() === d2.getMonth() &&
@@ -990,7 +988,6 @@
             }
             
             calendarGridContainer.innerHTML = heatmapHTML.join('');
-
             document.querySelectorAll('.calendar-day').forEach(box => {
                 box.addEventListener('mouseenter', (e) => {
                     tDate.innerText = box.getAttribute('data-date');
@@ -1011,7 +1008,6 @@
         }
         
         renderCalendar(currentMonth, currentYear);
-
         // --- 🔢 NAYA: NUMBER COUNTER ANIMATION ---
         document.addEventListener("DOMContentLoaded", () => {
             const counters = document.querySelectorAll('.animate-counter');
