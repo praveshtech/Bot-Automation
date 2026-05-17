@@ -528,6 +528,27 @@ client.on('interactionCreate', async interaction => {
 
         if (isVerifiedRoute && !hasRole) {
             
+            // --- 🛑 SPAM PROTECTION: Check if KYC is already pending ---
+            try {
+                const existingKycDoc = await db.collection('users_kyc').doc(interaction.user.id).get();
+                if (existingKycDoc.exists && existingKycDoc.data().status === 'Pending') {
+                    
+                    // Pehle se bane hue channel ko dhoondho taaki user ko rasta dikha sakein
+                    const existingChannel = interaction.guild.channels.cache.find(c => c.name.toLowerCase() === `kyc-${interaction.user.username.toLowerCase()}`);
+                    
+                    let replyMsg = '❌ **Action Denied:** Your KYC request is already **Pending**.\nPlease wait for an Admin to review it.';
+                    if (existingChannel) {
+                        replyMsg += `\n\n👉 **Go to your open ticket here:** ${existingChannel}`;
+                    }
+
+                    // User ko wahi rok do aur naya channel mat banao
+                    return interaction.update({ content: replyMsg, embeds: [], components: [] });
+                }
+            } catch (err) {
+                console.error("Spam Check Error:", err);
+            }
+            // --- 🛑 END SPAM PROTECTION ---
+
             await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
 
             try {
@@ -576,7 +597,7 @@ client.on('interactionCreate', async interaction => {
                         `Welcome ${interaction.user.toString()}!\n\n` +
                         `To unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\n` +
                         `Please upload:\n` +
-                        `1️⃣ **A clear photo of your National ID**\n` +
+                        `1️⃣ **A clear photo of your Aadhaar And Pan Card**\n` +
                         `2️⃣ **A selfie of you holding the ID**\n\n` +
                         `Send the images directly in this chat. Our Admin will review them shortly.`
                     )
