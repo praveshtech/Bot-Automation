@@ -555,7 +555,7 @@ client.on('interactionCreate', async interaction => {
             if (member) {
                 let desc = isSuccess ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦 Don't Forgot To Give Feedback` + (feedbackChannelId ? `\n\n⭐ **Feedback Link:** <#${feedbackChannelId}>` : "") : `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please open a new support ticket.`;
                 const receiptEmbed = new EmbedBuilder().setColor(isSuccess ? '#2ecc71' : '#e74c3c').setTitle(isSuccess ? '✅ Transaction Completed' : '❌ Transaction Cancelled').setDescription(desc).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-                await member.send({ embeds: [receiptEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef'))] }).catch(()=>{});
+                await member.send({ embeds: [receiptEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'))] }).catch(()=>{});
             }
 
             let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
