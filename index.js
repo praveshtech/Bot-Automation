@@ -13,7 +13,6 @@ const serviceAccount = require('./serviceAccountKey.json');
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   storageBucket: "professor-discord-556ae.firebasestorage.app"
-" 
 });
 const db = admin.firestore(); 
 const bucket = admin.storage().bucket(); 
