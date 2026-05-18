@@ -763,7 +763,21 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
 app.post('/api/kyc-delete', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
+        // 🔥 STEP 1: Firebase Storage se user ki sabhi photos delete karna
+        try {
+            // User ke ID se match hone wali saari files (ID + Selfie) dhoondho
+            const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` });
+            
+            // Sabhi mili hui files ko permanently delete kar do
+            await Promise.all(files.map(file => file.delete()));
+            console.log(`✅ Deleted ${files.length} photos from Storage for user: ${userId}`);
+        } catch (storageErr) {
+            console.error("Storage delete error:", storageErr);
+        }
+
+        // 🔥 STEP 2: Firestore Database se user ka KYC record delete karna
         await db.collection('users_kyc').doc(userId).delete();
+        
         globalLastUpdate = Date.now(); 
         res.json({ success: true });
     } catch (e) { 
