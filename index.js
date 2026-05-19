@@ -289,8 +289,7 @@ client.on('interactionCreate', async interaction => {
 
                 const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
 
-                const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n1️⃣ **A clear photo of your Aadhaar And Pan Card**\n2️⃣ **A selfie of you holding the ID**\n\nSend the images directly in this chat. Our Admin will review them shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });
-                const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
+const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar or PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });                const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
 
                 await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
                 await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
@@ -319,9 +318,8 @@ client.on('interactionCreate', async interaction => {
         messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
 
         let idPhotoUrl = attachments.length > 0 ? await uploadImageToFirebase(attachments[0], userId, 'ID') : null;
-        let selfieUrl = attachments.length > 1 ? await uploadImageToFirebase(attachments[1], userId, 'Selfie') : null;
 
-        await db.collection('users_kyc').doc(userId).update({ idPhoto: idPhotoUrl, selfiePhoto: selfieUrl }).catch(err => console.error(err));
+        await db.collection('users_kyc').doc(userId).update({ idPhoto: idPhotoUrl }).catch(err => console.error(err));
         await approveUserKYC(userId, interaction.guild);
         
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
