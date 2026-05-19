@@ -763,19 +763,45 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
 app.post('/api/kyc-delete', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        // 🔥 STEP 1: Firebase Storage se user ki sabhi photos delete karna
+        // 🔥 STEP 1: Firebase Storage se user ki photos delete karna
         try {
-            // User ke ID se match hone wali saari files (ID + Selfie) dhoondho
             const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` });
-            
-            // Sabhi mili hui files ko permanently delete kar do
             await Promise.all(files.map(file => file.delete()));
-            console.log(`✅ Deleted ${files.length} photos from Storage for user: ${userId}`);
+            console.log(`✅ Deleted photos from Storage for user: ${userId}`);
         } catch (storageErr) {
             console.error("Storage delete error:", storageErr);
         }
 
-        // 🔥 STEP 2: Firestore Database se user ka KYC record delete karna
+        // 🔥 STEP 2: Discord Server se "Vault Verified" Tag (Role) remove karna
+        try {
+            // GUILD_ID humne file me pehle hi define kiya hua hai
+            const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
+            if (guild) {
+                const member = await guild.members.fetch(userId).catch(() => null);
+                if (member) {
+                    const verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
+                    
+                    // Agar user ke paas role hai, toh usko remove karo
+                    if (verifiedRole && member.roles.cache.has(verifiedRole.id)) {
+                        await member.roles.remove(verifiedRole);
+                        console.log(`✅ Removed 'Vault Verified' role from ${member.user.username}`);
+                        
+                        // User ko alert bhejo (Optional but recommended)
+                        const revokeEmbed = new EmbedBuilder()
+                            .setColor('#e74c3c')
+                            .setTitle('⚠️ KYC Status Revoked')
+                            .setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.\n\nYou will no longer have access to $0 fee trades. If you believe this is a mistake, please open a support ticket.')
+                            .setFooter({ text: 'Professor Network Security' });
+                            
+                        await member.send({ embeds: [revokeEmbed] }).catch(() => {});
+                    }
+                }
+            }
+        } catch (discordErr) {
+            console.error("Discord Role Remove Error:", discordErr);
+        }
+
+        // 🔥 STEP 3: Firestore Database se user ka KYC record delete karna
         await db.collection('users_kyc').doc(userId).delete();
         
         globalLastUpdate = Date.now(); 
