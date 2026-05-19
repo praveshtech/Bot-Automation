@@ -250,9 +250,16 @@ client.on('interactionCreate', async interaction => {
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
+        // 🔥 NAYA BUG FIX: Vault Verified users ko Without KYC use karne se rokna 🔥
+        if (!isVerifiedRoute && hasRole) {
+            return interaction.reply({ 
+                content: '❌ **Action Denied:** You are already **Vault Verified**!\nPlease use the **"🛡️ P2P With KYC"** option to enjoy $0 fee trades.', 
+                ephemeral: true 
+            });
+        }
+
         if (isVerifiedRoute && !hasRole) {
-            
-            // --- 🛑 SPAM PROTECTION: Double Lock ---
+            // ...spam protection 
             try {
                 const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
                 const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
