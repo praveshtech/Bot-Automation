@@ -496,29 +496,136 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
-        // 🔥 NAYA FIX: User ko direct instructions aur 1-tap copyable address dena
-        let paymentInstructions = "";
-        if (userState.type === 'Sell') {
-            paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected. Please send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
-            
-        } else {
-            paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details:**\n\`\`\`\n${easyCopyText}\n\`\`\`\nOnce paid, please upload the payment screenshot here.`;
-        }
+       // 🔥 NAYA FIX: User ko direct instructions aur 1-tap copyable address dena
+let paymentInstructions = "";
 
-        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n**2. How much amount ($)?**\n> $${tradeAmount}\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n**Please pay exactly: $${Number(tradeAmount) + fee}**${paymentInstructions}`;
-        
-        const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
+if (userState.type === 'Sell') {
 
-        const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
-        
-        await ticketChannel.send({ content: palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`, embeds: [ticketEmbed], components: [actionButtonRow] });
-        await ticketChannel.send(`# ${easyCopyText}`);
-        const revealButtonsRow = new ActionRowBuilder();
-        
-        // 🔥 NAYA FIX: User wala button poori tarah hata diya. Ab sirf Admin ka button bachega.
-        revealButtonsRow.addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
+    paymentInstructions = `
+**⚠️ Payment Instructions:**
+This is the **${userState.step2}** wallet address you selected.
 
-        await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
+Please send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.
+
+👇 **Wallet address sent below**
+`;
+
+} else {
+
+    paymentInstructions = `
+**⚠️ Payment Instructions:**
+Please pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.
+
+👇 **Admin Payment Details Sent Below**
+
+Once paid, please upload the payment screenshot here.
+`;
+}
+
+
+// 🔥 MAIN DESCRIPTION
+const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.
+
+Please follow the instructions below so we can complete your trade as quickly as possible.
+
+**1. What is the action?**
+> ${userState.type} USDT
+
+**2. How much amount ($)?**
+> $${tradeAmount}
+
+**3. Which Method?**
+> ${userState.type === 'Sell'
+    ? userState.step2 + ' (Receive via ' + finalStep3Display + ')'
+    : userState.step2}
+
+**Fee Structure:** $${fee} (Non-KYC Charge)
+
+▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬
+
+**Please pay exactly: $${Number(tradeAmount) + fee}**
+`;
+
+
+// 🔥 MAIN TICKET EMBED
+const ticketEmbed = new EmbedBuilder()
+.setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22')
+.setAuthor({
+    name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`,
+    iconURL: client.user.displayAvatarURL()
+})
+.setDescription(cinematicDescription)
+.setFooter({
+    text: 'Share your payment screenshot here after successful transfer.',
+    iconURL: client.user.displayAvatarURL()
+});
+
+
+// 🔥 PAYMENT INSTRUCTIONS EMBED
+const paymentEmbed = new EmbedBuilder()
+.setColor('#5865F2')
+.setDescription(paymentInstructions);
+
+
+// 🔥 BUTTONS
+const actionButtonRow = new ActionRowBuilder().addComponents(
+
+    new ButtonBuilder()
+    .setCustomId('complete_p2p_ticket')
+    .setLabel('✅ Mark Complete (Admin)')
+    .setStyle(ButtonStyle.Success),
+
+    new ButtonBuilder()
+    .setCustomId('cancel_p2p_ticket')
+    .setLabel('❌ Cancel Trade')
+    .setStyle(ButtonStyle.Danger)
+);
+
+
+// 🔥 MAIN EMBED + BUTTONS
+await ticketChannel.send({
+
+    content: palermoRole
+    ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}`
+    : `Ping: ${interaction.user.toString()}`,
+
+    embeds: [ticketEmbed],
+
+    components: [actionButtonRow]
+});
+
+
+// 🔥 PAYMENT INSTRUCTIONS EMBED
+await ticketChannel.send({
+    embeds: [paymentEmbed]
+});
+
+
+// 🔥 WALLET ADDRESS NORMAL MESSAGE (OUTSIDE EMBED)
+await ticketChannel.send(`${easyCopyText}`);
+
+
+// 🔥 ADMIN BUTTON
+const revealButtonsRow = new ActionRowBuilder();
+
+revealButtonsRow.addComponents(
+
+    new ButtonBuilder()
+    .setCustomId('reveal_user_details')
+    .setLabel('👨‍💼 View User Details (Only For Admin)')
+    .setStyle(ButtonStyle.Secondary)
+);
+
+
+// 🔥 ADMIN ACCESS MESSAGE
+await ticketChannel.send({
+
+    content:
+`🔒 **Admin Secure Access**
+Admins can click below to securely view the user's receiving information.`,
+
+    components: [revealButtonsRow]
+});
         
 
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
