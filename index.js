@@ -96,11 +96,17 @@ client.on('messageCreate', async message => {
     if (command === '!setupleaderboard') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
-            let leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-ledger' || c.name === 'weekly-ledger');
+            // Pehle direct ID se channel dhoondho
+            let leaderboardChannel = message.guild.channels.cache.get('1506661433335746560');
+            
+            // Agar ID se nahi milta (ya delete ho gaya ho), tab naye naam se banayega
             if (!leaderboardChannel) {
-                leaderboardChannel = await message.guild.channels.create({ name: '📈・weekly-ledger', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] });
+                leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-recap' || c.name === 'weekly-recap');
+                if (!leaderboardChannel) {
+                    leaderboardChannel = await message.guild.channels.create({ name: '📈・weekly-recap', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] });
+                }
             }
-            await message.reply({ content: `✅ Weekly Leaderboard setup in ${leaderboardChannel}.`, ephemeral: true });
+            await message.reply({ content: `✅ Weekly Recap setup in ${leaderboardChannel}.`, ephemeral: true });
             await message.delete().catch(()=>{});
             updateWeeklyLeaderboard(message.guild);
         } catch (err) { console.error("❌ Error setting up leaderboard:", err); }
@@ -755,11 +761,14 @@ Admins can click below to securely view the user's receiving information.`,
 async function updateWeeklyLeaderboard(guild) {
     if (!guild) return;
     try {
-        const channel = guild.channels.cache.find(c => c.name === '📈・weekly-ledger' || c.name.includes('weekly-ledger'));
+        // 🔥 UPDATE YAHAN BHI KIYA HAI: Direct ID se fetch ya naye naam se fetch karega
+        const channel = guild.channels.cache.get('1506661433335746560') || guild.channels.cache.find(c => c.name === '📈・weekly-recap' || c.name.includes('weekly-recap'));
         if (!channel) return; 
+
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
         const now = new Date();
         const userVolumes = {};
+        // ... (Baaki poora function same rahega usme koi change mat karna)
         snapshot.forEach(doc => {
             const data = doc.data();
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
