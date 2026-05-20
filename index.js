@@ -628,11 +628,41 @@ client.on('interactionCreate', async interaction => {
 
             if (isSuccess) { updateWeeklyLeaderboard(interaction.guild); await updateUserHeistPoints(ticketData.discordUserId, interaction.guild, ticketData.username); }
 
+           // 🔥 ULTIMATE P2P FIX: Trade complete hone ke baad purana message hi EDIT hoga
             const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
             if (mainTicketChannel) {
-                const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 10 });
-                fetchedMessages.filter(m => m.author.id === client.user.id).forEach(msg => msg.delete().catch(console.error));
-                await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
+                try {
+                    const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 20 });
+                    // Bot ka sabse naya bheja hua message dhoondho
+                    const botMsg = fetchedMessages.find(m => m.author.id === client.user.id);
+                    
+                    const setupEmbed = new EmbedBuilder()
+                        .setColor('#2b2d31')
+                        .setTitle('🏦 Exchange Desk (P2P)')
+                        .setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.')
+                        .setFooter({ text: 'Automated by Professor Network' });
+                        
+                    const startBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary)
+                    );
+
+                    if (botMsg) {
+                        // Agar message pehle se hai, toh chupchaap use hi EDIT kar do
+                        await botMsg.edit({ embeds: [setupEmbed], components: [startBtn] }).catch(() => {});
+                        
+                        // Backup security: Extra duplicate bot messages ko saaf karo
+                        fetchedMessages.forEach(msg => {
+                            if (msg.author.id === client.user.id && msg.id !== botMsg.id) {
+                                msg.delete().catch(() => {});
+                            }
+                        });
+                    } else {
+                        // Agar channel khali hai tabhi naya message bhejo
+                        await mainTicketChannel.send({ embeds: [setupEmbed], components: [startBtn] });
+                    }
+                } catch (err) {
+                    console.error("Exchange channel update error:", err);
+                }
             }
 
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
