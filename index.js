@@ -232,7 +232,7 @@ client.on('interactionCreate', async interaction => {
             const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
             kycModal.addComponents(
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), 
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setValue(interaction.user.username).setRequired(true)),
                 new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('welcome_message').setLabel('🙏 Welcome To Professor Network').setStyle(TextInputStyle.Paragraph).setValue('💎 Trusted P2P Platform For Usdt Buy/Sell').setRequired(false))
             );
             await interaction.showModal(kycModal);
