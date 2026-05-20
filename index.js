@@ -500,10 +500,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         let paymentInstructions = "";
         if (userState.type === 'Sell') {
             paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected. Please send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
-            // YAHAN NICHE ADD KAR
-        await ticketChannel.send({
-        content: `\`${easyCopyText}\``
-      });
+            await ticketChannel.send(`** ${easyCopyText}**`);
 
         } else {
             paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details:**\n\`\`\`\n${easyCopyText}\n\`\`\`\nOnce paid, please upload the payment screenshot here.`;
