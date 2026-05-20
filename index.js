@@ -345,20 +345,15 @@ client.on('interactionCreate', async interaction => {
         if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
 
         await interaction.deferUpdate(); 
-        await interaction.followUp({ content: '⏳ Saving document to secure database... Please wait.', ephemeral: true });
         
-        const messages = await interaction.channel.messages.fetch({ limit: 50 });
-        let attachments = [];
-        messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
-
-        let idPhotoUrl = attachments.length > 0 ? await uploadImageToFirebase(attachments[0], userId, 'ID') : null;
-        await db.collection('users_kyc').doc(userId).update({ idPhoto: idPhotoUrl }).catch(err => console.error(err));
-        
+        // 🔥 NAYA FIX: Hum photo upload nahi kar rahe kyunki wo auto-save ho chuki hai.
+        // Seedha user ko verified role do aur approve karo.
         await approveUserKYC(userId, interaction.guild);
         
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
+        // Exchange desk ko refresh karna
         const exchangeChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
         if (exchangeChannel) {
             try {
@@ -368,6 +363,8 @@ client.on('interactionCreate', async interaction => {
                 await exchangeChannel.send({ embeds: [setupEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
             } catch (err) {}
         }
+        
+        // 5 second baad channel delete
         if (interaction.channel.name.startsWith('kyc-') && interaction.channel.name !== 'kyc-requests') setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
     }
 
