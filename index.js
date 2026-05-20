@@ -639,8 +639,7 @@ async function updateWeeklyLeaderboard(guild) {
         const top10 = Object.keys(userVolumes).map(tag => ({ tag, volume: userVolumes[tag] })).sort((a, b) => b.volume - a.volume).slice(0, 10);
         let description = 'These are the Top 10 Highest Volume P2P Traders of the last 7 days:\n\n';
         if (top10.length === 0) description += '*No completed trades found for this week yet.*';
-        else top10.forEach((trader, index) => { description += `${['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'][index]} **${index + 1}.** ${trader.tag} ━━ **$${trader.volume.toLocaleString()}**\n`; });
-
+        else top10.forEach((trader, index) => { description += `${['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'][index]} **${index + 1}.** ${trader.tag}\n`; });
         const embed = new EmbedBuilder().setColor('#f1c40f').setTitle('🏆 Live Weekly Top Traders').setDescription(description).setTimestamp().setFooter({ text: 'Updates Automatically | Professor Network', iconURL: client.user.displayAvatarURL() });
         const messages = await channel.messages.fetch({ limit: 10 });
         const botMsg = messages.find(m => m.author.id === client.user.id);
@@ -689,7 +688,7 @@ async function updateHeistLeaderboard(guild) {
         let i = 1;
         snapshot.forEach(doc => {
             const data = doc.data();
-            desc += `${['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'][i-1] || '🎖️'} **${i}.** ${data.username ? `[**@${data.username}**](https://discord.com/users/${data.discordId})` : `<@${data.discordId}>`} — **${data.heistPoints} Pts** | Rank: ${data.level ? data.level.split('—')[1].trim() : 'Recruit'} | Vol: $${data.totalVolume.toLocaleString()}\n`;
+            desc += `${['🥇', '🥈', '🥉', '🏅', '🏅', '🎖️', '🎖️', '🎖️', '🎖️', '🎖️'][i-1] || '🎖️'} **${i}.** ${data.username ? `[**@${data.username}**](https://discord.com/users/${data.discordId})` : `<@${data.discordId}>`} — **${data.heistPoints} Pts** | Rank: ${data.level ? data.level.split('—')[1].trim() : 'Recruit'}\n`;
             i++;
         });
         const embed = new EmbedBuilder().setColor('#e74c3c').setTitle('💰 THE VAULT | HEIST POINTS LEADERBOARD').setDescription(desc).setTimestamp().setFooter({ text: 'Updates Automatically | Professor Network', iconURL: client.user.displayAvatarURL() });
@@ -854,8 +853,8 @@ app.post('/update-price', requireLogin, async (req, res) => {
 
         const priceEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 USDT Market Price Update').setDescription('**Professor Network** has updated the real-time P2P exchange rates.').addFields({ name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
-        await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
-        sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
+     await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });       
+      sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
     } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
