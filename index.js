@@ -500,7 +500,6 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         let paymentInstructions = "";
         if (userState.type === 'Sell') {
             paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected. Please send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
-            await ticketChannel.send(`** ${easyCopyText}**`);
 
         } else {
             paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details:**\n\`\`\`\n${easyCopyText}\n\`\`\`\nOnce paid, please upload the payment screenshot here.`;
@@ -519,6 +518,8 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         revealButtonsRow.addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
 
         await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
+        await ticketChannel.send(`** ${easyCopyText}**`);
+
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
     }
