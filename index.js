@@ -653,7 +653,6 @@ Admins can click below to securely view the user's receiving information.`,
         try {
             const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
             if (ticketDoc.exists) {
-                await interaction.editReply({ content: '✅ User details have been sent in the chat below!' });
                 await interaction.channel.send({ content: `${ticketDoc.data().userReceivingDetails}` });
             } else { await interaction.editReply({ content: '❌ Ticket data not found.' }); }
         } catch (err) { await interaction.editReply({ content: '❌ Error.' }); }
