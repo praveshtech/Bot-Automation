@@ -217,14 +217,22 @@ client.on('interactionCreate', async interaction => {
     // --- 🛡️ 1. AUTO-KYC BASIC LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
-        // 🔥 FIX 1: User Verification Check
-        if (existingKyc.exists && existingKyc.data().name) {
+        
+        // 🔥 User Verification Check: Agar data pehle se hai toh form open mat karo
+        if (existingKyc.exists && existingKyc.data().basicVerified) {
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
-            if (basicRole && !interaction.member.roles.cache.has(basicRole.id)) await interaction.member.roles.add(basicRole).catch(console.error);
-            return interaction.reply({ content: '✅ **You Are Already Verified!** You have already completed the basic network verification.', ephemeral: true });
+            if (basicRole && !interaction.member.roles.cache.has(basicRole.id)) {
+                await interaction.member.roles.add(basicRole).catch(console.error);
+            }
+            return interaction.reply({ content: '✅ **You Are Already Verified!**', ephemeral: true });
         }
+
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
-        kycModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('welcome_message').setLabel('🙏 Welcome To Professor Network').setStyle(TextInputStyle.Paragraph).setValue('💎 Trusted P2P Platform For Usdt Buy/Sell').setRequired(false)));
+        kycModal.addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), 
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('welcome_message').setLabel('🙏 Welcome To Professor Network').setStyle(TextInputStyle.Paragraph).setValue('💎 Trusted P2P Platform For Usdt Buy/Sell').setRequired(false))
+        );
         await interaction.showModal(kycModal);
     }
 
@@ -232,17 +240,24 @@ client.on('interactionCreate', async interaction => {
         await interaction.deferReply({ ephemeral: true });
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
-            if (existingKyc.exists && existingKyc.data().name) return interaction.editReply({ content: `✅ **Action Denied:** Your profile is already **Registered**.` });
+            // Agar network lag ki wajah se 2 baar form submit ho jaye
+            if (existingKyc.exists && existingKyc.data().basicVerified) {
+                return interaction.editReply({ content: `✅ **You Are Already Verified!**` });
+            }
             
-            // 🔥 FIX 2: Merge True & Basic Flag
+            // Database me basicVerified flag true set kar rahe hain
             await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: interaction.fields.getTextInputValue('kyc_name'), discordContact: interaction.fields.getTextInputValue('kyc_discord_contact'), paymentInfo: 'N/A', basicVerified: true, createdAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
             
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (!basicRole) basicRole = await interaction.guild.roles.create({ name: 'Verified', color: '#3498db' });
             await interaction.member.roles.add(basicRole).catch(console.error);
             globalLastUpdate = Date.now(); 
+            
             await interaction.editReply({ content: '✅ **Registration Successful!** You have received the **Verified** role.\n*(Note: To get the **Vault Verified** tag, Select "P2P With KYC" at the Exchange Desk).*' });
-        } catch (error) { console.error("KYC Error:", error); await interaction.editReply({ content: '❌ Error saving data.' }); }
+        } catch (error) { 
+            console.error("KYC Error:", error); 
+            await interaction.editReply({ content: '❌ Error saving data.' }); 
+        }
     }
 
     // --- 🔥 P2P TRADE FLOW ---
