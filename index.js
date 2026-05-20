@@ -556,8 +556,22 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
                     if (!feedbackCategory) feedbackCategory = await interaction.guild.channels.create({ name: 'Feedback Tickets', type: ChannelType.GuildCategory });
                     const feedbackChannel = await interaction.guild.channels.create({ name: `feedback-${ticketData.username}`, type: ChannelType.GuildText, parent: feedbackCategory.id, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, { id: ticketData.discordUserId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }], topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` });
                     feedbackChannelId = feedbackChannel.id;
-                    const fbEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('⭐ Give Your Feedback').setDescription(`Hi <@${ticketData.discordUserId}>,\nYour transaction is completed successfully! Please share your experience to build community trust.\n\n📝 **Write a review message below**\n📸 **Upload a payment screenshot**\n\nWhen you are done, click the **Confirm** button to publish your review.\n\n*(⏳ This channel will auto-close in 2 hours)*`);
-                    await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`confirm_feedback_${ticketData.discordUserId}`).setLabel('✅ Confirm & Publish').setStyle(ButtonStyle.Success))] });
+                    
+                    // 🔥 NAYA FIX: Purana text aur button hata diya, seedha channel link set kar diya
+                    const fbEmbed = new EmbedBuilder()
+                        .setColor('#f1c40f')
+                        .setTitle('⭐ Give Your Feedback')
+                        .setDescription(`Hi <@${ticketData.discordUserId}>,\nYour transaction is completed successfully! Please share your experience to build community trust.\n\n👉 **Click the button below or this link <#1495117550709903591> to go directly to the reviews channel and post your feedback.**\n\n*(⏳ This temporary channel will auto-close in 2 hours)*`);
+                    
+                    const reviewLinkBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel('⭐ Go To Reviews Channel')
+                            .setStyle(ButtonStyle.Link)
+                            // Button me direct aapke channel ki ID ka link laga diya
+                            .setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
+                    );
+
+                    await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [reviewLinkBtn] });
                     setTimeout(() => { feedbackChannel.delete().catch(() => {}); }, 2 * 60 * 60 * 1000); 
                 } catch (e) {}
             }
