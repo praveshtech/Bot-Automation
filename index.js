@@ -317,9 +317,15 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         let attachments = [];
         messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
 
-        let idPhotoUrl = attachments.length > 0 ? await uploadImageToFirebase(attachments[0], userId, 'ID') : null;
+        // 🔥 NAYA FIX: User ki 1 se zyada (max 3) photos ko Firebase pe upload aur save karna
+        let uploadedPhotos = [];
+        for (let i = 0; i < Math.min(attachments.length, 3); i++) {
+            let url = await uploadImageToFirebase(attachments[i], userId, `Doc_${i+1}`);
+            if (url) uploadedPhotos.push(url);
+        }
 
-        await db.collection('users_kyc').doc(userId).update({ idPhoto: idPhotoUrl }).catch(err => console.error(err));
+        // Database me "photos" naam ke array me saari links save hongi
+        await db.collection('users_kyc').doc(userId).update({ photos: uploadedPhotos }).catch(err => console.error(err));
         await approveUserKYC(userId, interaction.guild);
         
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
