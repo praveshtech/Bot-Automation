@@ -672,39 +672,38 @@ Admins can click below to securely view the user's receiving information.`,
             const finalStatus = isSuccess ? 'Completed' : 'Cancelled';
 
             await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
-            let feedbackChannelId = null;
 
-            if (isSuccess) {
-                try {
-                    let feedbackCategory = interaction.guild.channels.cache.find(c => (c.name === 'Feedback Tickets' || c.name === 'Feedback Ticket') && c.type === ChannelType.GuildCategory);
-                    if (!feedbackCategory) feedbackCategory = await interaction.guild.channels.create({ name: 'Feedback Tickets', type: ChannelType.GuildCategory });
-                    const feedbackChannel = await interaction.guild.channels.create({ name: `feedback-${ticketData.username}`, type: ChannelType.GuildText, parent: feedbackCategory.id, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, { id: ticketData.discordUserId, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }], topic: `${ticketData.tradeType} | $${ticketData.amountUsd}` });
-                    feedbackChannelId = feedbackChannel.id;
-                    
-                    // 🔥 NAYA FIX: Purana text aur button hata diya, seedha channel link set kar diya
-                    const fbEmbed = new EmbedBuilder()
-                        .setColor('#f1c40f')
-                        .setTitle('⭐ Give Your Feedback')
-                        .setDescription(`Hi <@${ticketData.discordUserId}>,\nYour transaction is completed successfully! Please share your experience to build community trust.\n\n👉 **Click the button below or this link <#1495117550709903591> to go directly to the reviews channel and post your feedback.**\n\n*(⏳ This temporary channel will auto-close in 2 hours)*`);
-                    
-                    const reviewLinkBtn = new ActionRowBuilder().addComponents(
+            // 🔥 FIX: Completely removed the feedback channel creation. Sending directly to DM.
+            const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
+            if (member) {
+                let desc = isSuccess 
+                    ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦\n\n⭐ **Please click the button below to leave your feedback in the reviews channel to help build community trust.**` 
+: `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please contact <@1336703883711479896>.`;                
+                const receiptEmbed = new EmbedBuilder()
+                    .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
+                    .setTitle(isSuccess ? '✅ Transaction Completed' : '❌ Transaction Cancelled')
+                    .setDescription(desc)
+                    .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+
+                const dmComponents = new ActionRowBuilder();
+
+                if (isSuccess) {
+                    dmComponents.addComponents(
                         new ButtonBuilder()
                             .setLabel('⭐ Go To Reviews Channel')
                             .setStyle(ButtonStyle.Link)
-                            // Button me direct aapke channel ki ID ka link laga diya
                             .setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
                     );
+                }
 
-                    await feedbackChannel.send({ content: `<@${ticketData.discordUserId}>`, embeds: [fbEmbed], components: [reviewLinkBtn] });
-                    setTimeout(() => { feedbackChannel.delete().catch(() => {}); }, 2 * 60 * 60 * 1000); 
-                } catch (e) {}
-            }
+                dmComponents.addComponents(
+                    new ButtonBuilder()
+                        .setLabel('Return to Exchange Desk')
+                        .setStyle(ButtonStyle.Link)
+                        .setURL('https://discord.gg/2wvPqE5e4Z')
+                );
 
-            const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
-            if (member) {
-                let desc = isSuccess ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦 Don't Forgot To Give Feedback` + (feedbackChannelId ? `\n\n⭐ **Feedback Link:** <#${feedbackChannelId}>` : "") : `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please open a new support ticket.`;
-                const receiptEmbed = new EmbedBuilder().setColor(isSuccess ? '#2ecc71' : '#e74c3c').setTitle(isSuccess ? '✅ Transaction Completed' : '❌ Transaction Cancelled').setDescription(desc).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-                await member.send({ embeds: [receiptEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'))] }).catch(()=>{});
+                await member.send({ embeds: [receiptEmbed], components: [dmComponents] }).catch(()=>{});
             }
 
             let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
@@ -741,7 +740,6 @@ Admins can click below to securely view the user's receiving information.`,
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
         } catch (error) { console.error("Error Closing Ticket: ", error); }
     }
-});
 
 async function updateWeeklyLeaderboard(guild) {
     if (!guild) return;
