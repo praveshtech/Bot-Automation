@@ -719,10 +719,21 @@ Admins can click below to securely view the user's receiving information.`,
             const vaultEmbed = new EmbedBuilder().setColor(isSuccess ? '#f1c40f' : '#e74c3c').setTitle(`🏦 Vault Record: Transaction ${finalStatus}`).addFields({ name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, { name: 'Status', value: `\`${finalStatus}\``, inline: true }).setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
             await logChannel.send({ embeds: [vaultEmbed] });
             
-            if (isSuccess) {
+           if (isSuccess) {
                 let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
                 if (!publicLogChannel) publicLogChannel = await interaction.guild.channels.create({ name: '✅・completed-transactions', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }] });
-                await publicLogChannel.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Secure Trade Completed').setDescription(`Another successful transaction has been processed through Professor Network. 🏦\n\nTrader: Anonymous User 🕵️‍♂️\n💱 Action: ${ticketData.tradeType}\n💰 Volume: $${ticketData.amountUsd}\n🏦 Method: ${ticketData.networkOrMethod}\n\n⚠️ Users are responsible for their own tax compliance.`).setTimestamp().setFooter({ text: 'Professor Network • Trusted P2P Terminal', iconURL: client.user.displayAvatarURL() })] });
+                
+                // 🔥 NAYA UPDATE: "Trader" aur "Method" lines ko yahan description se hata diya gaya hai
+                await publicLogChannel.send({ 
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('#2ecc71')
+                            .setTitle('✅ Secure Trade Completed')
+                            .setDescription(`Another successful transaction has been processed through Professor Network. 🏦\n\n💱 Action: ${ticketData.tradeType}\n💰 Volume: $${ticketData.amountUsd}\n\n⚠️ Users are responsible for their own tax compliance.`)
+                            .setTimestamp()
+                            .setFooter({ text: 'Professor Network • Trusted P2P Terminal', iconURL: client.user.displayAvatarURL() })
+                    ] 
+                });
             }
 
             await db.collection('p2p_tickets').doc(interaction.channel.id).update({ status: finalStatus, closedBy: interaction.user.username, closedAt: admin.firestore.FieldValue.serverTimestamp() });
