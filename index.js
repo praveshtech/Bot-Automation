@@ -677,7 +677,7 @@ Admins can click below to securely view the user's receiving information.`,
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
                 let desc = isSuccess 
-                    ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦\n\n⭐ **Please click the button below to leave your feedback in the reviews channel to help build community trust.**` 
+                    ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦\n\n⭐ **Please click the button below to give your feedback in the reviews channel to help build community trust.**` 
 : `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please contact <@1336703883711479896>.`;                
                 const receiptEmbed = new EmbedBuilder()
                     .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
