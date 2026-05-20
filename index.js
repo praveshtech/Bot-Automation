@@ -740,7 +740,7 @@ Admins can click below to securely view the user's receiving information.`,
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
         } catch (error) { console.error("Error Closing Ticket: ", error); }
     }
-
+});
 async function updateWeeklyLeaderboard(guild) {
     if (!guild) return;
     try {
