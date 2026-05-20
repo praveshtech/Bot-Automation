@@ -480,9 +480,9 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: 'ðŸ›¡ï
             easyCopyText = walletAddress; 
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
-            if (userState.step2 === 'UPI[CCW]') paymentDetails = "Talk to Admin for UPI Details";
-            if (userState.step2 === 'CCW') paymentDetails = "Bank: SBI\nAcc: 123456789\nIFSC: SBIN0001234";
-            if (userState.step2 === 'CDM') paymentDetails = "Cash Deposit Acc: 9876543210 (HDFC)";
+            if (userState.step2 === 'UPI[CCW]') paymentDetails = "Talk to Admin for Payment Details";
+            if (userState.step2 === 'CCW') paymentDetails = "Talk to Admin for Payment Details";
+            if (userState.step2 === 'CDM') paymentDetails = "Talk to Admin for Payment Details";
             easyCopyText = paymentDetails; 
         }
 
