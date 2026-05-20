@@ -648,27 +648,64 @@ Admins can click below to securely view the user's receiving information.`,
     }
 
     if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
-        await interaction.deferReply({ ephemeral: true }); 
-        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) return interaction.editReply({ content: '❌ **Access Denied.**' });
-        try {
-            const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
-            if (ticketDoc.exists) {
-                await interaction.editReply({
-content:
+
+    await interaction.deferReply({ ephemeral: true });
+
+    if (
+        !interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) &&
+        !interaction.member.roles.cache.some(role => role.name === 'Palermo')
+    ) {
+        return interaction.editReply({
+            content: '❌ **Access Denied.**'
+        });
+    }
+
+    try {
+
+        const ticketDoc = await db
+            .collection('p2p_tickets')
+            .doc(interaction.channel.id)
+            .get();
+
+        if (ticketDoc.exists) {
+
+            // 🔥 GET DATA
+            const ticketData = ticketDoc.data();
+
+            // 🔥 GET WALLET
+            const wallet = ticketData.wallet || 'Wallet not found';
+
+            // 🔥 MESSAGE
+            await interaction.editReply({
+                content:
 `👇 Tap the address below to copy User's Receiving Details:
 
 ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`
-});
+            });
 
-await interaction.followUp({
-content: `${wallet}`,
-ephemeral: true
-});
+            // 🔥 WALLET MESSAGE
+            await interaction.followUp({
+                content: `${wallet}`,
+                ephemeral: true
+            });
 
-} else
-     { await interaction.editReply({ content: '❌ Ticket data not found.' }); }
-        } catch (err) { await interaction.editReply({ content: '❌ Error.' }); }
+        } else {
+
+            await interaction.editReply({
+                content: '❌ Ticket data not found.'
+            });
+
+        }
+
+    } catch (err) {
+
+        console.log(err);
+
+        await interaction.editReply({
+            content: '❌ Error.'
+        });
     }
+}
 
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
         const isAdmin = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) || interaction.member.roles.cache.some(role => role.name === 'Palermo');
