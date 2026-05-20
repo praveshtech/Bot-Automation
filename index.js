@@ -660,7 +660,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
                         new EmbedBuilder()
                             .setColor('#2ecc71')
                             .setTitle('✅ Secure Trade Completed')
-                            .setDescription(`Another successful transaction has been processed through Professor Network. 🏦\n\n💱 Action: ${ticketData.tradeType}\n💰 Volume: $${ticketData.amountUsd}\n\n⚠️ Users are responsible for their own tax compliance.`)
+                            .setDescription(`Another successful transaction has been processed through Professor Network. 🏦\n\n💱 Trade: ${ticketData.tradeType}\n💰 Volume: $${ticketData.amountUsd}\n\n⚠️ Users are responsible for their own tax compliance.`)
                             .setTimestamp()
                             .setFooter({ text: 'Professor Network • Trusted P2P Terminal', iconURL: client.user.displayAvatarURL() })
                     ] 
