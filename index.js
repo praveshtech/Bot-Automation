@@ -12,7 +12,7 @@ const serviceAccount = require('./serviceAccountKey.json');
 // ==========================================
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  storageBucket: "professor-discord-556ae.firebasestorage.app"
+  storageBucket: "bot-automation-01.firebasestorage.app" 
 });
 const db = admin.firestore(); 
 const bucket = admin.storage().bucket(); 
@@ -211,7 +211,6 @@ client.on('interactionCreate', async interaction => {
     // --- 🛡️ 1. AUTO-KYC BASIC LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
-        // 🔥 FIX 1: User Verification Check
         if (existingKyc.exists && existingKyc.data().name) {
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (basicRole && !interaction.member.roles.cache.has(basicRole.id)) await interaction.member.roles.add(basicRole).catch(console.error);
@@ -228,7 +227,6 @@ client.on('interactionCreate', async interaction => {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
             if (existingKyc.exists && existingKyc.data().name) return interaction.editReply({ content: `✅ **Action Denied:** Your profile is already **Registered**.` });
             
-            // 🔥 FIX 2: Merge True & Basic Flag
             await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: interaction.fields.getTextInputValue('kyc_name'), discordContact: interaction.fields.getTextInputValue('kyc_discord_contact'), paymentInfo: 'N/A', basicVerified: true, createdAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
             
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
@@ -250,7 +248,6 @@ client.on('interactionCreate', async interaction => {
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-        // 🔥 NAYA BUG FIX: Vault Verified users ko Without KYC use karne se rokna 🔥
         if (!isVerifiedRoute && hasRole) {
             return interaction.reply({ 
                 content: '❌ **Action Denied:** You are already **Vault Verified**!\nPlease use the **"🛡️ P2P With KYC"** option to enjoy $0 fee trades.', 
@@ -259,7 +256,6 @@ client.on('interactionCreate', async interaction => {
         }
 
         if (isVerifiedRoute && !hasRole) {
-            // ...spam protection 
             try {
                 const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
                 const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
@@ -268,9 +264,9 @@ client.on('interactionCreate', async interaction => {
                 const isPendingInDB = existingKycDoc.exists && existingKycDoc.data().status === 'Pending';
 
                 if (existingChannel || isPendingInDB) {
-                    let replyMsg = '❌ **Action Denied:** Your KYC verification is already in progress.\nPlease wait for an Admin to review your documents.';
+                    let replyMsg = '❌ **Action Denied:** Your KYC verification is already in progress.\nPlease wait for an Admin to review your document.';
                     if (existingChannel) replyMsg += `\n\n👉 **Head over to your open room here:** ${existingChannel}`;
-                    return interaction.reply({ content: replyMsg, ephemeral: true }); // Using .reply instead of .update
+                    return interaction.reply({ content: replyMsg, ephemeral: true });
                 }
             } catch (err) { console.error("Spam Check Error:", err); }
 
@@ -280,7 +276,7 @@ client.on('interactionCreate', async interaction => {
                 let kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
                 if (!kycCategory) kycCategory = await interaction.guild.channels.create({ name: '📢 KYC REQUESTS', type: ChannelType.GuildCategory });
 
-                await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, status: 'Pending', kycType: 'Advanced (Vault Verified)', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }); 
+                await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, status: 'Pending', kycType: 'Vault Verification', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }); 
                 globalLastUpdate = Date.now(); 
 
                 const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
@@ -289,10 +285,11 @@ client.on('interactionCreate', async interaction => {
 
                 const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
 
-const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar And PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });                const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
+                const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar or PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });
+                const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
 
-                await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
-                await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
+                await kycChannel.send({ content: `🔔 Admin Notification: New Vault KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
+                await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your document.\n\n*(This message will auto-delete in 15 seconds)*` });
                 setTimeout(() => { interaction.deleteReply().catch(() => {}); }, 15000);
             } catch (error) { console.error("KYC Room Creation Error:", error); await interaction.editReply({ content: '❌ Room create karne mein error aaya.' }); }
             return;
@@ -311,15 +308,15 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
 
         await interaction.deferUpdate(); 
-        await interaction.followUp({ content: '⏳ Saving photos to secure database... Please wait.', ephemeral: true });
+        await interaction.followUp({ content: '⏳ Saving document to secure database... Please wait.', ephemeral: true });
         
         const messages = await interaction.channel.messages.fetch({ limit: 50 });
         let attachments = [];
         messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
 
         let idPhotoUrl = attachments.length > 0 ? await uploadImageToFirebase(attachments[0], userId, 'ID') : null;
-
         await db.collection('users_kyc').doc(userId).update({ idPhoto: idPhotoUrl }).catch(err => console.error(err));
+        
         await approveUserKYC(userId, interaction.guild);
         
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
@@ -469,8 +466,18 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         let easyCopyText = ""; 
         if (userState.type === 'Sell') {
             let walletAddress = "Waiting for Admin to provide address.";
-            if (userState.step2 === 'TRC20') walletAddress = "TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie";
-            if (userState.step2 === 'ERC20' || userState.step2 === 'BEP20' || userState.step2 === 'USDC') walletAddress = "0x72c4956337A815FD03Ca960ca09543b6f049Fa42";
+            const walletDoc = await db.collection('settings').doc('wallets').get();
+            
+            let dynamicTrc20 = "TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie"; 
+            let dynamicErc20 = "0x72c4956337A815FD03Ca960ca09543b6f049Fa42"; 
+            
+            if (walletDoc.exists) {
+                dynamicTrc20 = walletDoc.data().trc20 || dynamicTrc20;
+                dynamicErc20 = walletDoc.data().erc20 || dynamicErc20;
+            }
+
+            if (userState.step2 === 'TRC20') walletAddress = dynamicTrc20;
+            if (userState.step2 === 'ERC20' || userState.step2 === 'BEP20' || userState.step2 === 'USDC') walletAddress = dynamicErc20;
             easyCopyText = walletAddress; 
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
@@ -560,7 +567,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             if (member) {
                 let desc = isSuccess ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦 Don't Forgot To Give Feedback` + (feedbackChannelId ? `\n\n⭐ **Feedback Link:** <#${feedbackChannelId}>` : "") : `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please open a new support ticket.`;
                 const receiptEmbed = new EmbedBuilder().setColor(isSuccess ? '#2ecc71' : '#e74c3c').setTitle(isSuccess ? '✅ Transaction Completed' : '❌ Transaction Cancelled').setDescription(desc).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-                await member.send({ embeds: [receiptEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'))] }).catch(()=>{});
+                await member.send({ embeds: [receiptEmbed], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/x9Aqjaef'))] }).catch(()=>{});
             }
 
             let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
@@ -699,6 +706,7 @@ app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public'));
 app.use(session({ secret: 'professor-vault-secret-key-2026', resave: true, saveUninitialized: true, cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 } }));
 
 const requireLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
@@ -729,6 +737,22 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
     } else { res.redirect('/'); }
 });
 
+app.post('/update-wallets', requireLogin, async (req, res) => {
+    const { trc20, erc20 } = req.body; 
+    const sendModernAlert = (title, text, icon) => {
+        res.send(`
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
+            <body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK', customClass: { popup: 'border border-slate-700 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]' }}).then(() => { window.location.href = "/"; });</script></body>
+        `);
+    };
+
+    try {
+        await db.collection('settings').doc('wallets').set({ trc20, erc20 }, { merge: true });
+        sendModernAlert("✅ Success!", "Crypto Wallets Updated Successfully!", "success");
+    } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
+});
+
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
@@ -746,21 +770,56 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 
 const GUILD_ID = '1450915791338737757';
 
+// 🔥 NAYA MASTER FIX: Dashboard se KYC Approve karna
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) return res.json({ success: false, error: "Discord server connection lost." });
+        
+        const userDoc = await db.collection('users_kyc').doc(userId).get();
+        const username = userDoc.exists ? userDoc.data().username : null;
+        
+        // Agar Discord me channel hai toh photo lo aur channel delete karo
+        if (username) {
+            const expectedChannelName = `kyc-${username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
+            const channel = guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(username.toLowerCase())));
+            
+            if (channel) {
+                const messages = await channel.messages.fetch({ limit: 50 });
+                let attachments = [];
+                messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
+                
+                if (attachments.length > 0) {
+                    let idPhotoUrl = await uploadImageToFirebase(attachments[0], userId, 'ID');
+                    await db.collection('users_kyc').doc(userId).update({ idPhoto: idPhotoUrl }).catch(()=>{});
+                }
+                await channel.delete().catch(()=>{});
+            }
+        }
+
         await approveUserKYC(userId, guild);
         res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
+// 🔥 NAYA MASTER FIX: Dashboard se KYC Reject karna
 app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
         await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
         globalLastUpdate = Date.now(); 
+        
+        const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
+        if (guild) {
+            const userDoc = await db.collection('users_kyc').doc(userId).get();
+            const username = userDoc.exists ? userDoc.data().username : null;
+            if (username) {
+                const expectedChannelName = `kyc-${username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
+                const channel = guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(username.toLowerCase())));
+                if (channel) await channel.delete().catch(()=>{});
+            }
+        }
         res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
@@ -768,52 +827,31 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
 app.post('/api/kyc-delete', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        // 🔥 STEP 1: Firebase Storage se user ki photos delete karna
         try {
             const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` });
             await Promise.all(files.map(file => file.delete()));
             console.log(`✅ Deleted photos from Storage for user: ${userId}`);
-        } catch (storageErr) {
-            console.error("Storage delete error:", storageErr);
-        }
+        } catch (storageErr) {}
 
-        // 🔥 STEP 2: Discord Server se "Vault Verified" Tag (Role) remove karna
         try {
-            // GUILD_ID humne file me pehle hi define kiya hua hai
             const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
             if (guild) {
                 const member = await guild.members.fetch(userId).catch(() => null);
                 if (member) {
                     const verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
-                    
-                    // Agar user ke paas role hai, toh usko remove karo
                     if (verifiedRole && member.roles.cache.has(verifiedRole.id)) {
                         await member.roles.remove(verifiedRole);
-                        console.log(`✅ Removed 'Vault Verified' role from ${member.user.username}`);
-                        
-                        // User ko alert bhejo (Optional but recommended)
-                        const revokeEmbed = new EmbedBuilder()
-                            .setColor('#e74c3c')
-                            .setTitle('⚠️ KYC Status Revoked')
-                            .setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.\n\nYou will no longer have access to $0 fee trades. If you believe this is a mistake, please open a support ticket.')
-                            .setFooter({ text: 'Professor Network Security' });
-                            
+                        const revokeEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('⚠️ KYC Status Revoked').setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.\n\nYou will no longer have access to $0 fee trades. If you believe this is a mistake, please open a support ticket.').setFooter({ text: 'Professor Network Security' });
                         await member.send({ embeds: [revokeEmbed] }).catch(() => {});
                     }
                 }
             }
-        } catch (discordErr) {
-            console.error("Discord Role Remove Error:", discordErr);
-        }
+        } catch (discordErr) {}
 
-        // 🔥 STEP 3: Firestore Database se user ka KYC record delete karna
         await db.collection('users_kyc').doc(userId).delete();
-        
         globalLastUpdate = Date.now(); 
         res.json({ success: true });
-    } catch (e) { 
-        res.json({ success: false, error: e.message }); 
-    }
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/update-price', requireLogin, async (req, res) => {
@@ -852,12 +890,15 @@ app.get('/', requireLogin, async (req, res) => {
         const allKycUsers = [];
         allKycSnap.forEach(doc => {
             const data = doc.data();
-            if (data.kycType === 'Advanced (Vault Verified)') allKycUsers.push({ id: doc.id, ...data });
+            if (data.kycType === 'Vault Verification' || data.kycType === 'Advanced (Vault Verified)') allKycUsers.push({ id: doc.id, ...data });
         });
 
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
         const pendingKycList = [];
         pendingKycSnap.forEach(doc => { pendingKycList.push(doc.data()); });
+
+        const walletDoc = await db.collection('settings').doc('wallets').get();
+        const wallets = walletDoc.exists ? walletDoc.data() : { trc20: 'TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie', erc20: '0x72c4956337A815FD03Ca960ca09543b6f049Fa42' };
 
         let dailyVol = 0, weeklyVol = 0, monthlyVol = 0, buyVol = 0, sellVol = 0;
         const now = new Date();
@@ -900,7 +941,8 @@ app.get('/', requireLogin, async (req, res) => {
 
         res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders, pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
-            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers
+            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers,
+            wallets 
         });
     } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
