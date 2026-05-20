@@ -500,7 +500,10 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         let paymentInstructions = "";
         if (userState.type === 'Sell') {
             paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected. Please send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
-            await ticketChannel.send(`** ${easyCopyText}**`);
+            // YAHAN NICHE ADD KAR
+        await ticketChannel.send({
+        content: `\`${easyCopyText}\``
+      });
 
         } else {
             paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details:**\n\`\`\`\n${easyCopyText}\n\`\`\`\nOnce paid, please upload the payment screenshot here.`;
@@ -512,10 +515,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
 
         const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
         await ticketChannel.send({ content: palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`, embeds: [ticketEmbed], components: [actionButtonRow] });
-        // YAHAN NICHE ADD KAR
-        await ticketChannel.send({
-        content: `\`${easyCopyText}\``
-      });
+        
         const revealButtonsRow = new ActionRowBuilder();
         
         // 🔥 NAYA FIX: User wala button poori tarah hata diya. Ab sirf Admin ka button bachega.
