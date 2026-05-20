@@ -605,6 +605,10 @@ await ticketChannel.send({
 await ticketChannel.send(`${easyCopyText}`);
 
 
+// 🔥 PARTITION / GAP
+await ticketChannel.send('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
+
+
 // 🔥 ADMIN BUTTON
 const revealButtonsRow = new ActionRowBuilder();
 
