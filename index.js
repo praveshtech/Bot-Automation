@@ -518,7 +518,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         revealButtonsRow.addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
 
         await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
-        await ticketChannel.send(` ${easyCopyText}`);
+        await ticketChannel.send(`# ${easyCopyText}`);
 
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
