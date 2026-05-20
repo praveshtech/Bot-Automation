@@ -696,7 +696,7 @@ Admins can click below to securely view the user's receiving information.`,
                 if (isSuccess) {
                     dmComponents.addComponents(
                         new ButtonBuilder()
-                            .setLabel('⭐ Go To Reviews Channel')
+                            .setLabel('⭐ Give Feedback Here')
                             .setStyle(ButtonStyle.Link)
                             .setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
                     );
