@@ -840,7 +840,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
 
         const priceEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 USDT Market Price Update').setDescription('**Professor Network** has updated the real-time P2P exchange rates.').addFields({ name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
-        await priceChannel.send({  @everyone`, embeds: [priceEmbed] });
+        await priceChannel.send({ content: `🔔 **Market Alert** | @everyone`, embeds: [priceEmbed] });
         sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
     } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
