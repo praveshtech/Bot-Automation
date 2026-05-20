@@ -496,17 +496,27 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
-        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n**2. How much amount ($)?**\n> $${tradeAmount}\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n**Please pay exactly: $${Number(tradeAmount) + fee}**`;
+        // 🔥 NAYA FIX: User ko direct instructions aur 1-tap copyable address dena
+        let paymentInstructions = "";
+        if (userState.type === 'Sell') {
+            paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected. Please send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.\n\n👇 **Tap the address below to copy:**\n\`${easyCopyText}\``;
+        } else {
+            paymentInstructions = `\n\n**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details:**\n\`\`\`\n${easyCopyText}\n\`\`\`\nOnce paid, please upload the payment screenshot here.`;
+        }
+
+        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n**2. How much amount ($)?**\n> $${tradeAmount}\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n**Please pay exactly: $${Number(tradeAmount) + fee}**${paymentInstructions}`;
+        
         const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
 
         const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
         await ticketChannel.send({ content: palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`, embeds: [ticketEmbed], components: [actionButtonRow] });
 
         const revealButtonsRow = new ActionRowBuilder();
-        if (userState.type === 'Sell') revealButtonsRow.addComponents(new ButtonBuilder().setCustomId('reveal_admin_details').setLabel('👤 View Transfer Details (Only For User)').setStyle(ButtonStyle.Primary));
+        
+        // 🔥 NAYA FIX: User wala button poori tarah hata diya. Ab sirf Admin ka button bachega.
         revealButtonsRow.addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
 
-        await ticketChannel.send({ content: `🔒 **Secure Details Access**\nClick below to securely view the payment information. These details will only be visible to you.`, components: [revealButtonsRow] });
+        await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
     }
