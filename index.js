@@ -758,7 +758,7 @@ async function updateUserHeistPoints(userId, guild, username) {
                         await member.roles.add(role);
                         let levelChannel = guild.channels.cache.find(c => c.name === '🎀・level-updates' || c.name.includes('level-updates'));
                         if (!levelChannel) levelChannel = await guild.channels.create({ name: '🎀・level-updates', type: ChannelType.GuildText, permissionOverwrites: [{ id: guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] });
-                        await levelChannel.send({ content: `🔔 **Level Up Alert!** | @everyone | <@${userId}>`, embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('💰 NEW RANK UNLOCKED!').setDescription(`Congratulations <@${userId}>! You've successfully reached **${targetLevel.name}** with **${points} Heist Points**.\n\nEnjoy your new perks and keep trading to reach the top!`).setFooter({ text: 'Professor Network - Auto Rank System', iconURL: client.user.displayAvatarURL() })] });
+                        await levelChannel.send({ content: `🔔 **Level Up Alert!** | <@${userId}>`, embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('💰 NEW RANK UNLOCKED!').setDescription(`Congratulations <@${userId}>! You've successfully reached **${targetLevel.name}** with **${points} Heist Points**.\n\nEnjoy your new perks and keep trading to reach the top!`).setFooter({ text: 'Professor Network - Auto Rank System', iconURL: client.user.displayAvatarURL() })] });
                     }
                 } else { if (member.roles.cache.has(role.id)) await member.roles.remove(role); }
             }
