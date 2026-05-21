@@ -495,7 +495,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: 'ðŸ›¡ï
         if (userState.type === 'Sell') {
             if (userState.step3 === 'IMPS') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('account_name')}\nAccount No: ${interaction.fields.getTextInputValue('account_number')}\nIFSC Code: ${interaction.fields.getTextInputValue('ifsc_code')}`;
             else if (userState.step3 === 'CDM') userDetails = `Holder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
-            else if (userState.step3 === 'CCW') userDetails = `Reference No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
+            else if (userState.step3 === 'CCW') userDetails = `Phone No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
         } else {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
