@@ -462,7 +462,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         if (userState.type === 'Sell') {
             step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
         } else {
-            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'Cashless Cash Withdrawals (CCW)', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
+            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'Cardless Cash Withdrawals (CCW)', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
         }
 
         const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() }).setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`).addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true });
