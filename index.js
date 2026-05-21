@@ -604,37 +604,59 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
 
             await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
 
-            // 🔥 FIX: Completely removed the feedback channel creation. Sending directly to DM.
+            // 🔥 Send DM Receipt & Separate Feedback Message to the user
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
-                let desc = isSuccess 
-                    ? `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦\n\n⭐ **Please Click On <#1495117550709903591> And Give Us Your Valuable Feedback **` 
-: `Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please contact <@1336703883711479896>.`;                
-                const receiptEmbed = new EmbedBuilder()
-                    .setColor(isSuccess ? '#2ecc71' : '#e74c3c')
-                    .setTitle(isSuccess ? '✅ Transaction Completed' : '❌ Transaction Cancelled')
-                    .setDescription(desc)
-                    .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-
-                const dmComponents = new ActionRowBuilder();
-
                 if (isSuccess) {
-                    dmComponents.addComponents(
+                    // MESSAGE 1: Transaction Receipt 🟢
+                    const receiptEmbed = new EmbedBuilder()
+                        .setColor('#2ecc71')
+                        .setTitle('✅ Transaction Completed')
+                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦`)
+                        .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+
+                    const receiptBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel('Return to Exchange Desk')
+                            .setStyle(ButtonStyle.Link)
+                            .setURL('https://discord.gg/2wvPqE5e4Z')
+                    );
+                    
+                    await member.send({ embeds: [receiptEmbed], components: [receiptBtn] }).catch(()=>{});
+
+                    // MESSAGE 2: Feedback Request ⭐ (Sent immediately after)
+                    const feedbackEmbed = new EmbedBuilder()
+                        .setColor('#f1c40f')
+                        .setTitle('⭐ Rate Your Experience')
+                        .setDescription(`We hope you had a smooth trade!\n\nPlease click the button below to give your valuable feedback in <#1495117550709903591>.\nYour reviews help us build community trust. 🤝`)
+                        .setFooter({ text: 'Professor Network • Reviews' });
+
+                    const feedbackBtn = new ActionRowBuilder().addComponents(
                         new ButtonBuilder()
                             .setLabel('⭐ Give Feedback Here')
                             .setStyle(ButtonStyle.Link)
                             .setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
                     );
+
+                    await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
+
+                } else {
+                    // MESSAGE: Cancelled Transaction 🔴
+                    const cancelEmbed = new EmbedBuilder()
+                        .setColor('#e74c3c')
+                        .setTitle('❌ Transaction Cancelled')
+                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please contact <@1336703883711479896>.`)
+                        .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+
+                    const cancelBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setLabel('Return to Exchange Desk')
+                            .setStyle(ButtonStyle.Link)
+                            .setURL('https://discord.gg/2wvPqE5e4Z')
+                    );
+
+                    await member.send({ embeds: [cancelEmbed], components: [cancelBtn] }).catch(()=>{});
                 }
-
-                dmComponents.addComponents(
-                    new ButtonBuilder()
-                        .setLabel('Return to Exchange Desk')
-                        .setStyle(ButtonStyle.Link)
-                        .setURL('https://discord.gg/2wvPqE5e4Z')
-                );
-
-                await member.send({ embeds: [receiptEmbed], components: [dmComponents] }).catch(()=>{});
             }
 
             let logChannel = interaction.guild.channels.cache.find(c => c.name === 'transaction-logs');
