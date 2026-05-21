@@ -541,7 +541,8 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
 
         let paymentInstructions = "";
         if (userState.type === 'Sell') {
-            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${tradeAmount} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
+            // 🔥 Yahan humne '$${tradeAmount}' ki jagah '$${Number(tradeAmount) + fee}' kar diya hai
+            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${Number(tradeAmount) + fee} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
         } else {
             paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
         }
