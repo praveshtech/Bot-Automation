@@ -842,24 +842,26 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
         
-        // 🔥 Excel ke liye special BOM aur aapke naye columns
-        let csv = '\uFEFFDate of transaction,Trade (buy/sell),Discord id,Amount $,Method,Transaction details,Kyc verified / non verified\n';
+        // 🔥 NAYA UPDATE: Column header ko 'Discord id' se badal kar 'Discord Name' kar diya hai
+        let csv = '\uFEFFDate of transaction,Trade (buy/sell),Discord Name,Amount $,Method,Transaction details,Kyc verified / non verified\n';
         
         snapshot.forEach(doc => {
             const d = doc.data();
             const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
             const tradeType = d.tradeType || 'N/A';
-            const discordId = d.discordUserId || 'N/A';
+            
+            // 🔥 NAYA FIX: 'd.discordUserId' ki jagah database se 'd.username' utha rahe hain
+            const discordName = d.username || 'N/A'; 
+            
             const amount = d.amountUsd || 0;
             const method = d.networkOrMethod || 'N/A';
             
-            // Transaction details me lines (enters) hote hain, isliye usko " | " me convert kar diya taaki Excel crash na ho
             let details = d.userReceivingDetails || d.adminTransferDetails || 'N/A';
             details = details.replace(/\n/g, ' | ').replace(/"/g, '""'); 
 
             const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non verified';
 
-            csv += `"${date}","${tradeType}","${discordId}","${amount}","${method}","${details}","${kycStatus}"\n`;
+            csv += `"${date}","${tradeType}","${discordName}","${amount}","${method}","${details}","${kycStatus}"\n`;
         });
 
         res.header('Content-Type', 'text/csv; charset=utf-8');
