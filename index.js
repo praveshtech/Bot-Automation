@@ -850,27 +850,25 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
         res.setHeader('Content-type', 'application/pdf');
         doc.pipe(res);
 
-        // 🎨 2. Naya Header Design (Dark Background Box + White Text)
+        // 🎨 2. Header Design (Dark Background Box + White Text)
         const pageWidth = doc.page.width;
         
-        // Dark background box draw kar rahe hain top par
         doc.roundedRect(30, 30, pageWidth - 60, 70, 8).fill('#2b2d31'); 
         
-        // Box ke andar ka text
         doc.font('Helvetica-Bold').fontSize(22).fillColor('#ffffff').text('THE VAULT LEDGER', 30, 45, { align: 'center', width: pageWidth - 60 });
         doc.font('Helvetica').fontSize(11).fillColor('#bdc3c7').text('Official Transaction Report • Professor Network', 30, 72, { align: 'center', width: pageWidth - 60 });
         
-        doc.moveDown(4); // Table ko thoda niche se shuru karne ke liye space
+        doc.moveDown(4); // Space before table
 
-        // 📊 3. Table Headers with Custom Blue Colors
+        // 📊 3. Table Headers (DATE ki width badha di hai taaki time fit ho sake)
         const table = {
             headers: [
-                { label: "DATE", property: "date", width: 70, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "DATE", property: "date", width: 105, headerColor: "#34495e", headerOpacity: 1 },
                 { label: "TRADE", property: "trade", width: 50, headerColor: "#34495e", headerOpacity: 1 },
                 { label: "DISCORD NAME", property: "name", width: 90, headerColor: "#34495e", headerOpacity: 1 },
                 { label: "AMOUNT $", property: "amount", width: 60, headerColor: "#34495e", headerOpacity: 1 },
                 { label: "METHOD", property: "method", width: 70, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "TRANSACTION DETAILS", property: "details", width: 330, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "TRANSACTION DETAILS", property: "details", width: 295, headerColor: "#34495e", headerOpacity: 1 },
                 { label: "KYC STATUS", property: "kyc", width: 70, headerColor: "#34495e", headerOpacity: 1 }
             ],
             rows: []
@@ -879,7 +877,8 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
             
-            const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleDateString() : 'N/A';
+            // 🔥 NAYA FIX: '.toLocaleDateString()' ko badal kar '.toLocaleString()' kiya hai exact match ke liye
+            const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
             const tradeType = d.tradeType || 'N/A';
             const discordName = d.username || 'N/A';
             const amount = `$${d.amountUsd || 0}`;
@@ -895,15 +894,14 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 
         // 🖌️ 4. Table Drawing & Styling
         await doc.table(table, { 
-            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8.5).fillColor('#ffffff'), // White text for header
+            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8.5).fillColor('#ffffff'), 
             prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
                 doc.font("Helvetica").fontSize(8.5).fillColor('#2b2d31');
-                // Alternating row background colors (White / Light Gray)
                 indexColumn === 0 && doc.addBackground(rectRow, (indexRow % 2 ? '#f8f9fa' : '#ffffff')); 
             }
         });
 
-        // 📝 5. Footer Text (Bottom center)
+        // 📝 5. Footer Text
         const pageBottom = doc.page.height - 40;
         doc.font('Helvetica').fontSize(8.5).fillColor('#95a5a6').text('Automated by Professor Network • Secure Exchange Terminal', 0, pageBottom, { align: 'center', width: pageWidth });
 
