@@ -843,33 +843,32 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
 
-        // 📄 1. PDF Setup (Landscape mode)
+        // 📄 1. PDF Setup (Landscape mode with strict dimensions)
         const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
 
         res.setHeader('Content-disposition', 'attachment; filename="The_Vault_Ledger_Report.pdf"');
         res.setHeader('Content-type', 'application/pdf');
         doc.pipe(res);
 
-        // 🎨 2. Header Design (Dark Background Box + White Text)
         const pageWidth = doc.page.width;
         
+        // 🎨 2. Top Banner Header (Exact match to HTML layout)
         doc.roundedRect(30, 30, pageWidth - 60, 70, 8).fill('#2b2d31'); 
-        
         doc.font('Helvetica-Bold').fontSize(22).fillColor('#ffffff').text('THE VAULT LEDGER', 30, 45, { align: 'center', width: pageWidth - 60 });
         doc.font('Helvetica').fontSize(11).fillColor('#bdc3c7').text('Official Transaction Report • Professor Network', 30, 72, { align: 'center', width: pageWidth - 60 });
         
-        doc.moveDown(4); // Space before table
+        doc.moveDown(4.5); // Exact vertical gap before the table starts
 
-        // 📊 3. Table Headers (DATE ki width badha di hai taaki time fit ho sake)
+        // 📊 3. Table Structure & Precise Column Widths (Total 740 max)
         const table = {
             headers: [
-                { label: "DATE", property: "date", width: 105, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "TRADE", property: "trade", width: 50, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "DISCORD NAME", property: "name", width: 90, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "AMOUNT $", property: "amount", width: 60, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "METHOD", property: "method", width: 70, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "TRANSACTION DETAILS", property: "details", width: 295, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "KYC STATUS", property: "kyc", width: 70, headerColor: "#34495e", headerOpacity: 1 }
+                { label: "DATE", property: "date", width: 110, headerColor: "#34495e" },
+                { label: "TRADE", property: "trade", width: 50, headerColor: "#34495e" },
+                { label: "DISCORD NAME", property: "name", width: 95, headerColor: "#34495e" },
+                { label: "AMOUNT $", property: "amount", width: 65, headerColor: "#34495e" },
+                { label: "METHOD", property: "method", width: 75, headerColor: "#34495e" },
+                { label: "TRANSACTION DETAILS", property: "details", width: 275, headerColor: "#34495e" },
+                { label: "KYC STATUS", property: "kyc", width: 70, headerColor: "#34495e" }
             ],
             rows: []
         };
@@ -877,7 +876,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
             
-            // 🔥 NAYA FIX: '.toLocaleDateString()' ko badal kar '.toLocaleString()' kiya hai exact match ke liye
+            // Format Date and Time properly
             const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
             const tradeType = d.tradeType || 'N/A';
             const discordName = d.username || 'N/A';
@@ -892,16 +891,25 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
             table.rows.push([date, tradeType, discordName, amount, method, details, kycStatus]);
         });
 
-        // 🖌️ 4. Table Drawing & Styling
+        // 🖌️ 4. Table Drawing Options (Silencing harsh lines and fixing padding)
         await doc.table(table, { 
+            x: 30,
+            padding: 8, // 🔥 NAYA FIX: Isse text table cells ke andar spacious aur clear dikhega bilkul HTML ki tarah
+            divider: {
+                header: { disabled: false, width: 1.5, color: '#2c3e50' },
+                horizontal: { disabled: false, width: 0.8, color: '#ecf0f1' } // 🔥 NAYA FIX: Light grey border rows ke beech me exact match ke liye
+            },
             prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8.5).fillColor('#ffffff'), 
             prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
                 doc.font("Helvetica").fontSize(8.5).fillColor('#2b2d31');
-                indexColumn === 0 && doc.addBackground(rectRow, (indexRow % 2 ? '#f8f9fa' : '#ffffff')); 
+                // Alternating row backgrounds (#fdfefe aur white) as defined in WeasyPrint
+                if (indexColumn === 0) {
+                    doc.addBackground(rectRow, (indexRow % 2 ? '#fdfefe' : '#ffffff')); 
+                }
             }
         });
 
-        // 📝 5. Footer Text
+        // 📝 5. Footer Layout Matching
         const pageBottom = doc.page.height - 40;
         doc.font('Helvetica').fontSize(8.5).fillColor('#95a5a6').text('Automated by Professor Network • Secure Exchange Terminal', 0, pageBottom, { align: 'center', width: pageWidth });
 
