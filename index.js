@@ -843,32 +843,35 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
 
-        // 📄 1. PDF Document Setup (Landscape mode taaki wide table fit ho jaye)
+        // 📄 1. PDF Setup (Landscape mode)
         const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
 
-        // ⬇️ 2. Browser ko batana ki file download karni hai
         res.setHeader('Content-disposition', 'attachment; filename="The_Vault_Ledger_Report.pdf"');
         res.setHeader('Content-type', 'application/pdf');
-
-        // Output ko direct response me bhej rahe hain
         doc.pipe(res);
 
-        // 🎨 3. PDF Header Design
-        doc.font('Helvetica-Bold').fontSize(22).fillColor('#2b2d31').text('THE VAULT LEDGER', { align: 'center' });
-        doc.font('Helvetica').fontSize(10).fillColor('#7f8c8d').text('Official Transaction Report • Professor Network', { align: 'center' });
-        doc.moveDown(2); // Thoda space dene ke liye
+        // 🎨 2. Naya Header Design (Dark Background Box + White Text)
+        const pageWidth = doc.page.width;
+        
+        // Dark background box draw kar rahe hain top par
+        doc.roundedRect(30, 30, pageWidth - 60, 70, 8).fill('#2b2d31'); 
+        
+        // Box ke andar ka text
+        doc.font('Helvetica-Bold').fontSize(22).fillColor('#ffffff').text('THE VAULT LEDGER', 30, 45, { align: 'center', width: pageWidth - 60 });
+        doc.font('Helvetica').fontSize(11).fillColor('#bdc3c7').text('Official Transaction Report • Professor Network', 30, 72, { align: 'center', width: pageWidth - 60 });
+        
+        doc.moveDown(4); // Table ko thoda niche se shuru karne ke liye space
 
-        // 📊 4. Table Data Prepare karna
+        // 📊 3. Table Headers with Custom Blue Colors
         const table = {
-            title: "Completed Transactions",
             headers: [
-                { label: "Date", property: "date", width: 80 },
-                { label: "Trade", property: "trade", width: 50 },
-                { label: "Discord Name", property: "name", width: 90 },
-                { label: "Amount", property: "amount", width: 60 },
-                { label: "Method", property: "method", width: 70 },
-                { label: "Transaction Details", property: "details", width: 250 }, // Isko thoda bada rakha hai
-                { label: "KYC Status", property: "kyc", width: 70 }
+                { label: "DATE", property: "date", width: 70, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "TRADE", property: "trade", width: 50, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "DISCORD NAME", property: "name", width: 90, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "AMOUNT $", property: "amount", width: 60, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "METHOD", property: "method", width: 70, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "TRANSACTION DETAILS", property: "details", width: 330, headerColor: "#34495e", headerOpacity: 1 },
+                { label: "KYC STATUS", property: "kyc", width: 70, headerColor: "#34495e", headerOpacity: 1 }
             ],
             rows: []
         };
@@ -876,7 +879,6 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
             
-            // Date ko short kiya taaki fit ho sake
             const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleDateString() : 'N/A';
             const tradeType = d.tradeType || 'N/A';
             const discordName = d.username || 'N/A';
@@ -891,16 +893,20 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
             table.rows.push([date, tradeType, discordName, amount, method, details, kycStatus]);
         });
 
-        // 🖌️ 5. Table Draw karna aur render karna
+        // 🖌️ 4. Table Drawing & Styling
         await doc.table(table, { 
-            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(9).fillColor('#ffffff'), // Header styling
+            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8.5).fillColor('#ffffff'), // White text for header
             prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                doc.font("Helvetica").fontSize(8).fillColor('#2b2d31');
-                indexColumn === 0 && doc.addBackground(rectRow, (indexRow % 2 ? '#f8f9fa' : '#ffffff')); // Alternating row colors
+                doc.font("Helvetica").fontSize(8.5).fillColor('#2b2d31');
+                // Alternating row background colors (White / Light Gray)
+                indexColumn === 0 && doc.addBackground(rectRow, (indexRow % 2 ? '#f8f9fa' : '#ffffff')); 
             }
         });
 
-        // ✅ 6. PDF Close/Finish
+        // 📝 5. Footer Text (Bottom center)
+        const pageBottom = doc.page.height - 40;
+        doc.font('Helvetica').fontSize(8.5).fillColor('#95a5a6').text('Automated by Professor Network • Secure Exchange Terminal', 0, pageBottom, { align: 'center', width: pageWidth });
+
         doc.end();
 
     } catch(e) { 
