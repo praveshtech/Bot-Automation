@@ -6,7 +6,6 @@ const axios = require('axios');
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField, ChannelType, AttachmentBuilder } = require('discord.js');
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
-const PDFDocument = require('pdfkit-table');
 
 // ==========================================
 // 1. FIREBASE SETUP
