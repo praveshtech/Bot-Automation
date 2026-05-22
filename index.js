@@ -841,18 +841,34 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
-        let csv = 'Date,User,Action,Method,Amount(USD),Closed By\n';
+        
+        // 🔥 Excel ke liye special BOM aur aapke naye columns
+        let csv = '\uFEFFDate of transaction,Trade (buy/sell),Discord id,Amount $,Method,Transaction details,Kyc verified / non verified\n';
+        
         snapshot.forEach(doc => {
             const d = doc.data();
             const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
-            csv += `"${date}","${d.username}","${d.tradeType}","${d.networkOrMethod}","${d.amountUsd}","${d.closedBy || 'Admin'}"\n`;
+            const tradeType = d.tradeType || 'N/A';
+            const discordId = d.discordUserId || 'N/A';
+            const amount = d.amountUsd || 0;
+            const method = d.networkOrMethod || 'N/A';
+            
+            // Transaction details me lines (enters) hote hain, isliye usko " | " me convert kar diya taaki Excel crash na ho
+            let details = d.userReceivingDetails || d.adminTransferDetails || 'N/A';
+            details = details.replace(/\n/g, ' | ').replace(/"/g, '""'); 
+
+            const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non verified';
+
+            csv += `"${date}","${tradeType}","${discordId}","${amount}","${method}","${details}","${kycStatus}"\n`;
         });
-        res.header('Content-Type', 'text/csv');
+
+        res.header('Content-Type', 'text/csv; charset=utf-8');
         res.attachment('The_Vault_Ledger.csv');
         res.send(csv);
-    } catch(e) { res.send("Export Error"); }
+    } catch(e) { 
+        res.send("Export Error"); 
+    }
 });
-
 const GUILD_ID = '1450915791338737757';
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
