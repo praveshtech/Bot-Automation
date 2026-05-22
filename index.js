@@ -842,70 +842,34 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
-
-        // 📄 1. PDF Document Setup (Landscape mode taaki wide table fit ho jaye)
-        const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
-
-        // ⬇️ 2. Browser ko batana ki file download karni hai
-        res.setHeader('Content-disposition', 'attachment; filename="The_Vault_Ledger_Report.pdf"');
-        res.setHeader('Content-type', 'application/pdf');
-
-        // Output ko direct response me bhej rahe hain
-        doc.pipe(res);
-
-        // 🎨 3. PDF Header Design
-        doc.font('Helvetica-Bold').fontSize(22).fillColor('#2b2d31').text('THE VAULT LEDGER', { align: 'center' });
-        doc.font('Helvetica').fontSize(10).fillColor('#7f8c8d').text('Official Transaction Report • Professor Network', { align: 'center' });
-        doc.moveDown(2); // Thoda space dene ke liye
-
-        // 📊 4. Table Data Prepare karna
-        const table = {
-            title: "Completed Transactions",
-            headers: [
-                { label: "Date", property: "date", width: 80 },
-                { label: "Trade", property: "trade", width: 50 },
-                { label: "Discord Name", property: "name", width: 90 },
-                { label: "Amount", property: "amount", width: 60 },
-                { label: "Method", property: "method", width: 70 },
-                { label: "Transaction Details", property: "details", width: 250 }, // Isko thoda bada rakha hai
-                { label: "KYC Status", property: "kyc", width: 70 }
-            ],
-            rows: []
-        };
-
-        snapshot.forEach(docSnap => {
-            const d = docSnap.data();
-            
-            // Date ko short kiya taaki fit ho sake
-            const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleDateString() : 'N/A';
+        
+        // 🔥 NAYA UPDATE: Column header ko 'Discord id' se badal kar 'Discord Name' kar diya hai
+        let csv = '\uFEFFDate of transaction,Trade (buy/sell),Discord Name,Amount $,Method,Transaction details,Kyc verified / non verified\n';
+        
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const date = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
             const tradeType = d.tradeType || 'N/A';
-            const discordName = d.username || 'N/A';
-            const amount = `$${d.amountUsd || 0}`;
+            
+            // 🔥 NAYA FIX: 'd.discordUserId' ki jagah database se 'd.username' utha rahe hain
+            const discordName = d.username || 'N/A'; 
+            
+            const amount = d.amountUsd || 0;
             const method = d.networkOrMethod || 'N/A';
             
             let details = d.userReceivingDetails || d.adminTransferDetails || 'N/A';
-            details = details.replace(/\n/g, ' | '); 
+            details = details.replace(/\n/g, ' | ').replace(/"/g, '""'); 
 
             const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non verified';
 
-            table.rows.push([date, tradeType, discordName, amount, method, details, kycStatus]);
+            csv += `"${date}","${tradeType}","${discordName}","${amount}","${method}","${details}","${kycStatus}"\n`;
         });
 
-        // 🖌️ 5. Table Draw karna aur render karna
-        await doc.table(table, { 
-            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(9).fillColor('#ffffff'), // Header styling
-            prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                doc.font("Helvetica").fontSize(8).fillColor('#2b2d31');
-                indexColumn === 0 && doc.addBackground(rectRow, (indexRow % 2 ? '#f8f9fa' : '#ffffff')); // Alternating row colors
-            }
-        });
-
-        // ✅ 6. PDF Close/Finish
-        doc.end();
-
+        res.header('Content-Type', 'text/csv; charset=utf-8');
+        res.attachment('The_Vault_Ledger.csv');
+        res.send(csv);
     } catch(e) { 
-        console.error("PDF Export Error:", e);
-        res.send("Export Error: " + e.message); 
+        res.send("Export Error"); 
     }
 });
 const GUILD_ID = '1450915791338737757';
