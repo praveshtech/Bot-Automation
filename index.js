@@ -332,7 +332,8 @@ client.on('interactionCreate', async interaction => {
 
                 const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
 
-const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar(Front & Back) And PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });                const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
+const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar(Front & Back) And PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });               
+ const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
 
                 await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
                 await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
@@ -478,8 +479,12 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             if (userState.step3 === 'IMPS') {
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setStyle(TextInputStyle.Short).setRequired(true)));
             } else if (userState.step3 === 'CDM') {
-                p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_mobile_number').setLabel('Mobile Number').setStyle(TextInputStyle.Short).setRequired(true)));
-            } else if (userState.step3 === 'CCW') {
+p2pModal.addComponents(
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_bank_name').setLabel('Bank Name (e.g. SBI, HDFC)').setStyle(TextInputStyle.Short).setRequired(true)),
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), 
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_mobile_number').setLabel('Mobile Number').setStyle(TextInputStyle.Short).setRequired(true))
+);            } else if (userState.step3 === 'CCW') {
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Phone Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)));
             }
         } else {
@@ -495,7 +500,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
 
         if (userState.type === 'Sell') {
             if (userState.step3 === 'IMPS') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('account_name')}\nAccount No: ${interaction.fields.getTextInputValue('account_number')}\nIFSC Code: ${interaction.fields.getTextInputValue('ifsc_code')}`;
-            else if (userState.step3 === 'CDM') userDetails = `Holder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
+            else if (userState.step3 === 'CDM') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('cdm_bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
             else if (userState.step3 === 'CCW') userDetails = `Phone No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
         } else {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
