@@ -55,6 +55,19 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
     const command = message.content.trim().toLowerCase();
 
+    // 🔥 NAYA CODE: One-Time Review Anti-Spam System
+    if (message.channel.id === '1495117550709903591') {
+        try {
+            // Message aate hi user ki type karne ki permission hata do
+            await message.channel.permissionOverwrites.delete(message.author.id);
+            // Premium feel ke liye react karo
+            await message.react('⭐');
+            await message.react('✅');
+        } catch (error) {
+            console.error("Review permission remove error:", error);
+        }
+    }
+
     if (command === '!p2p') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return message.reply({ content: "❌ Action Denied.", ephemeral: true });
         try {
@@ -670,6 +683,18 @@ p2pModal.addComponents(
                     );
 
                     await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
+                    // 🔥 NAYA CODE: User ko Review Channel me type karne ki permission dena
+                    try {
+                        const reviewChannel = interaction.guild.channels.cache.get('1495117550709903591');
+                        if (reviewChannel) {
+                            await reviewChannel.permissionOverwrites.create(ticketData.discordUserId, {
+                                SendMessages: true,
+                                ViewChannel: true
+                            });
+                        }
+                    } catch (err) {
+                        console.log("Error granting review permission:", err);
+                    }
 
                 } else {
                     // MESSAGE: Cancelled Transaction 🔴
