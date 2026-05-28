@@ -1127,39 +1127,67 @@ app.get('/', requireLogin, async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
 // ==========================================
-// 🔥 NEW FEATURE: WELCOME & MEMBER COUNT 🔥
+// 🔥 ADVANCED SERVER STATS (THE VAULT STYLE) 🔥
 // ==========================================
 
-const WELCOME_CHANNEL_ID = '1509523189389332480'; // 🔴 Yahan client ke Welcome Text Channel ki ID daalein
-const MEMBER_COUNT_CHANNEL_ID = '1509524469578727524'; // 🔴 Yahan client ke Member Count Voice Channel ki ID daalein
+const WELCOME_CHANNEL_ID = '1509523189389332480'; // Aapka Welcome Text Channel ID
 
-const updateMemberCount = (guild) => {
-    const channel = guild.channels.cache.get(MEMBER_COUNT_CHANNEL_ID);
-    if (channel) {
-        channel.setName(`👥 Members: ${guild.memberCount}`).catch(console.error);
+// 🔴 NEECHE APNE NAYE 3 VOICE CHANNELS KI IDs DAALEIN:
+const STATS_DATE_ID = '1509533726902849586';      // 📅 Date wala voice channel
+const STATS_TOTAL_ID = '1509533817986089062';     // 🏦 Total Traders wala voice channel
+const STATS_ONLINE_ID = '1509533898949005373';    // 🟢 Active Now wala voice channel
+
+const updateServerStats = async (guild) => {
+    try {
+        // Asli online count fetch karne ke liye sabhi members ko load karna zaroori hai
+        await guild.members.fetch();
+
+        // 1. Date Update (Vault Style: "Thursday, 28th May")
+        const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+        const day = d.getDate();
+        const suffix = ["th", "st", "nd", "rd"][((day % 10 > 3) || (Math.floor(day % 100 / 10) === 1)) ? 0 : day % 10];
+        const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(d);
+        const monthName = new Intl.DateTimeFormat('en-US', { month: 'short' }).format(d);
+        const todayDate = `${dayName}, ${day}${suffix} ${monthName}`;
+
+        const dateChannel = guild.channels.cache.get(STATS_DATE_ID);
+        if (dateChannel) dateChannel.setName(`📅 | ${todayDate}`).catch(()=>{});
+
+        // 2. Total Traders Update (Vault Theme)
+        const totalChannel = guild.channels.cache.get(STATS_TOTAL_ID);
+        if (totalChannel) totalChannel.setName(`🏦 | Total Traders: ${guild.memberCount}`).catch(()=>{});
+
+        // 3. Online Members Update (Active Now)
+        const onlineCount = guild.members.cache.filter(m => m.presence && m.presence.status !== 'offline').size;
+        const onlineChannel = guild.channels.cache.get(STATS_ONLINE_ID);
+        if (onlineChannel) onlineChannel.setName(`🟢 | Active Now: ${onlineCount}`).catch(()=>{});
+
+    } catch (error) {
+        console.error("Stats update error:", error);
     }
 };
+
 client.on('ready', () => {
-    client.guilds.cache.forEach(guild => updateMemberCount(guild));
+    console.log("Vault Style Stats Activated!");
+    
+    // Bot start hote hi pehli baar update karega
+    client.guilds.cache.forEach(guild => updateServerStats(guild));
+
+    // Har 10 minute me data refresh karega (Discord Rate Limit se bachne ke liye safe limit)
+    setInterval(() => {
+        client.guilds.cache.forEach(guild => updateServerStats(guild));
+    }, 10 * 60 * 1000); 
 });
+
 client.on('guildMemberAdd', async (member) => {
     // Welcome message bhejna
     const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (welcomeChannel) {
-        welcomeChannel.send(`Hey <@${member.id}>, welcome to the Professor Network community! 🎉`);
+        welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`);
     }
-    // Naya member aane par count update karna
-    updateMemberCount(member.guild);
-});
-
-client.on('guildMemberRemove', async (member) => {
-    // Member jaane par count update karna
-    updateMemberCount(member.guild);
 });
 
 // ==========================================
 
-// Ye line aapki file me sabse last me pehle se hogi, isko waise hi rehne dena
-// client.login(process.env.DISCORD_TOKEN);
 
 client.login(process.env.DISCORD_TOKEN);
