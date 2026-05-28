@@ -110,15 +110,18 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] animate-counter" data-target="<%= monthlyVol %>" data-prefix="$">0</p>
                 </div>
-                <div onclick="openKycModal()" class="glass-panel p-6 border-l-4 border-yellow-500 cursor-pointer <%= pendingKyc > 0 ? 'shadow-[0_0_20px_rgba(234,179,8,0.25)] border-yellow-500/50 hover:bg-yellow-500/5' : '' %>">
+                <div class="glass-panel p-6 border-l-4 border-yellow-500 hover:border-yellow-400 transition-colors duration-300">
                     <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Pending KYC</h3>
-                            <span class="text-[10px] text-yellow-500/60 font-black tracking-widest mt-0.5"><i class="fa-solid fa-hand-pointer"></i> Click to review</span>
-                        </div>
-                        <i class="fa-solid fa-id-card text-yellow-500/50"></i>
+                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Non-KYC Revenue</h3>
+                        <i class="fa-solid fa-hand-holding-dollar text-yellow-500/50 text-lg"></i>
                     </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingKyc > 0 ? 'text-yellow-500 animate-pulse text-shadow-[0_0_15px_rgba(234,179,8,0.5)]' : 'text-gray-300' %> animate-counter" data-target="<%= pendingKyc %>" data-prefix="">0</p>
+                    <% 
+                       // 🔥 Dashboard ke liye total fee revenue calculate kar rahe hain
+                       const totalNonKycRev = (typeof allLogs !== 'undefined' ? allLogs : [])
+                           .filter(t => t.isVerifiedTrade !== true)
+                           .reduce((sum, trade) => sum + (trade.fee || 0), 0);
+                    %>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] animate-counter" data-target="<%= totalNonKycRev %>" data-prefix="$">0</p>
                 </div>
             </div>
 
