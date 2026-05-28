@@ -6,7 +6,7 @@ const axios = require('axios');
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField, ChannelType, AttachmentBuilder } = require('discord.js');
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
-const PDFDocument = require('pdfkit-table');
+const excelJS = require('exceljs'); // 🔥 EXCEL KE LIYE NAYI LINE
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -880,41 +880,32 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
 
-        // 📄 1. PDF Setup (Landscape mode)
-        const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape' });
+        // 📊 1. Excel Workbook & Sheet Setup
+        const workbook = new excelJS.Workbook();
+        workbook.creator = 'Professor Network';
+        const worksheet = workbook.addWorksheet('Vault Ledger');
 
-        res.setHeader('Content-disposition', 'attachment; filename="The_Vault_Ledger_Report.pdf"');
-        res.setHeader('Content-type', 'application/pdf');
-        doc.pipe(res);
+        // 🎨 2. Columns Setup (Width & Names)
+        worksheet.columns = [
+            { header: 'DATE', key: 'date', width: 25 },
+            { header: 'TRADE', key: 'trade', width: 12 },
+            { header: 'DISCORD NAME', key: 'name', width: 25 },
+            { header: 'AMOUNT $', key: 'amount', width: 15 },
+            { header: 'METHOD', key: 'method', width: 20 },
+            { header: 'TRANSACTION DETAILS', key: 'details', width: 50 },
+            { header: 'KYC STATUS', key: 'kyc', width: 18 }
+        ];
 
-        const pageWidth = doc.page.width;
-        
-        // 🎨 2. Top Banner Header (Dark Theme)
-        doc.roundedRect(30, 30, pageWidth - 60, 70, 8).fill('#2b2d31'); 
-        doc.font('Helvetica-Bold').fontSize(22).fillColor('#ffffff').text('THE VAULT LEDGER', 30, 45, { align: 'center', width: pageWidth - 60 });
-        doc.font('Helvetica').fontSize(11).fillColor('#bdc3c7').text('Official Transaction Report • Professor Network', 30, 72, { align: 'center', width: pageWidth - 60 });
-        
-        doc.moveDown(4.5); // Space before table
+        // 🖌️ 3. Header Styling (Premium Look)
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
+        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2D31' } }; // Dark Grey Background
+        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // 📊 3. Table Structure (Width total exactly matched to page size)
-        const table = {
-            headers: [
-                { label: "DATE", property: "date", width: 100, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "TRADE", property: "trade", width: 45, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "DISCORD NAME", property: "name", width: 95, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "AMOUNT $", property: "amount", width: 65, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "METHOD", property: "method", width: 75, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "TRANSACTION DETAILS", property: "details", width: 320, headerColor: "#34495e", headerOpacity: 1 },
-                { label: "KYC STATUS", property: "kyc", width: 80, headerColor: "#34495e", headerOpacity: 1 }
-            ],
-            // 🔥 NAYA FIX: 'rows' ki jagah 'datas' use kiya hai taaki library colors aur styling ko allow kare
-            datas: [] 
-        };
-
+        // 📝 4. Data Add Karna
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
             
-            const dateStr = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString() : 'N/A';
+            const dateStr = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString('en-IN') : 'N/A';
             const tradeType = d.tradeType || 'N/A';
             const discordName = d.username || 'N/A';
             const amountStr = `$${d.amountUsd || 0}`;
@@ -923,10 +914,9 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
             let detailsStr = d.userReceivingDetails || d.adminTransferDetails || 'N/A';
             detailsStr = detailsStr.replace(/\n/g, ' | '); 
 
-            const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non verified';
+            const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non Verified';
 
-            // Data ab properly map ho jayega apni apni property ke sath
-            table.datas.push({
+            const row = worksheet.addRow({
                 date: dateStr,
                 trade: tradeType,
                 name: discordName,
@@ -935,31 +925,20 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
                 details: detailsStr,
                 kyc: kycStatus
             });
+
+            // Data rows ko thoda clean dikhane ke liye align karna
+            row.alignment = { vertical: 'middle' };
         });
 
-        // 🖌️ 4. Table Rendering Engine
-        await doc.table(table, { 
-            x: 30,
-            padding: 7, // 🔥 NAYA FIX: Andar ka space badha diya taaki text chipke na
-            divider: {
-                header: { disabled: false, width: 1, color: '#2c3e50' },
-                horizontal: { disabled: false, width: 0.5, color: '#ecf0f1' } // Light border rows ke liye
-            },
-            prepareHeader: () => doc.font("Helvetica-Bold").fontSize(8.5).fillColor('#ffffff'), 
-            prepareRow: (row, indexColumn, indexRow, rectRow, rectCell) => {
-                doc.font("Helvetica").fontSize(8.5).fillColor('#2b2d31');
-                indexColumn === 0 && doc.addBackground(rectRow, (indexRow % 2 ? '#f8f9fa' : '#ffffff')); 
-            }
-        });
+        // 🚀 5. Excel File Response send karna
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', 'attachment; filename="The_Vault_Ledger_Report.xlsx"');
 
-        // 📝 5. Footer Layout
-        const pageBottom = doc.page.height - 40;
-        doc.font('Helvetica').fontSize(8.5).fillColor('#95a5a6').text('Automated by Professor Network • Secure Exchange Terminal', 0, pageBottom, { align: 'center', width: pageWidth });
-
-        doc.end();
+        await workbook.xlsx.write(res);
+        res.end();
 
     } catch(e) { 
-        console.error("PDF Export Error:", e);
+        console.error("Excel Export Error:", e);
         res.send("Export Error: " + e.message); 
     }
 });
