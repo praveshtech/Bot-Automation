@@ -323,8 +323,9 @@ client.on('interactionCreate', async interaction => {
                 let kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
                 if (!kycCategory) kycCategory = await interaction.guild.channels.create({ name: '📢 KYC REQUESTS', type: ChannelType.GuildCategory });
 
-                await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, status: 'Pending', kycType: 'Advanced (Vault Verified)', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }); 
-                globalLastUpdate = Date.now(); 
+                // 🔥 BUG FIX: Ticket create hote time ab DB me Pending save nahi hoga, load bachega.
+               // await db.collection('users_kyc').doc(interaction.user.id).set(...); 
+              // globalLastUpdate = Date.now();; 
 
                 const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
                 const channelPermissions = [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }];
@@ -368,8 +369,9 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             if (url) uploadedPhotos.push(url);
         }
 
-        // Database me "photos" naam ke array me saari links save hongi
-        await db.collection('users_kyc').doc(userId).update({ photos: uploadedPhotos }).catch(err => console.error(err));
+        
+        // 🔥 FIX: Ab direct .set() use kar rahe hain taaki DB me direct data bane
+        await db.collection('users_kyc').doc(userId).set({ photos: uploadedPhotos }, { merge: true }).catch(err => console.error(err));
         await approveUserKYC(userId, interaction.guild);
         
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
@@ -394,8 +396,8 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
 
         await interaction.deferUpdate();
-        await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' }).catch(()=>{});
-        globalLastUpdate = Date.now(); 
+        // 🔥 FIX: Reject hone par bhi DB me kuch save nahi karenge, DB clean rahega.
+// await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' }).catch(()=>{});
         
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#e74c3c').setTitle('❌ KYC Rejected')], components: [] });
         await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>. This room will close in 5 seconds.`, ephemeral: true });
@@ -822,8 +824,16 @@ async function approveUserKYC(userId, guild) {
     try {
         const member = await guild.members.fetch(userId);
         await member.roles.add(verifiedRole);
-        await db.collection('users_kyc').doc(userId).update({ status: 'Approved' }).catch(()=>{});
-        globalLastUpdate = Date.now(); 
+        // 🔥 FIX: Approved hone par hi poora data seedha DB me save hoga
+            await db.collection('users_kyc').doc(userId).set({ 
+                discordId: userId,
+                username: member.user.username,
+                status: 'Approved',
+                kycType: 'Advanced (Vault Verified)',
+                updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true }).catch(()=>{});
+            
+            globalLastUpdate = Date.now();
         await member.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 Professor Network').setDescription('Your KYC verification has been successfully approved.\n\nYou have now received the **🏦 Vault Verified** role, unlocking:\n• $0 transaction fee  \n• Faster processing  \n• Higher trust status inside the network  \n\nWelcome to the verified side of the network. ⚡')] }).catch(() => {});
     } catch (e) {}
 }
