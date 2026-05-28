@@ -1127,6 +1127,7 @@ app.get('/', requireLogin, async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
 // ==========================================
+// ==========================================
 // 🔥 ADVANCED SERVER STATS (THE VAULT STYLE) 🔥
 // ==========================================
 
@@ -1139,8 +1140,8 @@ const STATS_ONLINE_ID = '1509533898949005373';    // 🟢 Active Now wala voice 
 
 const updateServerStats = async (guild) => {
     try {
-        // Asli online count fetch karne ke liye sabhi members ko load karna zaroori hai
-        await guild.members.fetch();
+        // 🔥 FIX 1: 'withPresences: true' add kiya hai taaki live online status fetch ho sake
+        await guild.members.fetch({ withPresences: true });
 
         // 1. Date Update (Vault Style: "Thursday, 28th May")
         const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
@@ -1157,8 +1158,13 @@ const updateServerStats = async (guild) => {
         const totalChannel = guild.channels.cache.get(STATS_TOTAL_ID);
         if (totalChannel) totalChannel.setName(`🏦 | Total Traders: ${guild.memberCount}`).catch(()=>{});
 
-        // 3. Online Members Update (Active Now)
-        const onlineCount = guild.members.cache.filter(m => m.presence && m.presence.status !== 'offline').size;
+        // 3. Online Members Update (Active Now) - 🔥 FIX 2: 100% ACCURATE LOGIC 🔥
+        const onlineCount = guild.presences.cache.filter(presence => {
+            const member = guild.members.cache.get(presence.userId);
+            // Bots ko ignore karega aur sirf real online/idle/dnd members ko count karega
+            return member && !member.user.bot && ['online', 'idle', 'dnd'].includes(presence.status);
+        }).size;
+        
         const onlineChannel = guild.channels.cache.get(STATS_ONLINE_ID);
         if (onlineChannel) onlineChannel.setName(`🟢 | Active Now: ${onlineCount}`).catch(()=>{});
 
