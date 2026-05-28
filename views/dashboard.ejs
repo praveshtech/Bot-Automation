@@ -721,8 +721,44 @@
 
         const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
         const buyV = Number('<%= buyVol %>'), sellV = Number('<%= sellVol %>');
-        new Chart(ctxDoughnut, { type: 'doughnut', data: { labels: ['Buy (INR in)', 'Sell (Crypto out)'], datasets: [{ data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV], backgroundColor: ['#22c55e', '#ef4444'], borderColor: '#0f172a', borderWidth: 5 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family:'Outfit', weight:'600', size: 12 }, padding: 20 } } } } });
+        
+        // 🔥 Percentage Calculate Karna
+        const totalVSum = buyV + sellV;
+        const buyPercent = totalVSum > 0 ? Math.round((buyV / totalVSum) * 100) : 0;
+        const sellPercent = totalVSum > 0 ? Math.round((sellV / totalVSum) * 100) : 0;
 
+        new Chart(ctxDoughnut, { 
+            type: 'doughnut', 
+            data: { 
+                // 🔥 Labels mein percentage add kar diya
+                labels: [`Buy (INR in) : ${buyPercent}%`, `Sell (Crypto out) : ${sellPercent}%`], 
+                datasets: [{ 
+                    data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV], 
+                    backgroundColor: ['#22c55e', '#ef4444'], 
+                    borderColor: '#0f172a', 
+                    borderWidth: 5 
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                cutout: '75%', 
+                plugins: { 
+                    legend: { 
+                        position: 'bottom', 
+                        labels: { color: '#94a3b8', font: { family:'Outfit', weight:'800', size: 12 }, padding: 20 } 
+                    },
+                    // 🔥 Hover karne par exact Amount ($) dikhayega
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ' Amount: $' + context.raw.toLocaleString();
+                            }
+                        }
+                    }
+                } 
+            } 
+        });
         const calData = <%- calendarData %>, monthDataRaw = <%- monthWiseData %>;
         new Chart(document.getElementById('monthlyBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Volume ($)', data: monthDataRaw, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgba(99, 102, 241, 1)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(99, 102, 241, 0.8)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } } } } });
 
