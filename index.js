@@ -430,23 +430,26 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             const components = [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)];
             const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true }, { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true });
 
-           if (userState.type === 'Sell') {
+          if (userState.type === 'Sell') {
                 const step3Dropdown = new StringSelectMenuBuilder()
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
                         { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 30 Minutes', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
-                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 30 Minutes to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' }
+                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 30 Minutes to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                        // 🔥 NAYA FIX: CCW wapas add kar diya naye naam ke sath
+                        { label: 'CCW (HDFC, ICICI, SBI)', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' } 
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
                 if (userState.step3) {
                     components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success)));
-                    // Yahan se bhi CCW ki condition permanently hata di hai
+                    
+                    // Yahan display mein bhi CCW ka naya naam dikhega
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                         .setColor('#2ecc71')
                         .setDescription('Click the **Next** button below to securely enter your bank details.')
-                        .addFields({ name: '🏦 Receiving Method', value: `${userState.step3}`, inline: true });
+                        .addFields({ name: '🏦 Receiving Method', value: `${userState.step3 === 'CCW' ? 'CCW (HDFC, ICICI, SBI)' : userState.step3}`, inline: true });
                 } else {
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3', iconURL: client.user.displayAvatarURL() })
                         .setDescription('Please select how you want to receive your INR from the dropdown below.');
