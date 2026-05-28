@@ -37,7 +37,7 @@ async function uploadImageToFirebase(imageUrl, userId, type) {
 // ==========================================
 // 2. DISCORD BOT INIT
 // ==========================================
-const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers ] });
+const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences ] });
 const userSelections = new Map();
 
 client.once('ready', () => {
