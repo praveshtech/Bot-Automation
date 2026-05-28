@@ -1146,7 +1146,7 @@ client.on('guildMemberAdd', async (member) => {
     // Welcome message bhejna
     const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (welcomeChannel) {
-        welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`);
+        welcomeChannel.send(`Hey <@${member.id}>, welcome to the Professor Network community! 🎉`);
     }
     // Naya member aane par count update karna
     updateMemberCount(member.guild);
