@@ -53,6 +53,7 @@
             <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings</button>
             <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC</button>
             <button onclick="showTab('wallet-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-wallet mr-4 text-lg"></i> Wallet Addresses</button>
+            <button onclick="showTab('logs-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-list-check mr-4 text-lg"></i> Transaction Logs</button>
         </nav>
 
         <div class="p-6 border-t border-slate-800/50">
@@ -368,6 +369,71 @@
             </div>
         </section>
 
+        <section id="logs-view" class="hidden-section fade-in">
+            <div class="glass-panel p-6 border-t-4 border-indigo-500 relative overflow-hidden">
+                <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-indigo-500 text-glow"><i class="fa-solid fa-list-check mr-2"></i> Vault Transaction Logs</h3>
+                
+                <!-- TABS BUTTONS -->
+                <div class="flex space-x-6 mb-6 border-b border-slate-700/50 pb-2">
+                    <button onclick="switchLogTab('kyc-logs')" id="btn-kyc-logs" class="text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300">🛡️ KYC Trades</button>
+                    <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
+                </div>
+
+                <% 
+                   const kycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade === true);
+                   const nonKycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade !== true);
+                %>
+
+                <!-- KYC TRADES TABLE -->
+                <div id="kyc-logs" class="overflow-x-auto w-full custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-slate-800/30">
+                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Date</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
+                        </thead>
+                        <tbody class="text-sm font-medium">
+                            <% if (kycLogs.length === 0) { %>
+                                 <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No KYC transactions found.</td></tr>
+                            <% } else { %>
+                                <% kycLogs.forEach((trade) => { %>
+                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                                        <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
+                                        <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
+                                        <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
+                                        <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
+                                        <td class="py-4 px-6 text-right font-black text-green-400">$<%= trade.amountUsd.toLocaleString() %></td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- NON-KYC TRADES TABLE -->
+                <div id="non-kyc-logs" class="hidden overflow-x-auto w-full custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-slate-800/30">
+                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Date</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
+                        </thead>
+                        <tbody class="text-sm font-medium">
+                            <% if (nonKycLogs.length === 0) { %>
+                                 <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No Non-KYC transactions found.</td></tr>
+                            <% } else { %>
+                                <% nonKycLogs.forEach((trade) => { %>
+                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                                        <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
+                                        <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
+                                        <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
+                                        <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
+                                        <td class="py-4 px-6 text-right font-black text-orange-400">$<%= trade.amountUsd.toLocaleString() %></td>
+                                    </tr>
+                                <% }) %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <div id="txModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
@@ -509,6 +575,7 @@
             document.getElementById('price-view').classList.add('hidden-section'); 
             document.getElementById('kyc-view').classList.add('hidden-section'); 
             document.getElementById('wallet-view').classList.add('hidden-section'); 
+            document.getElementById('logs-view').classList.add('hidden-section'); // 🔥 Yeh nayi line jodi
             
             const selectedTab = document.getElementById(tabId);
             selectedTab.classList.remove('hidden-section'); selectedTab.classList.remove('fade-in'); void selectedTab.offsetWidth; selectedTab.classList.add('fade-in');
@@ -519,10 +586,27 @@
                 'settings-view': 'Vault Settings', 
                 'kyc-view': 'Verified Users Database', 
                 'price-view': 'Market Prices',
-                'wallet-view': 'Secure Wallet Details' 
+                'wallet-view': 'Secure Wallet Details',
+                'logs-view': 'Complete Transaction Logs' // 🔥 Yeh nayi line jodi
             };
             document.getElementById('page-title').innerText = titles[tabId];
             if (window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function switchLogTab(tabId) {
+            document.getElementById('kyc-logs').classList.add('hidden');
+            document.getElementById('non-kyc-logs').classList.add('hidden');
+            
+            document.getElementById('btn-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
+            document.getElementById('btn-non-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
+            
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            if (tabId === 'kyc-logs') {
+                document.getElementById('btn-kyc-logs').className = 'text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300';
+            } else {
+                document.getElementById('btn-non-kyc-logs').className = 'text-orange-400 font-black uppercase tracking-widest border-b-2 border-orange-500 pb-2 px-2 transition duration-300';
+            }
         }
 
         // --- 📋 COPY TO CLIPBOARD FUNCTION ---

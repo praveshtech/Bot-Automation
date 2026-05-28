@@ -1117,9 +1117,9 @@ app.get('/', requireLogin, async (req, res) => {
         
         const topTraders = Object.keys(userVolumes).map(username => ({ username, totalVolume: userVolumes[username] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
 
-        res.render('dashboard', { 
+       res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders, pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
-            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers
+            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), allLogs: allCompleted, monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers
         });
     } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
