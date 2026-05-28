@@ -373,16 +373,33 @@
             <div class="glass-panel p-6 border-t-4 border-indigo-500 relative overflow-hidden">
                 <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-indigo-500 text-glow"><i class="fa-solid fa-list-check mr-2"></i> Vault Transaction Logs</h3>
                 
-                <!-- TABS BUTTONS -->
-                <div class="flex space-x-6 mb-6 border-b border-slate-700/50 pb-2">
-                    <button onclick="switchLogTab('kyc-logs')" id="btn-kyc-logs" class="text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300">🛡️ KYC Trades</button>
-                    <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
-                </div>
-
                 <% 
                    const kycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade === true);
                    const nonKycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade !== true);
+                   
+                   const kycTotalVolume = kycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
+                   const nonKycTotalVolume = nonKycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
                 %>
+
+                <!-- TABS & STATS HEADER -->
+                <div class="flex flex-wrap justify-between items-end mb-6 border-b border-slate-700/50 pb-2 gap-4">
+                    <div class="flex space-x-6">
+                        <button onclick="switchLogTab('kyc-logs')" id="btn-kyc-logs" class="text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300">🛡️ KYC Trades</button>
+                        <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
+                    </div>
+                    
+                    <!-- KYC STATS -->
+                    <div id="kyc-stats" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1">
+                        <span class="mr-3 bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= kycLogs.length %></span></span>
+                        <span class="bg-green-900/20 px-3 py-1.5 rounded-md border border-green-500/30">Volume: <span class="text-green-400 ml-1">$<%= kycTotalVolume.toLocaleString() %></span></span>
+                    </div>
+                    
+                    <!-- NON-KYC STATS -->
+                    <div id="non-kyc-stats" class="hidden text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1">
+                        <span class="mr-3 bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= nonKycLogs.length %></span></span>
+                        <span class="bg-orange-900/20 px-3 py-1.5 rounded-md border border-orange-500/30">Volume: <span class="text-orange-400 ml-1">$<%= nonKycTotalVolume.toLocaleString() %></span></span>
+                    </div>
+                </div>
 
                 <!-- KYC TRADES TABLE -->
                 <div id="kyc-logs" class="overflow-x-auto w-full custom-scrollbar">
@@ -575,7 +592,7 @@
             document.getElementById('price-view').classList.add('hidden-section'); 
             document.getElementById('kyc-view').classList.add('hidden-section'); 
             document.getElementById('wallet-view').classList.add('hidden-section'); 
-            document.getElementById('logs-view').classList.add('hidden-section'); // 🔥 Yeh nayi line jodi
+            document.getElementById('logs-view').classList.add('hidden-section'); 
             
             const selectedTab = document.getElementById(tabId);
             selectedTab.classList.remove('hidden-section'); selectedTab.classList.remove('fade-in'); void selectedTab.offsetWidth; selectedTab.classList.add('fade-in');
@@ -587,7 +604,7 @@
                 'kyc-view': 'Verified Users Database', 
                 'price-view': 'Market Prices',
                 'wallet-view': 'Secure Wallet Details',
-                'logs-view': 'Complete Transaction Logs' // 🔥 Yeh nayi line jodi
+                'logs-view': 'Complete Transaction Logs' 
             };
             document.getElementById('page-title').innerText = titles[tabId];
             if (window.innerWidth < 1024) toggleSidebar();
@@ -596,6 +613,8 @@
         function switchLogTab(tabId) {
             document.getElementById('kyc-logs').classList.add('hidden');
             document.getElementById('non-kyc-logs').classList.add('hidden');
+            document.getElementById('kyc-stats').classList.add('hidden');
+            document.getElementById('non-kyc-stats').classList.add('hidden');
             
             document.getElementById('btn-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
             document.getElementById('btn-non-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
@@ -604,8 +623,10 @@
             
             if (tabId === 'kyc-logs') {
                 document.getElementById('btn-kyc-logs').className = 'text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300';
+                document.getElementById('kyc-stats').classList.remove('hidden');
             } else {
                 document.getElementById('btn-non-kyc-logs').className = 'text-orange-400 font-black uppercase tracking-widest border-b-2 border-orange-500 pb-2 px-2 transition duration-300';
+                document.getElementById('non-kyc-stats').classList.remove('hidden');
             }
         }
 
