@@ -1139,7 +1139,9 @@ const updateMemberCount = (guild) => {
         channel.setName(`👥 Members: ${guild.memberCount}`).catch(console.error);
     }
 };
-
+client.on('ready', () => {
+    client.guilds.cache.forEach(guild => updateMemberCount(guild));
+});
 client.on('guildMemberAdd', async (member) => {
     // Welcome message bhejna
     const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
