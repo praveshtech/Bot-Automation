@@ -102,12 +102,12 @@
                     </div>
                     <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green animate-counter" data-target="<%= dailyVol %>" data-prefix="$">0</p>
                 </div>
-                <div class="glass-panel p-6 border-l-4 border-red-500 <%= pendingTickets > 0 ? 'shadow-[0_0_20px_rgba(239,68,68,0.15)] border-red-500/50' : '' %>">
+                <div class="glass-panel p-6 border-l-4 border-purple-500 hover:border-purple-400 transition-colors duration-300">
                     <div class="flex justify-between items-start">
-                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Active Tickets</h3>
-                        <i class="fa-solid fa-ticket text-red-500/50"></i>
+                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Monthly Vol (30d)</h3>
+                        <i class="fa-solid fa-sack-dollar text-purple-500/50 text-lg"></i>
                     </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 <%= pendingTickets > 0 ? 'text-red-500 text-glow animate-pulse' : 'text-gray-300' %> animate-counter" data-target="<%= pendingTickets %>" data-prefix="">0</p>
+                    <p class="text-3xl sm:text-4xl font-black mt-3 text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] animate-counter" data-target="<%= monthlyVol %>" data-prefix="$">0</p>
                 </div>
                 <div onclick="openKycModal()" class="glass-panel p-6 border-l-4 border-yellow-500 cursor-pointer <%= pendingKyc > 0 ? 'shadow-[0_0_20px_rgba(234,179,8,0.25)] border-yellow-500/50 hover:bg-yellow-500/5' : '' %>">
                     <div class="flex justify-between items-start">
