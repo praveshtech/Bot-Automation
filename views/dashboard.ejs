@@ -377,8 +377,13 @@
                    const kycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade === true);
                    const nonKycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade !== true);
                    
+                   // Volume ka sum
                    const kycTotalVolume = kycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
                    const nonKycTotalVolume = nonKycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
+
+                   // 🔥 NAYA CODE: Fee Revenue ka sum nikalne ke liye
+                   const kycTotalFee = kycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
+                   const nonKycTotalFee = nonKycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
                 %>
 
                 <!-- TABS & STATS HEADER -->
@@ -389,18 +394,21 @@
                     </div>
                     
                     <!-- KYC STATS -->
-                    <div id="kyc-stats" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1">
-                        <span class="mr-3 bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= kycLogs.length %></span></span>
+                    <div id="kyc-stats" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
+                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= kycLogs.length %></span></span>
                         <span class="bg-green-900/20 px-3 py-1.5 rounded-md border border-green-500/30">Volume: <span class="text-green-400 ml-1">$<%= kycTotalVolume.toLocaleString() %></span></span>
+                        <!-- 🔥 NAYA BADGE: Total Fee Revenue (KYC) -->
+                        <span class="bg-blue-900/20 px-3 py-1.5 rounded-md border border-blue-500/30">Fee Rev: <span class="text-blue-400 ml-1">$<%= kycTotalFee.toLocaleString() %></span></span>
                     </div>
                     
                     <!-- NON-KYC STATS -->
-                    <div id="non-kyc-stats" class="hidden text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1">
-                        <span class="mr-3 bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= nonKycLogs.length %></span></span>
+                    <div id="non-kyc-stats" class="hidden text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
+                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= nonKycLogs.length %></span></span>
                         <span class="bg-orange-900/20 px-3 py-1.5 rounded-md border border-orange-500/30">Volume: <span class="text-orange-400 ml-1">$<%= nonKycTotalVolume.toLocaleString() %></span></span>
+                        <!-- 🔥 NAYA BADGE: Total Fee Revenue (NON-KYC) -->
+                        <span class="bg-blue-900/20 px-3 py-1.5 rounded-md border border-blue-500/30">Fee Rev: <span class="text-blue-400 ml-1">$<%= nonKycTotalFee.toLocaleString() %></span></span>
                     </div>
                 </div>
-
                 <!-- KYC TRADES TABLE -->
                 <div id="kyc-logs" class="overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap">
