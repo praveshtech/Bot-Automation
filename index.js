@@ -424,7 +424,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             if (userState.type === 'Sell') {
                 step2Dropdown.addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙', default: userState.step2 === 'USDC' }]);
             } else {
-                step2Dropdown.addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱', default: userState.step2 === 'UPI[CCW]' }, { label: 'Cardless Cash Withdrawals(CCW)', value: 'CCW', emoji: '🏦', default: userState.step2 === 'CCW' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }]);
+                step2Dropdown.addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱', default: userState.step2 === 'UPI[CCW]' }, { label: 'CCW (HDFC, ICICI, SBI)', value: 'CCW', emoji: '💳', default: userState.step2 === 'CCW' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }]);
             }
             
             const components = [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)];
@@ -438,7 +438,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
                         { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 30 Minutes', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
                         { label: 'CDM (Cash Deposit)', description: 'Estimated Time 30 Minutes to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                         // 🔥 NAYA FIX: CCW wapas add kar diya naye naam ke sath
-                        { label: 'CCW (HDFC, ICICI, SBI)', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' } 
+                        
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
@@ -480,7 +480,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         if (userState.type === 'Sell') {
             step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
         } else {
-            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'Cardless Cash Withdrawals (CCW)', value: 'IMPS', emoji: '🏦' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
+            step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([{ label: 'UPI[CCW]', value: 'UPI[CCW]', emoji: '📱' }, { label: 'CCW (HDFC, ICICI, SBI)', value: 'CCW', emoji: '💳' }, { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }]);
         }
 
         const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() }).setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`).addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true });
@@ -552,7 +552,7 @@ p2pModal.addComponents(
         }
 
         const fee = userState.isVerifiedTrade ? 0 : 3;
-        const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (Limit 20k INR)' : userState.step3;
+        const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (HDFC, ICICI, SBI)' : userState.step3;
 
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
