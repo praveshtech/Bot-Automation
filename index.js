@@ -1126,6 +1126,38 @@ app.get('/', requireLogin, async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
+// ==========================================
+// 🔥 NEW FEATURE: WELCOME & MEMBER COUNT 🔥
+// ==========================================
 
+const WELCOME_CHANNEL_ID = '1509523189389332480'; // 🔴 Yahan client ke Welcome Text Channel ki ID daalein
+const MEMBER_COUNT_CHANNEL_ID = '1509524469578727524'; // 🔴 Yahan client ke Member Count Voice Channel ki ID daalein
+
+const updateMemberCount = (guild) => {
+    const channel = guild.channels.cache.get(MEMBER_COUNT_CHANNEL_ID);
+    if (channel) {
+        channel.setName(`👥 Members: ${guild.memberCount}`).catch(console.error);
+    }
+};
+
+client.on('guildMemberAdd', async (member) => {
+    // Welcome message bhejna
+    const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
+    if (welcomeChannel) {
+        welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`);
+    }
+    // Naya member aane par count update karna
+    updateMemberCount(member.guild);
+});
+
+client.on('guildMemberRemove', async (member) => {
+    // Member jaane par count update karna
+    updateMemberCount(member.guild);
+});
+
+// ==========================================
+
+// Ye line aapki file me sabse last me pehle se hogi, isko waise hi rehne dena
+// client.login(process.env.DISCORD_TOKEN);
 
 client.login(process.env.DISCORD_TOKEN);
