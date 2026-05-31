@@ -1,941 +1,405 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vault | Premium Executive Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Outfit', sans-serif; background-color: #0b1120; background-image: radial-gradient(circle at top right, #1e293b, #0b1120); color: #f8fafc; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; border: 2px solid #0f172a; }
-        ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
-        .glass-panel { background: linear-gradient(145deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1.25rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
-        .glass-panel:hover { border-color: rgba(255, 255, 255, 0.1); transform: translateY(-2px); box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.6); }
-        .sidebar-link { transition: all 0.3s ease; border-right: 4px solid transparent; }
-        .sidebar-link:hover { background: rgba(255, 255, 255, 0.03); transform: translateX(4px); }
-        .sidebar-link.active { background: linear-gradient(90deg, rgba(220,38,38,0.0) 0%, rgba(220,38,38,0.15) 100%); border-right: 4px solid #ef4444; color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.3); }
-        .text-glow { text-shadow: 0 0 15px rgba(239, 68, 68, 0.6); }
-        .text-glow-green { text-shadow: 0 0 15px rgba(34, 197, 94, 0.5); }
-        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        @keyframes fadeIn { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
-        .hidden-section { display: none; }
-        tbody tr { transition: all 0.2s ease; }
-        tbody tr:hover { background: rgba(239, 68, 68, 0.1) !important; transform: scale(1.01); }
-        #sidebar-overlay { transition: opacity 0.3s ease; pointer-events: none; }
-        #sidebar-overlay.active { opacity: 1; pointer-events: auto; }
-        .custom-scrollbar::-webkit-scrollbar { height: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(52, 211, 153, 0.3); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(52, 211, 153, 0.6); }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8) sepia(1) saturate(5) hue-rotate(220deg); cursor: pointer; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PropVault — Elite Prop Firm Analytics 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+/* --- ELITE FINANCIAL PSYCHOLOGY COLOR SYSTEM --- */
+:root {
+  --bg-base: #030712;       
+  --bg-surface: rgba(15, 23, 42, 0.65); 
+  --bg-surface-light: rgba(30, 41, 59, 0.8);
+  --border-dim: rgba(255, 255, 255, 0.04);
+  --border-glow: rgba(56, 189, 248, 0.2);
+  --accent-gold: #F59E0B;   
+  --accent-gold-glow: rgba(245, 158, 11, 0.2);
+  --accent-cyan: #38BDF8;   
+  --accent-purple: #818CF8; 
+  --status-success: #10B981;
+  --status-success-dim: rgba(16, 185, 129, 0.1);
+  --status-warn: #F59E0B;
+  --status-danger: #EF4444;
+  --text-main: #F8FAFC;     
+  --text-muted: #94A3B8;
+  
+  --font-head: 'Space Grotesk', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius: 12px;
+  --radius-lg: 20px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.03) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.03) 0%, transparent 40%);
+  background-attachment: fixed;
+}
+
+/* --- TEXT & CARD ANIMATIONS --- */
+@keyframes glowPulse { 0% { box-shadow: 0 0 10px var(--accent-gold-glow); } 50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.4); } 100% { box-shadow: 0 0 10px var(--accent-gold-glow); } }
+@keyframes textGradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
+@keyframes borderFlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+/* --- ORBIT ANIMATIONS --- */
+.bg-orbit-container {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%; max-width: 1200px; height: 800px;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.orbit-icon {
+  position: absolute;
+  top: 50%; left: 50%;
+  filter: grayscale(100%) opacity(0.12) drop-shadow(0 0 15px rgba(56, 189, 248, 0.4));
+}
+
+.orbit-1 { animation: orbitCW1 35s linear infinite; width: 120px; margin-top: -60px; margin-left: -60px; }
+.orbit-2 { animation: orbitCCW1 45s linear infinite; width: 100px; margin-top: -50px; margin-left: -50px; }
+.orbit-3 { animation: orbitCW2 25s linear infinite; width: 140px; margin-top: -70px; margin-left: -70px; }
+.orbit-4 { animation: orbitCCW2 40s linear infinite; width: 110px; margin-top: -55px; margin-left: -55px; }
+.orbit-5 { animation: orbitCW3 30s linear infinite; width: 130px; margin-top: -65px; margin-left: -65px; border-radius: 20px; }
+
+@keyframes orbitCW1 {
+  0% { transform: rotate(0deg) translateX(350px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(350px) rotate(-360deg); }
+}
+@keyframes orbitCCW1 { 
+  0% { transform: rotate(360deg) translateX(450px) rotate(-360deg); }
+  100% { transform: rotate(0deg) translateX(450px) rotate(0deg); }
+}
+@keyframes orbitCW2 {
+  0% { transform: rotate(120deg) translateX(280px) rotate(-120deg); }
+  100% { transform: rotate(480deg) translateX(280px) rotate(-480deg); }
+}
+@keyframes orbitCCW2 {
+  0% { transform: rotate(240deg) translateX(400px) rotate(-240deg); }
+  100% { transform: rotate(-120deg) translateX(400px) rotate(120deg); }
+}
+@keyframes orbitCW3 {
+  0% { transform: rotate(70deg) translateX(520px) rotate(-70deg); }
+  100% { transform: rotate(430deg) translateX(520px) rotate(-430deg); }
+}
+
+.highlight-cyan { color: var(--accent-cyan); font-weight: 600; }
+.highlight-gold { color: var(--accent-gold); font-weight: 700; }
+.highlight-success { color: var(--status-success); font-weight: 600; }
+
+/* --- NAV --- */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(3, 7, 18, 0.8); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border-dim);
+  padding: 0 4%; height: 70px; display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: var(--font-head); font-weight: 700; font-size: 22px; color: var(--text-main); text-decoration: none; display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
+.nav-links { display: flex; gap: 8px; list-style: none; }
+.nav-links a { color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 600; padding: 8px 16px; border-radius: 8px; transition: all 0.2s; font-family: var(--font-head); text-transform: uppercase; }
+.nav-links a:hover { color: var(--text-main); background: rgba(255,255,255,0.03); }
+.nav-cta { background: linear-gradient(135deg, var(--accent-gold), #D97706) !important; color: #000 !important; font-weight: 700 !important; box-shadow: 0 4px 15px var(--accent-gold-glow); animation: glowPulse 3s infinite; }
+
+/* --- HERO SECTION --- */
+.hero { position: relative; padding: 180px 4% 100px; text-align: center; overflow: hidden; }
+.hero-content { position: relative; z-index: 2; }
+
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; background: var(--status-success-dim); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--status-success); font-size: 12px; font-weight: 700; font-family: var(--font-mono); letter-spacing: 1px; text-transform: uppercase; padding: 6px 16px; border-radius: 100px; margin-bottom: 24px; animation: slideUpFade 0.6s ease-out both; }
+.hero-badge::before { content: ''; width: 6px; height: 6px; background: var(--status-success); border-radius: 50%; box-shadow: 0 0 8px var(--status-success); }
+h1 { font-family: var(--font-head); font-size: clamp(40px, 6vw, 72px); font-weight: 700; line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 24px; animation: slideUpFade 0.8s ease-out 0.1s both; }
+.h1-accent { background: linear-gradient(to right, #fff, var(--accent-cyan), var(--accent-purple), #fff); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textGradient 6s linear infinite; }
+.hero-sub { color: var(--text-muted); font-size: clamp(16px, 2vw, 19px); max-width: 680px; margin: 0 auto 40px; line-height: 1.7; animation: slideUpFade 1s ease-out 0.2s both; }
+.hero-actions { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 70px; animation: slideUpFade 1.2s ease-out 0.3s both; }
+.btn-primary { background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: #000; border: none; padding: 15px 36px; border-radius: 12px; font-family: var(--font-head); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4); }
+.btn-primary:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 30px rgba(56, 189, 248, 0.6); }
+.btn-secondary { background: rgba(255,255,255,0.02); color: var(--text-main); border: 1px solid var(--border-dim); padding: 15px 36px; border-radius: 12px; font-family: var(--font-head); font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; backdrop-filter: blur(10px); }
+.btn-secondary:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); box-shadow: 0 5px 15px rgba(255,255,255,0.05); }
+
+/* --- FILTER BAR --- */
+.filter-bar { position: sticky; top: 70px; z-index: 90; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-dim); padding: 16px 4%; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.filter-label { font-family: var(--font-head); font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-tab { padding: 8px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border-dim); background: transparent; color: var(--text-muted); transition: all 0.2s; font-family: var(--font-body); }
+.filter-tab.active, .filter-tab:hover { background: rgba(56, 189, 248, 0.1); border-color: var(--accent-cyan); color: var(--accent-cyan); box-shadow: 0 0 15px rgba(56, 189, 248, 0.15); }
+
+/* --- SECTION HEADERS --- */
+section { padding: 80px 4%; max-width: 1200px; margin: 0 auto; position: relative; z-index: 2; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 32px; flex-wrap: wrap; gap: 12px; }
+.section-title { font-family: var(--font-head); font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+.section-title span { color: var(--text-muted); font-weight: 400; font-size: 15px; margin-left: 8px; font-family: var(--font-body); }
+
+/* --- ELITE FIRM CARDS --- */
+.firms-grid { display: flex; flex-direction: column; gap: 16px; }
+.firm-card { background: var(--bg-surface); border: 1px solid var(--border-dim); border-radius: var(--radius-lg); padding: 24px 30px; display: grid; grid-template-columns: 30px 1fr auto auto auto auto; align-items: center; gap: 24px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; text-decoration: none; color: inherit; backdrop-filter: blur(16px); position: relative; overflow: hidden; }
+.firm-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.1); box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(255, 255, 255, 0.02); }
+.firm-card::before { content: ''; position: absolute; bottom: 0; left: 0; height: 2px; width: 0%; background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent); transition: width 0.6s ease; }
+.firm-card:hover::before { width: 100%; }
+.firm-card::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent); transition: left 0.6s; pointer-events: none; }
+.firm-card:hover::after { left: 100%; }
+
+.firm-rank { font-family: var(--font-mono); font-size: 15px; color: var(--text-muted); text-align: center; font-weight: 600; }
+.firm-rank.top { color: var(--accent-gold); font-weight: 700; font-size: 18px; text-shadow: 0 0 10px rgba(245, 158, 11, 0.3); }
+
+/* Updated Logo Image Container */
+.firm-logo-img { 
+  width: 54px; height: 54px; border-radius: 14px; 
+  display: flex; align-items: center; justify-content: center; 
+  flex-shrink: 0; overflow: hidden; background: #080C14;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 15px rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.firm-logo-img img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.fallback-logo { font-family: var(--font-head); font-weight: 700; font-size: 16px; color: #fff; }
+
+.firm-inner { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.firm-name { font-family: var(--font-head); font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.firm-tag { font-size: 10px; font-weight: 800; font-family: var(--font-mono); letter-spacing: 1px; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; }
+.tag-gold { background: rgba(245, 158, 11, 0.15); color: var(--accent-gold); border: 1px solid rgba(245, 158, 11, 0.4); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+.tag-cyan { background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 0 10px rgba(56, 189, 248, 0.2); }
+.firm-meta { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; font-weight: 500; }
+.firm-meta span { display: flex; align-items: center; gap: 4px; }
+
+.trust-score { text-align: center; min-width: 80px; }
+.trust-num { font-family: var(--font-head); font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+.trust-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: -2px;}
+
+.discount-wrap { text-align: center; }
+.discount-pill { background: rgba(255,255,255,0.03); border: 1px dashed var(--accent-gold); color: var(--accent-gold); font-family: var(--font-mono); font-size: 15px; font-weight: 700; padding: 8px 18px; border-radius: 10px; letter-spacing: 1px; transition: 0.3s; }
+.firm-card:hover .discount-pill { background: rgba(245, 158, 11, 0.05); box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.1); }
+.discount-off { font-size: 11px; font-weight: 700; color: var(--accent-gold); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px;}
+
+.cashback-chip { background: var(--status-success-dim); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--status-success); font-size: 13px; font-weight: 700; padding: 10px 16px; border-radius: 10px; white-space: nowrap; font-family: var(--font-mono); }
+.btn-get { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border-dim); padding: 12px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; font-family: var(--font-head); cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); white-space: nowrap; }
+.firm-card:hover .btn-get { background: var(--accent-cyan); color: #000; border-color: var(--accent-cyan); box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3); }
+
+/* Premium Featured Card */
+.firm-card.featured { background: linear-gradient(var(--bg-surface), var(--bg-surface)) padding-box, linear-gradient(135deg, var(--accent-gold), transparent, var(--accent-cyan)) border-box; border: 1px solid transparent; background-size: 200% 200%; animation: borderFlow 5s linear infinite; }
+.firm-card.featured:hover { transform: translateY(-4px); box-shadow: 0 25px 50px rgba(0,0,0,0.6), inset 0 0 30px rgba(245, 158, 11, 0.05); }
+.firm-card.featured::before { display: none; }
+.firm-card.featured::after { content: '★ INSTITUTIONAL PICK'; position: absolute; top: -1px; left: 30px; width: auto; height: auto; background: var(--accent-gold); color: #000; font-size: 10px; font-weight: 800; font-family: var(--font-head); letter-spacing: 1px; padding: 4px 14px; border-radius: 0 0 8px 8px; pointer-events: auto; left: auto; }
+.firm-card.featured .firm-inner::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); transition: left 0.6s; pointer-events: none; }
+.firm-card.featured:hover .firm-inner::after { left: 100%; }
+
+/* --- TOAST NOTIFICATION --- */
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translate(-50%, 80px); background: rgba(16, 185, 129, 0.95); backdrop-filter: blur(10px); color: #000; padding: 14px 28px; border-radius: 100px; font-size: 14px; font-weight: 700; font-family: var(--font-head); z-index: 999; opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); border: 1px solid rgba(255,255,255,0.2); }
+.toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+@media (max-width: 900px) {
+  .firm-card { grid-template-columns: 1fr; gap: 16px; text-align: center; }
+  .firm-inner { flex-direction: column; text-align: center; }
+  .firm-rank { display: none; }
+  .firm-meta { justify-content: center; }
+  .firm-card.featured::after { left: 50%; transform: translateX(-50%); }
+}
+</style>
 </head>
-<body class="min-h-screen flex overflow-x-hidden">
+<body>
 
-    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 opacity-0 lg:hidden" onclick="toggleSidebar()"></div>
+<nav>
+  <a href="#" class="logo">
+    <div class="logo-icon">▲</div>
+    PropVault
+  </a>
+  <ul class="nav-links">
+    <li><a href="#firms">Matrix</a></li>
+    <li><a href="#codes">Discounts</a></li>
+    <li><a href="#leaderboard">Leaderboard</a></li>
+    <li><a href="#" class="nav-cta">Claim Cashback</a></li>
+  </ul>
+</nav>
 
-    <aside id="sidebar" class="w-64 bg-slate-900/95 border-r border-slate-800/50 flex flex-col fixed h-full z-50 shadow-[5px_0_30px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all duration-300 transform -translate-x-full lg:translate-x-0">
-        <div class="p-8 relative">
-            <h1 class="text-3xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-700 flex items-center text-glow"><i class="fa-solid fa-building-columns mr-3 text-red-600"></i> Vault</h1>
-            <div class="mt-2 text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold ml-10">Admin Control</div>
-            <button onclick="toggleSidebar()" class="lg:hidden absolute top-8 right-6 text-slate-400 hover:text-red-500 transition duration-300"><i class="fa-solid fa-xmark text-xl"></i></button>
-        </div>
+<div class="hero">
+  <div class="bg-orbit-container">
+    <img src="FTMO.svg" class="orbit-icon orbit-1" alt="FTMO" onerror="this.style.display='none'">
+    <img src="Funded Next.svg" class="orbit-icon orbit-2" alt="FundedNext" onerror="this.style.display='none'">
+    <img src="image_013a60.svg" class="orbit-icon orbit-3" alt="5ers" onerror="this.style.display='none'">
+    <img src="GFT.svg" class="orbit-icon orbit-4" alt="Goat" onerror="this.style.display='none'">
+    <img src="blueberry.jpg" class="orbit-icon orbit-5" alt="Blueberry" onerror="this.style.display='none'">
+  </div>
 
-        <nav class="flex-1 mt-6 px-4 space-y-3">
-            <button onclick="showTab('dashboard-view', this)" class="sidebar-link active w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-chart-line mr-4 text-lg"></i> Dashboard</button>
-            <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update</button>
-            <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings</button>
-            <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC</button>
-            <button onclick="showTab('wallet-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-wallet mr-4 text-lg"></i> Wallet Addresses</button>
-            <button onclick="showTab('logs-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-list-check mr-4 text-lg"></i> Transaction Logs</button>
-        </nav>
-
-        <div class="p-6 border-t border-slate-800/50">
-            <button onclick="confirmLogout()" class="w-full flex items-center justify-center px-4 py-3 text-sm font-bold uppercase tracking-widest text-red-400 hover:text-white bg-red-950/30 hover:bg-red-600/80 rounded-xl transition-all duration-300 shadow-[0_0_10px_rgba(220,38,38,0.1)] hover:shadow-[0_0_15px_rgba(220,38,38,0.4)] border border-red-900/50">
-                <i class="fa-solid fa-power-off mr-3"></i> Lock Vault
-            </button>
-        </div>
-    </aside>
-
-    <main class="flex-1 w-full lg:ml-64 p-4 sm:p-6 md:p-10 min-h-screen">
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 fade-in">
-            <div class="flex items-center gap-4">
-                <button id="menu-toggle-btn" onclick="toggleSidebar()" class="lg:hidden w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300"><i id="menu-arrow-icon" class="fa-solid fa-chevron-right text-lg"></i></button>
-                <div>
-                    <h2 id="page-title" class="text-2xl sm:text-3xl font-black text-gray-100 tracking-tight">Executive Analytics</h2>
-                    <p class="text-slate-400 text-xs sm:text-sm font-medium mt-1">Real-time Professor Network Monitoring</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <div class="glass-panel px-4 py-2 flex items-center space-x-3 border-slate-700/50 text-xs font-bold uppercase tracking-wider">
-                    <div class="flex items-center space-x-2">
-                        <button onclick="toggleSmartSync()" id="refresh-toggle-btn" class="text-green-500 hover:text-green-400 transition"><i id="refresh-icon" class="fa-solid fa-bolt animate-pulse"></i></button>
-                        <span>Smart Sync: <span id="sync-status" class="text-green-400">Active</span></span>
-                    </div>
-                </div>
-                <a href="/export-ledger" class="glass-panel justify-center px-4 py-2.5 text-emerald-400 hover:text-emerald-300 border-emerald-500/20 hover:border-emerald-500/50 transition flex items-center text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-file-excel mr-2 text-base"></i> Export</a>
-                <div class="glass-panel px-4 py-2.5 flex items-center justify-center space-x-3 border-slate-700/50">
-                    <div class="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_#22c55e]"></div>
-                    <span class="text-xs font-black uppercase tracking-widest text-slate-300">Live DB</span>
-                </div>
-            </div>
-        </header>
-
-        <section id="dashboard-view" class="fade-in">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="glass-panel p-6 border-l-4 border-blue-500">
-                    <div class="flex justify-between items-start">
-                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Network Strength</h3>
-                        <i class="fa-solid fa-users text-blue-500/50"></i>
-                    </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 text-white animate-counter" data-target="<%= liveMembers %>" data-prefix="">0</p>
-                </div>
-                <div class="glass-panel p-6 border-l-4 border-green-500">
-                    <div class="flex justify-between items-start">
-                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Daily Vol (24h)</h3>
-                        <i class="fa-solid fa-chart-bar text-green-500/50"></i>
-                    </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 text-green-400 text-glow-green animate-counter" data-target="<%= dailyVol %>" data-prefix="$">0</p>
-                </div>
-                <div onclick="openCustomVolModal()" class="glass-panel p-6 border-l-4 border-purple-500 hover:border-purple-400 transition-colors duration-300 cursor-pointer group">
-                    <div class="flex justify-between items-start">
-                        <div class="flex flex-col">
-                            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Monthly Vol (30d)</h3>
-                            <span class="text-[10px] text-purple-500/60 font-black tracking-widest mt-0.5 group-hover:text-purple-400 transition"><i class="fa-solid fa-calendar-alt"></i> Click for Custom Date</span>
-                        </div>
-                        <i class="fa-solid fa-sack-dollar text-purple-500/50 text-lg group-hover:text-purple-400 transition"></i>
-                    </div>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 text-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)] animate-counter" data-target="<%= monthlyVol %>" data-prefix="$">0</p>
-                </div>
-                <div class="glass-panel p-6 border-l-4 border-yellow-500 hover:border-yellow-400 transition-colors duration-300">
-                    <div class="flex justify-between items-start">
-                        <h3 class="text-slate-400 text-xs font-bold uppercase tracking-widest">Non-KYC Revenue</h3>
-                        <i class="fa-solid fa-hand-holding-dollar text-yellow-500/50 text-lg"></i>
-                    </div>
-                    <% 
-                       // 🔥 Dashboard ke liye total fee revenue calculate kar rahe hain
-                       const totalNonKycRev = (typeof allLogs !== 'undefined' ? allLogs : [])
-                           .filter(t => t.isVerifiedTrade !== true)
-                           .reduce((sum, trade) => sum + (trade.fee || 0), 0);
-                    %>
-                    <p class="text-3xl sm:text-4xl font-black mt-3 text-yellow-400 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)] animate-counter" data-target="<%= totalNonKycRev %>" data-prefix="$">0</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <div class="glass-panel p-4 sm:p-6 lg:col-span-2">
-                    <div class="flex items-center mb-6">
-                        <div class="p-2 bg-blue-500/10 rounded-lg mr-3"><i class="fa-solid fa-chart-area text-blue-400"></i></div>
-                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Revenue Trajectory</h4>
-                    </div>
-                    <div class="h-64 sm:h-72"><canvas id="volumeChart"></canvas></div>
-                </div>
-                <div class="glass-panel p-4 sm:p-6 flex flex-col items-center relative overflow-hidden">
-                    <div class="w-full flex items-center mb-4 relative z-10">
-                        <div class="p-2 bg-purple-500/10 rounded-lg mr-3"><i class="fa-solid fa-scale-balanced text-purple-400"></i></div>
-                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Buy vs Sell Ratio</h4>
-                    </div>
-                    <div class="relative h-56 sm:h-60 w-full flex justify-center z-10"><canvas id="ratioChart"></canvas></div>
-                    <i class="fa-solid fa-chart-pie absolute -right-10 -bottom-10 text-9xl text-slate-800/30 z-0"></i>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8 fade-in">
-                <div class="glass-panel p-4 sm:p-6 relative overflow-hidden flex flex-col h-full">
-                    <div class="flex-1 flex flex-col">
-                        <div class="flex items-center mb-4 relative z-10">
-                            <div class="p-2 bg-indigo-500/10 rounded-lg mr-3"><i class="fa-solid fa-chart-column text-indigo-400"></i></div>
-                            <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Monthly Volume</h4>
-                        </div>
-                        <div class="relative flex-1 min-h-[160px] w-full z-10"><canvas id="monthlyBarChart"></canvas></div>
-                    </div>
-                    <div class="mt-6 pt-5 border-t border-slate-700/50 shrink-0">
-                        <div class="flex items-center mb-3 relative z-10">
-                            <div class="p-1.5 bg-sky-500/10 rounded-lg mr-3"><i class="fa-solid fa-calendar-week text-sky-400 text-xs"></i></div>
-                            <h4 class="font-black uppercase text-xs text-slate-400 tracking-widest">Current Week (Mon-Sun)</h4>
-                        </div>
-                        <div class="relative h-32 z-10 w-full"><canvas id="weeklyBarChart"></canvas></div>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-4 sm:p-6 relative overflow-hidden">
-                    <div class="flex items-center mb-6 relative z-10">
-                        <div class="p-2 bg-emerald-500/10 rounded-lg mr-3"><i class="fa-solid fa-calendar-days text-emerald-400"></i></div>
-                        <h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Trading Activity</h4>
-                    </div>
-                    <div class="flex items-center justify-between mb-5 relative z-10 text-slate-100">
-                        <button onclick="changeMonth(-1)" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300"><i class="fa-solid fa-chevron-left"></i></button>
-                        <div id="calendar-month-year" class="font-black text-lg tracking-tight"></div>
-                        <button onclick="changeMonth(1)" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)] hover:bg-slate-700 transition duration-300"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                    <div class="relative z-10 pb-4 overflow-x-auto overflow-y-hidden custom-scrollbar">
-                        <div class="grid grid-cols-7 text-center text-[10px] text-slate-500 font-bold mb-3 pl-1 whitespace-nowrap"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
-                        <div id="calendar-heatmap-grid" class="grid grid-cols-7 grid-flow-row gap-[5px] sm:gap-[6px] h-auto"></div>
-                    </div>
-                    <div class="mt-2 pt-3 border-t border-slate-700/50 flex justify-end items-center text-[10px] text-slate-400 uppercase font-bold gap-2 relative z-10">
-                        <span>Less</span><div class="w-3 h-3 rounded-[2px] bg-slate-800/80 border border-slate-700"></div><div class="w-3 h-3 rounded-[2px] bg-emerald-900 border border-emerald-800"></div><div class="w-3 h-3 rounded-[2px] bg-emerald-600 border border-emerald-500"></div><div class="w-3 h-3 rounded-[2px] bg-emerald-400 border border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div><span>More</span>
-                    </div>
-                    <div id="heatmap-tooltip" class="fixed hidden bg-slate-900/95 backdrop-blur-md border border-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-2xl z-50 pointer-events-none transform -translate-x-1/2 -translate-y-full mt-[-10px] whitespace-nowrap transition-opacity duration-200 opacity-0">
-                        <span id="tooltip-date" class="text-slate-400 block text-[9px] uppercase tracking-widest mb-1"></span>
-                        <span id="tooltip-vol" class="text-green-400 font-black text-sm"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
-                <!-- LIVE FEED SECTION -->
-                <div class="glass-panel p-0 lg:col-span-2 overflow-hidden flex flex-col">
-                    <div class="p-6 border-b border-slate-700/50 flex items-center justify-between shrink-0">
-                        <div class="flex items-center"><div class="p-2 bg-red-500/10 rounded-lg mr-3"><i class="fa-solid fa-bolt text-red-400"></i></div><h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Live Feed</h4></div>
-                        <span class="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-widest"><i class="fa-solid fa-arrows-up-down mr-1"></i> Scroll to view all</span>
-                    </div>
-                    
-                    <!-- 🔥 NAYA SCROLLABLE AREA & MAX HEIGHT -->
-                    <div class="overflow-x-auto overflow-y-auto max-h-[450px] w-full custom-scrollbar">
-                        <table class="w-full text-left whitespace-nowrap min-w-[500px] lg:min-w-0 relative">
-                            <!-- 🔥 STICKY HEADER: Scroll karne pe gayab nahi hoga -->
-                            <thead class="bg-slate-800/95 backdrop-blur-md sticky top-0 z-20 shadow-md">
-                                <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
-                            </thead>
-                            <tbody class="text-sm font-medium">
-                                <% const displayLogs = (typeof allLogs !== 'undefined' ? allLogs : []); %>
-                                <% if (displayLogs.length === 0) { %>
-                                     <tr><td colspan="4" class="text-center py-8 text-slate-500 italic">No transactions found</td></tr>
-                                <% } else { %>
-                                    <% displayLogs.forEach((trade, index) => { %>
-                                        <tr class="border-b border-slate-800/50 cursor-pointer group" onclick="openTxModal(<%= index %>)">
-                                            <td class="py-4 px-6 text-gray-200 flex items-center group-hover:text-white transition">
-                                                <div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center mr-3 text-xs font-black text-slate-400 group-hover:bg-red-600 group-hover:text-white transition shrink-0"><%= trade.username.charAt(0).toUpperCase() %></div>
-                                                <div class="flex flex-col">
-                                                    <span class="font-bold"><%= trade.username %></span>
-                                                    <!-- 🔥 NAYA BADGE: KYC / NON-KYC -->
-                                                    <% if (trade.isVerifiedTrade) { %>
-                                                        <span class="text-[9px] text-green-500 font-black tracking-widest uppercase mt-0.5"><i class="fa-solid fa-shield-check"></i> KYC</span>
-                                                    <% } else { %>
-                                                        <span class="text-[9px] text-orange-400 font-black tracking-widest uppercase mt-0.5"><i class="fa-solid fa-triangle-exclamation"></i> NON-KYC</span>
-                                                    <% } %>
-                                                </div>
-                                            </td>
-                                            <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="bg-green-500/10 border border-green-500/20 text-green-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span><% } else { %><span class="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span><% } %></td>
-                                            <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
-                                            <td class="py-4 px-6 text-right font-black text-gray-100 text-base group-hover:text-red-400 transition">$<%= trade.amountUsd.toLocaleString() %></td>
-                                        </tr>
-                                    <% }) %>
-                                <% } %>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="glass-panel p-6">
-                    <div class="flex items-center mb-6"><div class="p-2 bg-yellow-500/10 rounded-lg mr-3"><i class="fa-solid fa-crown text-yellow-400"></i></div><h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Top Whales</h4></div>
-                    <div class="space-y-3">
-                        <% if (topTraders.length === 0) { %><p class="text-slate-500 italic text-center text-sm py-4">Awaiting volume...</p><% } %>
-                        <% topTraders.forEach((trader, index) => { %>
-                            <div class="flex justify-between items-center p-4 bg-slate-800/40 hover:bg-slate-700/50 rounded-xl border border-white/5 transition duration-300 group">
-                                <div class="flex items-center space-x-3">
-                                    <% if (index === 0) { %><div class="w-7 h-7 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-600 flex items-center justify-center font-black text-black shadow-[0_0_10px_rgba(234,179,8,0.5)] text-xs">1</div>
-                                    <% } else if (index === 1) { %><div class="w-7 h-7 rounded-full bg-gradient-to-br from-gray-300 to-gray-500 flex items-center justify-center font-black text-black text-xs">2</div>
-                                    <% } else if (index === 2) { %><div class="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-700 flex items-center justify-center font-black text-white text-xs">3</div>
-                                    <% } else { %><div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center font-bold text-gray-400 text-xs"><%= index + 1 %></div><% } %>
-                                    <span class="font-bold text-slate-300 group-hover:text-white transition"><%= trader.username %></span>
-                                </div>
-                                <span class="font-black text-green-400 bg-green-500/10 px-2 py-1 rounded text-sm">$<%= trader.totalVolume.toLocaleString() %></span>
-                            </div>
-                        <% }) %>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="kyc-view" class="hidden-section fade-in">
-            <div class="glass-panel p-6 border-t-4 border-blue-500 relative overflow-hidden">
-                <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-blue-500 text-glow"><i class="fa-solid fa-users mr-2"></i> Vault Verified Users Database</h3>
-                <div class="overflow-x-auto w-full custom-scrollbar">
-                    <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-800/30">
-                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-700/50"><th class="py-4 px-6">User Details</th><th class="py-4 px-6">Name</th><th class="py-4 px-6">Status</th><th class="py-4 px-6 text-right">Actions</th></tr>
-                        </thead>
-                        <tbody class="text-sm font-medium">
-                            <% allKycUsers.forEach(user => { %>
-                            <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" onclick="openUserModal('<%= user.id %>')">
-                                <td class="py-4 px-6 text-gray-200">
-                                    <div class="font-bold text-base"><%= user.discordContact || user.username %></div><div class="text-[10px] text-slate-500 uppercase tracking-widest">ID: <%= user.discordId %></div>
-                                </td>
-                                <td class="py-4 px-6 text-slate-300"><%= user.name || 'N/A' %></td>
-                                <td class="py-4 px-6"><span class="px-3 py-1.5 rounded-md text-[10px] font-black tracking-widest uppercase <%= user.status === 'Approved' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : (user.status === 'Rejected' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20') %>"><%= user.status %></span></td>
-                                <td class="py-4 px-6 text-right">
-                                    <div class="flex items-center justify-end space-x-3">
-                                        <% if((user.photos && user.photos.length > 0) || user.idPhoto) { %>
-                                            <% let photosStr = user.photos ? user.photos.join(',') : user.idPhoto; %>
-                                            <button onclick="event.stopPropagation(); openDocs('<%= user.username %>', '<%= photosStr %>')" class="bg-blue-600/20 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(59,130,246,0.1)]"><i class="fa-solid fa-file-invoice mr-1"></i> Documents</button>
-                                        <% } else { %><span class="text-slate-600 text-xs italic font-bold mr-2">No Document</span><% } %>
-                                        <button onclick="event.stopPropagation(); deleteKyc('<%= user.discordId %>')" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 w-8 h-8 rounded-lg flex items-center justify-center transition duration-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]" title="Delete User"><i class="fa-solid fa-trash-can"></i></button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <div id="userDetailsModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeUserModal()"></div>
-            <div class="glass-panel relative z-10 w-full max-w-lg p-6 border-t-4 border-blue-500 transform scale-95 opacity-0 transition-all duration-300" id="userDetailsModalContent">
-                <button onclick="closeUserModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-                <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-700 to-blue-900 flex justify-center items-center mr-4 text-2xl font-black text-white shadow-inner border border-blue-600" id="ud-avatar">U</div>
-                    <div><h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="ud-name">User Name</h3><p class="text-[10px] sm:text-xs font-bold text-blue-400 uppercase tracking-widest mt-1" id="ud-username">@username</p></div>
-                </div>
-                <div class="space-y-4">
-                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Discord ID</p><p class="font-mono text-sm text-slate-300" id="ud-id">123456789</p></div>
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Status</p><p class="font-black text-sm" id="ud-status">Approved</p></div>
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">KYC Level</p><p class="font-bold text-sm text-slate-300" id="ud-type">Advanced (Vault Verified)</p></div>
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Record Date</p><p class="font-bold text-sm text-slate-300" id="ud-date">N/A</p></div>
-                        </div>
-                    </div>
-                    <div class="bg-[#050b14] p-4 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 shadow-inner">
-                        <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center"><i class="fa-solid fa-message mr-2"></i> Additional Info</p><span id="ud-info">No additional info provided.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="photoModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeDocs()"></div>
-            <div class="glass-panel relative z-10 w-full max-w-5xl p-6 border-t-4 border-blue-500 transform transition-all duration-300" id="photoModalContent">
-                <button onclick="closeDocs()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight mb-6 flex items-center" id="docModalTitle"><i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> User Documents</h3>
-                
-                <div id="photoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-center max-h-[70vh] overflow-y-auto custom-scrollbar p-2">
-                    </div>
-            </div>
-        </div>
-
-        <section id="price-view" class="hidden-section fade-in">
-            <div class="max-w-4xl grid grid-cols-1 gap-8">
-                <div class="glass-panel p-5 sm:p-8 border-t-4 border-green-500 relative overflow-hidden">
-                    <div class="relative z-10">
-                        <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-green-500 text-glow-green"><i class="fa-solid fa-bolt mr-2"></i> Update USDT Market Price</h3>
-                        <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Broadcast new P2P trading rates directly to the Discord #📊・usdt-price-update channel.</p>
-                        <form action="/update-price" method="POST" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🟢 Buy Price (₹)</label><input type="number" step="0.01" name="buyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition" placeholder="e.g. 88.50" required></div>
-                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🔴 Sell Price (₹)</label><input type="number" step="0.01" name="sellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 87.20" required></div>
-                            </div>
-                            <div class="pt-6 border-t border-slate-800/50 mt-4"><button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)]">Broadcast to Discord 🚀</button></div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="settings-view" class="hidden-section fade-in">
-            <div class="max-w-4xl grid grid-cols-1 gap-8">
-                <div class="glass-panel p-5 sm:p-8 border-t-4 border-red-600 relative overflow-hidden">
-                    <i class="fa-solid fa-shield-halved absolute -right-6 -bottom-6 text-[12rem] text-slate-800/40 z-0"></i>
-                    <div class="relative z-10">
-                        <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-red-500 text-glow">Vault Security Control</h3>
-                        <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Update your administrative credentials to maintain operational security.</p>
-                        <form action="/update-credentials" method="POST" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Admin ID</label><div class="relative"><i class="fa-solid fa-user-astronaut absolute left-4 top-4 text-slate-500"></i><input type="text" name="new_username" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New Username" required></div></div>
-                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">New Passcode</label><div class="relative"><i class="fa-solid fa-key absolute left-4 top-4 text-slate-500"></i><input type="password" name="new_password" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="New passcode" required></div></div>
-                            </div>
-                            <div class="pt-8 border-t border-slate-800/50 flex flex-col md:flex-row items-center justify-between gap-6 mt-4">
-                                <p class="text-xs text-slate-400 font-medium flex items-center bg-red-500/10 px-4 py-2 rounded-lg border border-red-500/20"><i class="fa-solid fa-circle-exclamation mr-2 text-red-500"></i> Note: You will be logged out immediately after updating.</p>
-                                <button type="submit" class="w-full md:w-auto bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(220,38,38,0.4)]"><i class="fa-solid fa-lock mr-2"></i> Save & Lock Vault</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="wallet-view" class="hidden-section fade-in">
-            <div class="max-w-4xl grid grid-cols-1 gap-8">
-                <div class="glass-panel p-5 sm:p-8 border-t-4 border-purple-500 relative overflow-hidden">
-                    <i class="fa-brands fa-bitcoin absolute -right-6 -bottom-6 text-[12rem] text-slate-800/40 z-0"></i>
-                    <div class="relative z-10">
-                        <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-purple-500 text-glow"><i class="fa-solid fa-wallet mr-2"></i> Admin Payment & Wallet Details</h3>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">USDT (TRC20)</h4>
-                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
-                                    <span class="font-mono text-sm text-green-400 truncate pr-2">TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie</span>
-                                    <button onclick="copyToClipboard('TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
-                                </div>
-                            </div>
-
-                            <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                                <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">ERC20 / BEP20 / USDC</h4>
-                                <div class="flex items-center justify-between bg-[#050b14] p-3 rounded-lg border border-slate-700/50">
-                                    <span class="font-mono text-sm text-green-400 truncate pr-2">0x72c4956337A815FD03Ca960ca09543b6f049Fa42</span>
-                                    <button onclick="copyToClipboard('0x72c4956337A815FD03Ca960ca09543b6f049Fa42')" class="text-slate-500 hover:text-white transition"><i class="fa-solid fa-copy"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="logs-view" class="hidden-section fade-in">
-            <div class="glass-panel p-6 border-t-4 border-indigo-500 relative overflow-hidden">
-                <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-indigo-500 text-glow"><i class="fa-solid fa-list-check mr-2"></i> Vault Transaction Logs</h3>
-                
-              <% 
-                   const kycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade === true);
-                   const nonKycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade !== true);
-                   
-                   // Volume ka sum
-                   const kycTotalVolume = kycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
-                   const nonKycTotalVolume = nonKycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
-
-                   // 🔥 NAYA CODE: Fee Revenue ka sum (Ab sirf Non-KYC ke liye use hoga)
-                   const nonKycTotalFee = nonKycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
-                %>
-
-                <!-- TABS & STATS HEADER -->
-                <div class="flex flex-wrap justify-between items-end mb-6 border-b border-slate-700/50 pb-2 gap-4">
-                    <div class="flex space-x-6">
-                        <button onclick="switchLogTab('kyc-logs')" id="btn-kyc-logs" class="text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300">🛡️ KYC Trades</button>
-                        <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
-                    </div>
-                    
-                    <!-- KYC STATS -->
-                    <div id="kyc-stats" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
-                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= kycLogs.length %></span></span>
-                        <span class="bg-green-900/20 px-3 py-1.5 rounded-md border border-green-500/30">Volume: <span class="text-green-400 ml-1">$<%= kycTotalVolume.toLocaleString() %></span></span>
-                    </div>
-                    
-                    <!-- NON-KYC STATS -->
-                    <div id="non-kyc-stats" class="hidden text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
-                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= nonKycLogs.length %></span></span>
-                        <span class="bg-orange-900/20 px-3 py-1.5 rounded-md border border-orange-500/30">Volume: <span class="text-orange-400 ml-1">$<%= nonKycTotalVolume.toLocaleString() %></span></span>
-                        <!-- 🔥 BADGE: Total Fee Revenue (Amount ab Yellow aayega) -->
-                        <span class="bg-blue-900/20 px-3 py-1.5 rounded-md border border-blue-500/30">Fee Rev: <span class="text-yellow-400 ml-1">$<%= nonKycTotalFee.toLocaleString() %></span></span>
-                    </div>
-                </div>
-                <!-- KYC TRADES TABLE -->
-                <div id="kyc-logs" class="overflow-x-auto w-full custom-scrollbar">
-                    <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-800/30">
-                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Date</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
-                        </thead>
-                        <tbody class="text-sm font-medium">
-                            <% if (kycLogs.length === 0) { %>
-                                 <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No KYC transactions found.</td></tr>
-                            <% } else { %>
-                                <% kycLogs.forEach((trade) => { %>
-                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
-                                        <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
-                                        <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
-                                        <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
-                                        <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
-                                        <td class="py-4 px-6 text-right font-black text-green-400">$<%= trade.amountUsd.toLocaleString() %></td>
-                                    </tr>
-                                <% }) %>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- NON-KYC TRADES TABLE -->
-                <div id="non-kyc-logs" class="hidden overflow-x-auto w-full custom-scrollbar">
-                    <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-800/30">
-                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Date</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
-                        </thead>
-                        <tbody class="text-sm font-medium">
-                            <% if (nonKycLogs.length === 0) { %>
-                                 <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No Non-KYC transactions found.</td></tr>
-                            <% } else { %>
-                                <% nonKycLogs.forEach((trade) => { %>
-                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
-                                        <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
-                                        <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
-                                        <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
-                                        <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
-                                        <td class="py-4 px-6 text-right font-black text-orange-400">$<%= trade.amountUsd.toLocaleString() %></td>
-                                    </tr>
-                                <% }) %>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- CUSTOM DATE VOLUME MODAL -->
-    <div id="customVolModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeCustomVolModal()"></div>
-        <div class="glass-panel relative z-10 w-full max-w-md p-6 border-t-4 border-purple-500 transform scale-95 opacity-0 transition-all duration-300" id="customVolModalContent">
-            <button onclick="closeCustomVolModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-            
-            <div class="mb-6 border-b border-slate-700/50 pb-4">
-                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center"><i class="fa-solid fa-calendar-check text-purple-500 mr-3"></i> Custom Date Volume</h3>
-                <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Select a start and end date to calculate volume.</p>
-            </div>
-
-            <div class="space-y-4 mb-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">Start Date</label>
-                        <input type="date" id="cv-start" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-2.5 px-3 focus:outline-none focus:border-purple-500 text-sm shadow-inner" max="<%= new Date().toISOString().split('T')[0] %>">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">End Date</label>
-                        <input type="date" id="cv-end" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-2.5 px-3 focus:outline-none focus:border-purple-500 text-sm shadow-inner" max="<%= new Date().toISOString().split('T')[0] %>">
-                    </div>
-                </div>
-                <button onclick="calculateCustomVolume()" class="w-full bg-purple-600/20 hover:bg-purple-600 text-purple-400 hover:text-white border border-purple-500/30 font-black uppercase tracking-widest py-3 rounded-xl transition duration-300 shadow-[0_0_15px_rgba(168,85,247,0.15)]"><i class="fa-solid fa-calculator mr-2"></i> Calculate Result</button>
-            </div>
-
-            <div id="cv-result-box" class="hidden bg-[#050b14] p-5 rounded-xl border border-slate-700 text-center shadow-inner">
-                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Total Volume Generated</p>
-                <p class="text-3xl font-black text-purple-400 text-glow" id="cv-total-vol">$0</p>
-                <div class="flex justify-center gap-6 mt-3 pt-3 border-t border-slate-800">
-                    <span class="text-xs text-slate-400 font-bold">Trades: <span class="text-white" id="cv-total-trades">0</span></span>
-                    <span class="text-xs text-slate-400 font-bold">Fee Rev: <span class="text-blue-400" id="cv-total-fee">$0</span></span>
-                </div>
-            </div>
-        </div>
+  <div class="hero-content">
+    <div class="hero-badge">Verified Analytics Data — May 2026</div>
+    <h1>Precision Funding.<br><span class="h1-accent">Maximum Edge.</span></h1>
+    <p class="hero-sub">Compare trailing drawdowns, hidden consistency rules, and verified payout speeds. Use code <span class="highlight-gold">VAULT</span> to unlock maximum allocation discounts.</p>
+    <div class="hero-actions">
+      <a href="#firms" class="btn-primary">Initialize Matrix</a>
+      <a href="#codes" class="btn-secondary">View Live Codes</a>
     </div>
+  </div>
+</div>
 
-    <div id="txModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
-        <div class="absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity" onclick="closeTxModal()"></div>
-        <div class="glass-panel relative z-10 w-full max-w-lg p-5 sm:p-8 border-t-4 border-red-600 transform scale-95 opacity-0 transition-all duration-300" id="txModalContent">
-            <button onclick="closeTxModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-            <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 flex justify-center items-center mr-4 text-lg font-black text-white shadow-inner border border-slate-600" id="modal-avatar">U</div>
-                <div><h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="modal-username">Username</h3><p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1" id="modal-date">Date & Time</p></div>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-6">
-                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner"><p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Action & Method</p><p class="font-black text-sm sm:text-lg" id="modal-action">BUY / UPI</p></div>
-                <div class="bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-700/50 shadow-inner"><p class="text-[9px] sm:text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Amount</p><p class="font-black text-lg sm:text-2xl text-white text-glow" id="modal-amount">$0.00</p></div>
-            </div>
-            <div>
-                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center"><i class="fa-solid fa-file-invoice mr-2"></i> User Provided Details</p>
-                <div class="bg-[#050b14] p-4 sm:p-5 rounded-xl border border-slate-700 text-xs sm:text-sm font-medium text-green-400 whitespace-pre-wrap font-mono shadow-inner max-h-40 overflow-y-auto" id="modal-details">Loading...</div>
-            </div>
-            <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500 font-bold uppercase"><span>Closed By: <span id="modal-closedBy" class="text-slate-300">Admin</span></span><span class="text-red-500"><i class="fa-solid fa-shield-check mr-1"></i> Vault Secured</span></div>
+<div class="filter-bar">
+  <span class="filter-label">Filter Algorithm:</span>
+  <div class="filter-tabs">
+    <button class="filter-tab active">All Markets</button>
+    <button class="filter-tab">Forex (FX)</button>
+    <button class="filter-tab">Futures</button>
+    <button class="filter-tab">Instant Funding</button>
+  </div>
+</div>
+
+<section id="firms">
+  <div class="section-head">
+    <div class="section-title">Elite Prop Firms <span>Sorted by Institutional Trust Score</span></div>
+  </div>
+  
+  <div class="firms-grid">
+    <a href="#" class="firm-card featured" onclick="copyCode('FTMO10', event)">
+      <div class="firm-rank top">01</div>
+      <div class="firm-inner">
+        <div class="firm-logo-img" style="border-color: var(--accent-gold); box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);">
+          <img src="FTMO.svg" alt="FTMO" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span class="fallback-logo" style="display:none; color:var(--accent-gold);">FT</span>
         </div>
-    </div>
-
-    <div id="kycModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 overflow-y-auto">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeKycModal()"></div>
-        <div class="glass-panel relative z-10 w-full max-w-2xl p-5 sm:p-8 border-t-4 border-yellow-500 transform scale-95 opacity-0 transition-all duration-300" id="kycModalContent">
-            <button onclick="closeKycModal()" class="absolute top-5 right-5 text-slate-400 hover:text-yellow-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-            <div class="mb-6 border-b border-slate-700/50 pb-4">
-                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center"><i class="fa-solid fa-user-shield text-yellow-500 mr-3"></i> Pending KYC Reviews</h3>
-                <p class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Review and action the verification requests.</p>
-            </div>
-            <div class="space-y-4 max-h-[350px] sm:max-h-[400px] overflow-y-auto pr-1" id="kyc-list-wrapper">
-                <% if (pendingKycList.length === 0) { %>
-                    <div class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-circle-check text-4xl text-green-500/20 mb-3 block"></i>No pending KYC requests. All clear!</div>
-                <% } else { %>
-                    <% pendingKycList.forEach(kyc => { %>
-                        <div class="bg-slate-900/60 p-4 sm:p-5 rounded-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition duration-300 hover:border-slate-700" id="kyc-row-<%= kyc.discordId %>">
-                            <div class="flex-1 w-full">
-                                <div class="flex items-center space-x-3 mb-2"><span class="bg-yellow-500/10 text-yellow-400 text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pending</span><span class="text-xs font-black text-slate-400">ID: <%= kyc.discordContact %></span></div>
-                                <h4 class="font-bold text-white text-sm sm:text-base">Alias: <span class="text-yellow-400"><%= kyc.name %></span></h4><p class="text-xs text-slate-400 mt-1">Tag: @<%= kyc.username %></p>
-                                <div class="bg-[#050b14]/50 border border-slate-800/80 p-2.5 rounded-lg mt-3 text-xs text-slate-300 font-mono overflow-x-auto"><span class="text-slate-500 font-bold block mb-1">Details:</span><%= kyc.paymentInfo %></div>
-                            </div>
-                            <div class="flex md:flex-col gap-2 w-full md:w-auto">
-                                <button onclick="actionKyc('<%= kyc.discordId %>', 'approve')" class="flex-1 md:flex-initial w-full md:w-28 bg-green-600 hover:bg-green-700 text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg transition-all shadow-[0_0_10px_rgba(34,197,94,0.1)]">Approve</button>
-                                <button onclick="actionKyc('<%= kyc.discordId %>', 'reject')" class="flex-1 md:flex-initial w-full md:w-28 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white text-xs font-black uppercase tracking-wider py-2.5 rounded-lg border border-red-500/10 transition-all">Reject</button>
-                            </div>
-                        </div>
-                    <% }) %>
-                <% } %>
-            </div>
-            <div class="mt-6 pt-4 border-t border-slate-700/50 text-right text-[10px] text-slate-500 font-black uppercase tracking-widest"><i class="fa-solid fa-clock-rotate-left mr-1"></i> Waiting Queue: <%= pendingKyc %></div>
+        <div class="firm-info">
+          <div class="firm-name">FTMO <span class="firm-tag tag-gold">Gold Tier</span></div>
+          <div class="firm-meta">
+            <span><span class="highlight-cyan">Allocation:</span> Up to $200K</span>
+            <span><span class="highlight-cyan">Asset Class:</span> FX, Indices</span>
+          </div>
         </div>
-    </div>
+      </div>
+      <div class="trust-score">
+        <div class="trust-num highlight-success">9.4</div>
+        <div class="trust-label">Trust Index</div>
+      </div>
+      <div class="discount-wrap">
+        <div class="discount-pill">FTMO10</div>
+        <div class="discount-off">10% Discount</div>
+      </div>
+      <div class="cashback-chip">8% Cashback</div>
+      <button class="btn-get">Apply Code</button>
+    </a>
 
-    <script>
-        const recentTrades = <%- JSON.stringify(recentFeed || []) %>;
-        const allKycData = <%- JSON.stringify(allKycUsers || []).replace(/</g, '\\u003c') %>;
-        const allLogsDataClient = <%- JSON.stringify(typeof allLogs !== 'undefined' ? allLogs : []).replace(/</g, '\\u003c') %>;
-    </script>
+    <a href="#" class="firm-card" onclick="copyCode('NEXT15', event)">
+      <div class="firm-rank top">02</div>
+      <div class="firm-inner">
+        <div class="firm-logo-img" style="border-color: var(--accent-cyan); box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);">
+          <img src="Funded Next.svg" alt="FundedNext" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span class="fallback-logo" style="display:none; color:var(--accent-cyan);">FN</span>
+        </div>
+        <div class="firm-info">
+          <div class="firm-name">FundedNext <span class="firm-tag tag-cyan">Trending</span></div>
+          <div class="firm-meta">
+            <span><span class="highlight-cyan">Allocation:</span> Up to $300K</span>
+            <span><span class="highlight-cyan">Asset Class:</span> FX, Crypto</span>
+          </div>
+        </div>
+      </div>
+      <div class="trust-score">
+        <div class="trust-num highlight-success">9.1</div>
+        <div class="trust-label">Trust Index</div>
+      </div>
+      <div class="discount-wrap">
+        <div class="discount-pill" style="border-color: var(--accent-cyan); color: var(--accent-cyan);">NEXT15</div>
+        <div class="discount-off" style="color: var(--accent-cyan);">15% Discount</div>
+      </div>
+      <div class="cashback-chip">10% Cashback</div>
+      <button class="btn-get">Apply Code</button>
+    </a>
+    
+    <a href="#" class="firm-card" onclick="copyCode('APEX90', event)">
+      <div class="firm-rank">03</div>
+      <div class="firm-inner">
+        <div class="firm-logo-img" style="border-color: #fff; background: #fff;">
+          <img src="blueberry.jpg" alt="Blueberry Funded" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span class="fallback-logo" style="display:none; color:#3305ff;">AT</span>
+        </div>
+        <div class="firm-info">
+          <div class="firm-name">Blueberry Funded</div>
+          <div class="firm-meta">
+            <span><span class="highlight-cyan">Allocation:</span> Up to $300K</span>
+            <span><span class="highlight-cyan">Asset Class:</span> Forex</span>
+          </div>
+        </div>
+      </div>
+      <div class="trust-score">
+        <div class="trust-num highlight-success">8.8</div>
+        <div class="trust-label">Trust Index</div>
+      </div>
+      <div class="discount-wrap">
+        <div class="discount-pill" style="border-color: #fff; color: #fff;">APEX90</div>
+        <div class="discount-off" style="color: var(--text-muted);">90% Discount</div>
+      </div>
+      <div class="cashback-chip">5% Cashback</div>
+      <button class="btn-get">Apply Code</button>
+    </a>
+    
+    <a href="#" class="firm-card" onclick="copyCode('GOAT20', event)">
+      <div class="firm-rank">04</div>
+      <div class="firm-inner">
+        <div class="firm-logo-img" style="border-color: #fff;">
+          <img src="GFT.svg" alt="Goat Funded Trader" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <span class="fallback-logo" style="display:none;">GT</span>
+        </div>
+        <div class="firm-info">
+          <div class="firm-name">Goat Funded Trader</div>
+          <div class="firm-meta">
+            <span><span class="highlight-cyan">Allocation:</span> Up to $200K</span>
+            <span><span class="highlight-cyan">Asset Class:</span> FX, Indices</span>
+          </div>
+        </div>
+      </div>
+      <div class="trust-score">
+        <div class="trust-num highlight-success">8.6</div>
+        <div class="trust-label">Trust Index</div>
+      </div>
+      <div class="discount-wrap">
+        <div class="discount-pill" style="border-color: #fff; color: #fff;">GOAT20</div>
+        <div class="discount-off" style="color: var(--text-muted);">20% Discount</div>
+      </div>
+      <div class="cashback-chip">4% Cashback</div>
+      <button class="btn-get">Apply Code</button>
+    </a>
+  </div>
+</section>
 
-    <script>
-        // --- 🚀 MODERN ALERT SETUP ---
-        const VaultAlert = Swal.mixin({
-            background: '#0f172a', color: '#f8fafc',
-            customClass: { popup: 'border border-slate-700 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)]', confirmButton: 'font-black uppercase tracking-widest px-6 py-2.5 rounded-lg', cancelButton: 'font-bold uppercase tracking-widest px-6 py-2.5 rounded-lg' }
-        });
+<div class="toast" id="toast">Code Copied Successfully!</div>
 
-        function confirmLogout() {
-            VaultAlert.fire({
-                title: 'Lock Vault?', text: 'Are you sure you want to securely lock the system and logout?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', cancelButtonColor: '#334155', confirmButtonText: '<i class="fa-solid fa-lock mr-2"></i> Yes, Lock It!'
-            }).then((result) => { if (result.isConfirmed) { window.location.href = '/logout'; } });
-        }
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const cards = document.querySelectorAll('.firm-card');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, index) => {
+      if (entry.isIntersecting) {
+        entry.target.style.animation = `slideUpFade 0.6s ease-out ${index * 0.15}s both`;
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  
+  cards.forEach(card => {
+    card.style.opacity = '0';
+    observer.observe(card);
+  });
+});
 
-        async function actionKyc(userId, action) {
-            const actionText = action === 'approve' ? 'Approve' : 'Reject';
-            const btnColor = action === 'approve' ? '#22c55e' : '#ef4444';
-            const result = await VaultAlert.fire({ title: `${actionText} KYC?`, text: `Are you sure you want to ${action} this user's verification?`, icon: 'question', showCancelButton: true, confirmButtonColor: btnColor, cancelButtonColor: '#334155', confirmButtonText: `Yes, ${actionText}` });
-            if(!result.isConfirmed) return;
-
-            try {
-                const response = await fetch(action === 'approve' ? '/api/kyc-approve' : '/api/kyc-reject', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
-                const apiResult = await response.json();
-                if (apiResult.success) {
-                    await VaultAlert.fire({ title: 'Success!', text: `User KYC ${action}d!`, icon: 'success', confirmButtonColor: '#3b82f6' });
-                    const row = document.getElementById(`kyc-row-${userId}`);
-                    if(row) { row.style.transition = 'all 0.5s ease'; row.style.opacity = '0'; row.style.transform = 'translateY(15px)'; setTimeout(() => { row.remove(); }, 500); }
-                    setTimeout(() => { window.location.reload(); }, 1000);
-                } else { VaultAlert.fire('Error', apiResult.error, 'error'); }
-            } catch (e) { VaultAlert.fire('Error', 'API Connection Error!', 'error'); }
-        }
-
-        async function deleteKyc(userId) {
-            const result = await VaultAlert.fire({ title: 'Permanently Delete?', text: "⚠️ DANGER: Are you sure you want to delete this user's KYC record?", icon: 'error', showCancelButton: true, confirmButtonColor: '#dc2626', cancelButtonColor: '#334155', confirmButtonText: '<i class="fa-solid fa-trash-can mr-2"></i> Delete' });
-            if (!result.isConfirmed) return;
-            try {
-                const response = await fetch('/api/kyc-delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId }) });
-                const apiResult = await response.json();
-                if (apiResult.success) {
-                    await VaultAlert.fire({ title: 'Deleted!', text: 'KYC record wiped.', icon: 'success', confirmButtonColor: '#3b82f6' });
-                    window.location.reload();
-                } else { VaultAlert.fire('Error', apiResult.error, 'error'); }
-            } catch (e) { VaultAlert.fire('Error', 'API Connection Error!', 'error'); }
-        }
-
-        // --- 🔥 ZERO-READ SMART REFRESH SYSTEM 🔥 ---
-        let currentServerTime = Date.now();
-        let isSyncPaused = false;
-        let syncInterval;
-
-        function startSmartSync() {
-            syncInterval = setInterval(async () => {
-                if (!isSyncPaused) {
-                    try {
-                        const response = await fetch('/api/check-updates');
-                        const data = await response.json();
-                        if (data.timestamp > currentServerTime) { console.log("New data detected! Refreshing..."); window.location.reload(); }
-                    } catch (error) { console.log("Update check paused/failed."); }
-                }
-            }, 5000);
-        }
-
-        function toggleSmartSync() {
-            const icon = document.getElementById('refresh-icon'); const statusText = document.getElementById('sync-status'); isSyncPaused = !isSyncPaused;
-            if (isSyncPaused) { icon.className = 'fa-solid fa-pause text-slate-500'; statusText.innerText = 'Paused'; statusText.className = 'text-slate-500'; } 
-            else { icon.className = 'fa-solid fa-bolt text-green-500 animate-pulse'; statusText.innerText = 'Active'; statusText.className = 'text-green-400'; currentServerTime = Date.now(); }
-        }
-
-        function pauseOnModalOpen() { isSyncPaused = true; document.getElementById('refresh-icon').className = 'fa-solid fa-pause text-slate-500'; document.getElementById('sync-status').innerText = 'Paused'; document.getElementById('sync-status').className = 'text-slate-500'; }
-        function resumeOnModalClose() { isSyncPaused = false; document.getElementById('refresh-icon').className = 'fa-solid fa-bolt text-green-500 animate-pulse'; document.getElementById('sync-status').innerText = 'Active'; document.getElementById('sync-status').className = 'text-green-400'; currentServerTime = Date.now(); }
-        startSmartSync();
-
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('sidebar-overlay'); const arrowIcon = document.getElementById('menu-arrow-icon');
-            if (!sidebar.classList.contains('-translate-x-full')) { sidebar.classList.add('-translate-x-full'); overlay.classList.remove('active'); overlay.classList.add('opacity-0'); arrowIcon.className = 'fa-solid fa-chevron-right text-lg'; } 
-            else { sidebar.classList.remove('-translate-x-full'); overlay.classList.add('active'); overlay.classList.remove('opacity-0'); arrowIcon.className = 'fa-solid fa-chevron-left text-lg'; }
-        }
-
-        function showTab(tabId, btn) {
-            document.getElementById('dashboard-view').classList.add('hidden-section'); 
-            document.getElementById('settings-view').classList.add('hidden-section'); 
-            document.getElementById('price-view').classList.add('hidden-section'); 
-            document.getElementById('kyc-view').classList.add('hidden-section'); 
-            document.getElementById('wallet-view').classList.add('hidden-section'); 
-            document.getElementById('logs-view').classList.add('hidden-section'); 
-            
-            const selectedTab = document.getElementById(tabId);
-            selectedTab.classList.remove('hidden-section'); selectedTab.classList.remove('fade-in'); void selectedTab.offsetWidth; selectedTab.classList.add('fade-in');
-            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active')); btn.classList.add('active');
-            
-            const titles = { 
-                'dashboard-view': 'Executive Analytics', 
-                'settings-view': 'Vault Settings', 
-                'kyc-view': 'Verified Users Database', 
-                'price-view': 'Market Prices',
-                'wallet-view': 'Secure Wallet Details',
-                'logs-view': 'Complete Transaction Logs' 
-            };
-            document.getElementById('page-title').innerText = titles[tabId];
-            if (window.innerWidth < 1024) toggleSidebar();
-        }
-
-        function switchLogTab(tabId) {
-            document.getElementById('kyc-logs').classList.add('hidden');
-            document.getElementById('non-kyc-logs').classList.add('hidden');
-            document.getElementById('kyc-stats').classList.add('hidden');
-            document.getElementById('non-kyc-stats').classList.add('hidden');
-            
-            document.getElementById('btn-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
-            document.getElementById('btn-non-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
-            
-            document.getElementById(tabId).classList.remove('hidden');
-            
-            if (tabId === 'kyc-logs') {
-                document.getElementById('btn-kyc-logs').className = 'text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300';
-                document.getElementById('kyc-stats').classList.remove('hidden');
-            } else {
-                document.getElementById('btn-non-kyc-logs').className = 'text-orange-400 font-black uppercase tracking-widest border-b-2 border-orange-500 pb-2 px-2 transition duration-300';
-                document.getElementById('non-kyc-stats').classList.remove('hidden');
-            }
-        }
-
-        function openCustomVolModal() {
-            pauseOnModalOpen();
-            const modal = document.getElementById('customVolModal');
-            const content = document.getElementById('customVolModalContent');
-            
-            // Purana data clear karein
-            document.getElementById('cv-start').value = '';
-            document.getElementById('cv-end').value = '';
-            document.getElementById('cv-result-box').classList.add('hidden');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
-        }
-
-        function closeCustomVolModal() {
-            resumeOnModalClose();
-            const modal = document.getElementById('customVolModal');
-            const content = document.getElementById('customVolModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        function calculateCustomVolume() {
-            const startVal = document.getElementById('cv-start').value;
-            const endVal = document.getElementById('cv-end').value;
-            
-            if (!startVal || !endVal) {
-                VaultAlert.fire('Oops!', 'Please select both Start and End dates.', 'warning');
-                return;
-            }
-
-            // Dates set karein taaki poora din cover ho
-            const startDate = new Date(startVal);
-            startDate.setHours(0, 0, 0, 0);
-            
-            const endDate = new Date(endVal);
-            endDate.setHours(23, 59, 59, 999);
-
-            if (startDate > endDate) {
-                VaultAlert.fire('Invalid Date', 'Start Date cannot be after End Date.', 'error');
-                return;
-            }
-
-            let totalVol = 0;
-            let totalFee = 0;
-            let tradeCount = 0;
-
-            // Har trade ko filter karke sum nikalna
-            allLogsDataClient.forEach(trade => {
-                if (trade.closedAt && trade.closedAt._seconds) {
-                    const tradeDate = new Date(trade.closedAt._seconds * 1000);
-                    if (tradeDate >= startDate && tradeDate <= endDate) {
-                        totalVol += (trade.amountUsd || 0);
-                        totalFee += (trade.fee || 0);
-                        tradeCount++;
-                    }
-                }
-            });
-
-            // Result HTML mein push karna
-            document.getElementById('cv-total-vol').innerText = '$' + totalVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
-            document.getElementById('cv-total-trades').innerText = tradeCount;
-            document.getElementById('cv-total-fee').innerText = '$' + totalFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
-            
-            document.getElementById('cv-result-box').classList.remove('hidden');
-            document.getElementById('cv-result-box').classList.add('fade-in');
-        }
-
-        // --- 📋 COPY TO CLIPBOARD FUNCTION ---
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: 'Copied to clipboard!',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    background: '#0f172a',
-                    color: '#f8fafc',
-                    customClass: { popup: 'border border-slate-700 shadow-xl' }
-                });
-            });
-        }
-
-        function openTxModal(index) {
-            pauseOnModalOpen();
-            const trade = recentTrades[index];
-            if(!trade) return;
-            document.getElementById('modal-avatar').innerText = trade.username.charAt(0).toUpperCase(); document.getElementById('modal-username').innerText = trade.username;
-            let dateStr = "Date Not Available"; if (trade.closedAt && trade.closedAt._seconds) dateStr = new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
-            document.getElementById('modal-date').innerText = dateStr;
-            const actionEl = document.getElementById('modal-action');
-            if(trade.tradeType === 'Buy') actionEl.innerHTML = `<span class="text-green-400"><i class="fa-solid fa-arrow-down mr-1"></i> BUY</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
-            else actionEl.innerHTML = `<span class="text-red-400"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span> <span class="text-slate-400 text-xs sm:text-sm ml-1">via ${trade.networkOrMethod}</span>`;
-            document.getElementById('modal-amount').innerText = '$' + (trade.amountUsd ? trade.amountUsd.toLocaleString() : '0');
-            document.getElementById('modal-details').innerText = trade.userReceivingDetails || "No details provided by the user."; document.getElementById('modal-closedBy').innerText = trade.closedBy || "Admin";
-            const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent');
-            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
-        }
-        function closeTxModal() {
-            resumeOnModalClose(); const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent');
-            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
-
-        function openKycModal() { pauseOnModalOpen(); const modal = document.getElementById('kycModal'); const content = document.getElementById('kycModalContent'); modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10); }
-        function closeKycModal() { resumeOnModalClose(); const modal = document.getElementById('kycModal'); const content = document.getElementById('kycModalContent'); content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300); }
-
-        function openUserModal(docId) {
-            pauseOnModalOpen(); const user = allKycData.find(u => u.id === docId); if(!user) return;
-            document.getElementById('ud-avatar').innerText = (user.name || user.username || 'U').charAt(0).toUpperCase();
-            document.getElementById('ud-name').innerText = user.name || 'Name Not Provided'; document.getElementById('ud-username').innerText = '@' + (user.username || user.discordContact || 'Unknown'); document.getElementById('ud-id').innerText = user.discordId || 'N/A';
-            const statusEl = document.getElementById('ud-status'); statusEl.innerText = user.status || 'Pending'; statusEl.className = 'font-black text-sm ' + (user.status === 'Approved' ? 'text-green-400' : (user.status === 'Rejected' ? 'text-red-400' : 'text-yellow-400'));
-            document.getElementById('ud-type').innerText = user.kycType || 'Basic Verification'; document.getElementById('ud-info').innerText = user.paymentInfo && user.paymentInfo !== 'N/A' ? user.paymentInfo : 'No additional information recorded.';
-            let dateStr = "Not Available"; if (user.createdAt && user.createdAt._seconds) dateStr = new Date(user.createdAt._seconds * 1000).toLocaleDateString('en-IN'); else if (user.updatedAt && user.updatedAt._seconds) dateStr = new Date(user.updatedAt._seconds * 1000).toLocaleDateString('en-IN');
-            document.getElementById('ud-date').innerText = dateStr;
-            const modal = document.getElementById('userDetailsModal'); const content = document.getElementById('userDetailsModalContent');
-            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
-        }
-        function closeUserModal() { resumeOnModalClose(); const modal = document.getElementById('userDetailsModal'); const content = document.getElementById('userDetailsModalContent'); content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300); }
-
-        function openDocs(username, photosStr) { 
-            document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> ${username}'s Documents`; 
-            
-            const container = document.getElementById('photoContainer');
-            container.innerHTML = ''; // Purani photo hata do
-            
-            if (photosStr) {
-                const photos = photosStr.split(','); // Comma se alag karke array banao
-                photos.forEach((url, idx) => {
-                    container.innerHTML += `
-                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner w-full flex flex-col items-center">
-                            <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 px-4 rounded w-full">Document ${idx + 1}</h4>
-                            <a href="${url}" target="_blank" title="Click to view full image">
-                                <img src="${url}" class="w-full rounded-lg object-cover h-48 sm:h-64 transition hover:scale-105 border border-slate-700" alt="Document ${idx+1}">
-                            </a>
-                        </div>
-                    `;
-                });
-            } else {
-                container.innerHTML = `<p class="text-slate-400 italic">No documents found.</p>`;
-            }
-            
-            document.getElementById('photoModal').classList.remove('hidden'); 
-        }
-        function closeDocs() { document.getElementById('photoModal').classList.add('hidden'); }
-
-        const ctxBar = document.getElementById('volumeChart').getContext('2d');
-        const gradientLine = ctxBar.createLinearGradient(0, 0, 0, 300);
-        gradientLine.addColorStop(0, 'rgba(239, 68, 68, 0.4)'); gradientLine.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
-        new Chart(ctxBar, { type: 'line', data: { labels: ['Daily (24h)', 'Weekly (7d)', 'Monthly (30d)'], datasets: [{ label: 'Revenue ($)', data: [Number('<%= dailyVol %>'), Number('<%= weeklyVol %>'), Number('<%= monthlyVol %>')], borderColor: '#ef4444', backgroundColor: gradientLine, borderWidth: 3, fill: true, tension: 0.4, pointBackgroundColor: '#0f172a', pointBorderColor: '#ef4444', pointBorderWidth: 2, pointRadius: 5, pointHoverRadius: 7 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } }, border: { display: false } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } } } } });
-
-        const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
-        const buyV = Number('<%= buyVol %>'), sellV = Number('<%= sellVol %>');
-        
-        // 🔥 Percentage Calculate Karna
-        const totalVSum = buyV + sellV;
-        const buyPercent = totalVSum > 0 ? Math.round((buyV / totalVSum) * 100) : 0;
-        const sellPercent = totalVSum > 0 ? Math.round((sellV / totalVSum) * 100) : 0;
-
-        new Chart(ctxDoughnut, { 
-            type: 'doughnut', 
-            data: { 
-                // 🔥 Labels mein percentage add kar diya
-                labels: [`Buy (INR in) : ${buyPercent}%`, `Sell (Crypto out) : ${sellPercent}%`], 
-                datasets: [{ 
-                    data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV], 
-                    backgroundColor: ['#22c55e', '#ef4444'], 
-                    borderColor: '#0f172a', 
-                    borderWidth: 5 
-                }] 
-            }, 
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                cutout: '75%', 
-                plugins: { 
-                    legend: { 
-                        position: 'bottom', 
-                        labels: { color: '#94a3b8', font: { family:'Outfit', weight:'800', size: 12 }, padding: 20 } 
-                    },
-                    // 🔥 Hover karne par exact Amount ($) dikhayega
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return ' Amount: $' + context.raw.toLocaleString();
-                            }
-                        }
-                    }
-                } 
-            } 
-        });
-        const calData = <%- calendarData %>, monthDataRaw = <%- monthWiseData %>;
-        new Chart(document.getElementById('monthlyBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Volume ($)', data: monthDataRaw, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgba(99, 102, 241, 1)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(99, 102, 241, 0.8)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } } } } });
-
-        const currentWeekData = [0, 0, 0, 0, 0, 0, 0], todayForWeek = new Date(), dayOfWeek = todayForWeek.getDay();
-        const diffToMonday = todayForWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-        const mondayDate = new Date(todayForWeek.setDate(diffToMonday));
-        for (let i = 0; i < 7; i++) { const d = new Date(mondayDate); d.setDate(mondayDate.getDate() + i); currentWeekData[i] = calData[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`] || 0; }
-        new Chart(document.getElementById('weeklyBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], datasets: [{ label: 'Volume ($)', data: currentWeekData, backgroundColor: 'rgba(14, 165, 233, 0.4)', borderColor: 'rgba(14, 165, 233, 0.8)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(14, 165, 233, 1)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return '$' + context.raw.toLocaleString(); } } } }, scales: { y: { display: false, beginAtZero: true }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '700', size: 10 } }, border: { display: false } } } } });
-
-        const calendarGridContainer = document.getElementById('calendar-heatmap-grid'), monthYearLabel = document.getElementById('calendar-month-year'), tooltip = document.getElementById('heatmap-tooltip'), tDate = document.getElementById('tooltip-date'), tVol = document.getElementById('tooltip-vol'), todayObj = new Date();
-        let currentMonth = todayObj.getMonth(), currentYear = todayObj.getFullYear();
-        function isSameDay(d1, d2) { return d1.getFullYear() === d2.getFullYear() && d1.getMonth() === d2.getMonth() && d1.getDate() === d2.getDate(); }
-
-        window.changeMonth = function(delta) { currentMonth += delta; if (currentMonth > 11) { currentMonth = 0; currentYear++; } else if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(currentMonth, currentYear); }
-
-        function renderCalendar(month, year) {
-            monthYearLabel.innerText = `${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][month]} ${year}`;
-            const firstDayOfMonth = new Date(year, month, 1).getDay(), daysInMonth = new Date(year, month + 1, 0).getDate(), heatmapHTML = [], prevMonthDate = new Date(year, month, 0), prevMonthDays = prevMonthDate.getDate();
-            for (let i = firstDayOfMonth - 1; i >= 0; i--) heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40"><span class="font-bold text-[9px] self-center">${prevMonthDays - i}</span></div>`);
-            for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber++) {
-                const d = new Date(year, month, dayNumber), vol = calData[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`] || 0;
-                const todayClass = isSameDay(d, todayObj) ? "border-red-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]" : "";
-                let colorClass = "bg-slate-800/60 border-slate-700/50 text-slate-300", volTextHTML = "";
-                if (vol > 0 && vol <= 500) { colorClass = "bg-emerald-900 border-emerald-800 hover:border-emerald-400 text-slate-300"; volTextHTML = `<span class="font-black text-glow-green text-green-400 text-[9px] self-center">$${vol.toLocaleString()}</span>`; } 
-                else if (vol > 500 && vol <= 2000) { colorClass = "bg-emerald-600 border-emerald-500 hover:border-white text-slate-100"; volTextHTML = `<span class="font-black text-glow-green text-green-300 text-[9px] self-center">$${vol.toLocaleString()}</span>`; } 
-                else if (vol > 2000) { colorClass = "bg-emerald-400 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.5)] hover:border-white text-glow-green text-white"; volTextHTML = `<span class="font-black text-glow-green text-green-100 text-[9px] self-center">$${vol.toLocaleString()}</span>`; }
-                heatmapHTML.push(`<div class="calendar-day p-1.5 flex flex-col justify-between aspect-square border rounded-md transition duration-200 cursor-pointer ${todayClass} ${colorClass}" data-date="${d.toDateString()}" data-vol="$${vol.toLocaleString()}"><span class="font-black text-xs self-center">${dayNumber}</span>${volTextHTML}</div>`);
-            }
-            const cellsToPad = (7 * (Math.ceil(heatmapHTML.length / 7))) - heatmapHTML.length;
-            for (let i = 1; i <= cellsToPad; i++) heatmapHTML.push(`<div class="p-1.5 flex flex-col aspect-square border border-slate-700/50 rounded-md bg-slate-800/40 text-slate-500 opacity-40"><span class="font-bold text-[9px] self-center">${i}</span></div>`);
-            
-            calendarGridContainer.innerHTML = heatmapHTML.join('');
-            document.querySelectorAll('.calendar-day').forEach(box => {
-                box.addEventListener('mouseenter', () => { tDate.innerText = box.getAttribute('data-date'); tVol.innerText = 'Volume: ' + box.getAttribute('data-vol'); const rect = box.getBoundingClientRect(); tooltip.style.left = (rect.left + rect.width / 2) + 'px'; tooltip.style.top = (rect.top - 8) + 'px'; tooltip.classList.remove('hidden'); setTimeout(() => tooltip.classList.remove('opacity-0'), 10); });
-                box.addEventListener('mouseleave', () => { tooltip.classList.add('opacity-0'); setTimeout(() => tooltip.classList.add('hidden'), 200); });
-            });
-        }
-        renderCalendar(currentMonth, currentYear);
-
-        document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll('.animate-counter').forEach(counter => {
-                const target = +counter.getAttribute('data-target'), prefix = counter.getAttribute('data-prefix') || '';
-                if (target === 0) return counter.innerText = prefix + '0';
-                let current = 0; const increment = target / (1500 / 16);
-                const updateCounter = () => { current += increment; if (current < target) { counter.innerText = prefix + Math.ceil(current).toLocaleString(); requestAnimationFrame(updateCounter); } else { counter.innerText = prefix + target.toLocaleString(); } };
-                updateCounter();
-            });
-        });
-    </script>
+function copyCode(code, e) {
+  e.preventDefault();
+  navigator.clipboard.writeText(code).then(() => {
+    const t = document.getElementById('toast');
+    t.textContent = code + ' Copied to Clipboard!';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  });
+}
+</script>
 </body>
 </html>
