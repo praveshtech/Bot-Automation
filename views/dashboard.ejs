@@ -397,35 +397,44 @@
                    const kycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade === true);
                    const nonKycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade !== true);
                    
-                   // Volume ka sum
                    const kycTotalVolume = kycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
                    const nonKycTotalVolume = nonKycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
-
-                   // 🔥 NAYA CODE: Fee Revenue ka sum (Ab sirf Non-KYC ke liye use hoga)
                    const nonKycTotalFee = nonKycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
                 %>
 
-                <!-- TABS & STATS HEADER -->
+                <!-- TABS, FILTER & STATS HEADER -->
                 <div class="flex flex-wrap justify-between items-end mb-6 border-b border-slate-700/50 pb-2 gap-4">
-                    <div class="flex space-x-6">
-                        <button onclick="switchLogTab('kyc-logs')" id="btn-kyc-logs" class="text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300">🛡️ KYC Trades</button>
-                        <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
+                    <div class="flex flex-wrap items-center gap-4 sm:gap-6">
+                        <div class="flex space-x-6">
+                            <button onclick="switchLogTab('kyc-logs')" id="btn-kyc-logs" class="text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300">🛡️ KYC Trades</button>
+                            <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
+                        </div>
+                        
+                        <!-- 🔥 NAYA FILTER DROPDOWN -->
+                        <div class="relative pb-2">
+                            <select id="log-action-filter" onchange="filterLogs()" class="appearance-none bg-slate-900/80 border border-slate-700 text-slate-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-lg py-1.5 pl-3 pr-8 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-inner">
+                                <option value="All">All Actions</option>
+                                <option value="Buy">🟢 Buy Only</option>
+                                <option value="Sell">🔴 Sell Only</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-3 top-2.5 text-slate-500 text-[10px] pointer-events-none"></i>
+                        </div>
                     </div>
                     
                     <!-- KYC STATS -->
                     <div id="kyc-stats" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
-                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= kycLogs.length %></span></span>
-                        <span class="bg-green-900/20 px-3 py-1.5 rounded-md border border-green-500/30">Volume: <span class="text-green-400 ml-1">$<%= kycTotalVolume.toLocaleString() %></span></span>
+                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1" id="kyc-stat-trades"><%= kycLogs.length %></span></span>
+                        <span class="bg-green-900/20 px-3 py-1.5 rounded-md border border-green-500/30">Volume: <span class="text-green-400 ml-1" id="kyc-stat-vol">$<%= kycTotalVolume.toLocaleString() %></span></span>
                     </div>
                     
                     <!-- NON-KYC STATS -->
                     <div id="non-kyc-stats" class="hidden text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
-                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1"><%= nonKycLogs.length %></span></span>
-                        <span class="bg-orange-900/20 px-3 py-1.5 rounded-md border border-orange-500/30">Volume: <span class="text-orange-400 ml-1">$<%= nonKycTotalVolume.toLocaleString() %></span></span>
-                        <!-- 🔥 BADGE: Total Fee Revenue (Amount ab Yellow aayega) -->
-                        <span class="bg-blue-900/20 px-3 py-1.5 rounded-md border border-blue-500/30">Fee Rev: <span class="text-yellow-400 ml-1">$<%= nonKycTotalFee.toLocaleString() %></span></span>
+                        <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1" id="nonkyc-stat-trades"><%= nonKycLogs.length %></span></span>
+                        <span class="bg-orange-900/20 px-3 py-1.5 rounded-md border border-orange-500/30">Volume: <span class="text-orange-400 ml-1" id="nonkyc-stat-vol">$<%= nonKycTotalVolume.toLocaleString() %></span></span>
+                        <span class="bg-blue-900/20 px-3 py-1.5 rounded-md border border-blue-500/30">Fee Rev: <span class="text-yellow-400 ml-1" id="nonkyc-stat-fee">$<%= nonKycTotalFee.toLocaleString() %></span></span>
                     </div>
                 </div>
+
                 <!-- KYC TRADES TABLE -->
                 <div id="kyc-logs" class="overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap">
@@ -437,7 +446,8 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No KYC transactions found.</td></tr>
                             <% } else { %>
                                 <% kycLogs.forEach((trade) => { %>
-                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                                    <!-- 🔥 Rows mein class "kyc-row" aur data attributes lagaye -->
+                                    <tr class="log-row kyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
                                         <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
@@ -461,7 +471,8 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No Non-KYC transactions found.</td></tr>
                             <% } else { %>
                                 <% nonKycLogs.forEach((trade) => { %>
-                                    <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                                    <!-- 🔥 Rows mein class "nonkyc-row" aur data attributes lagaye -->
+                                    <tr class="log-row nonkyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-fee="<%= trade.fee || 0 %>">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
                                         <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
@@ -746,6 +757,53 @@
             content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
+        }
+
+        // --- 🔥 INSTANT LOGS FILTER LOGIC 🔥 ---
+        function filterLogs() {
+            const filterValue = document.getElementById('log-action-filter').value;
+            
+            let kycTrades = 0, kycVol = 0;
+            let nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
+
+            // Handle KYC Table
+            document.querySelectorAll('.kyc-row').forEach(row => {
+                const action = row.getAttribute('data-action');
+                const amount = parseFloat(row.getAttribute('data-amount') || 0);
+                
+                if (filterValue === 'All' || action === filterValue) {
+                    row.style.display = ''; // Show
+                    kycTrades++;
+                    kycVol += amount;
+                } else {
+                    row.style.display = 'none'; // Hide
+                }
+            });
+
+            // Handle Non-KYC Table
+            document.querySelectorAll('.nonkyc-row').forEach(row => {
+                const action = row.getAttribute('data-action');
+                const amount = parseFloat(row.getAttribute('data-amount') || 0);
+                const fee = parseFloat(row.getAttribute('data-fee') || 0);
+                
+                if (filterValue === 'All' || action === filterValue) {
+                    row.style.display = ''; // Show
+                    nonKycTrades++;
+                    nonKycVol += amount;
+                    nonKycFee += fee;
+                } else {
+                    row.style.display = 'none'; // Hide
+                }
+            });
+
+            // Update KYC Stats Box instantly
+            document.getElementById('kyc-stat-trades').innerText = kycTrades;
+            document.getElementById('kyc-stat-vol').innerText = '$' + kycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            
+            // Update Non-KYC Stats Box instantly
+            document.getElementById('nonkyc-stat-trades').innerText = nonKycTrades;
+            document.getElementById('nonkyc-stat-vol').innerText = '$' + nonKycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            document.getElementById('nonkyc-stat-fee').innerText = '$' + nonKycFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
         }
 
         function calculateCustomVolume() {
