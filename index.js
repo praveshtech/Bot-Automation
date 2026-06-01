@@ -132,6 +132,28 @@ client.on('messageCreate', async message => {
         setTimeout(() => { setupMsg.delete().catch(() => {}); }, 15000);
     }
 
+    // 🔥 NEW COMMAND: SERVER POLL SETUP
+    if (command === '!poll') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        await message.delete().catch(() => {});
+        
+        const setupEmbed = new EmbedBuilder()
+            .setTitle('📊 Server Poll Setup')
+            .setDescription('Click the button below to create a new community poll.')
+            .setColor('#3498db')
+            .setFooter({ text: 'Professor Network - Poll System' });
+            
+        const pollBtn = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('open_poll_modal')
+                .setLabel('Create Poll')
+                .setStyle(ButtonStyle.Primary)
+                .setEmoji('📊')
+        );
+        
+        await message.channel.send({ embeds: [setupEmbed], components: [pollBtn] });
+    }
+
     if (command === '!verify') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
@@ -236,6 +258,68 @@ client.on('interactionCreate', async interaction => {
         const flashEmbed = new EmbedBuilder().setTitle('🚨 MEGA FLASH DEAL 🚨').setDescription(`**${msg}**\n\n━━━━━━━━━━━━━━━━━━━━\n⏰ **Exact End Time:** <t:${endTime}:T>\n⏳ **Countdown:** <t:${endTime}:R>\n━━━━━━━━━━━━━━━━━━━━`).setColor('#ff0000').setFooter({ text: 'Professor Network-Trusted P2P', iconURL: client.user.displayAvatarURL() });
         await interaction.reply({ content: '✅ Deal Successfully Posted!', ephemeral: true });
         await interaction.channel.send({ content: '@everyone', embeds: [flashEmbed] });
+    }
+
+    // 🔥 POLL SYSTEM: Modal Open Karna
+    if (interaction.isButton() && interaction.customId === 'open_poll_modal') {
+        const modal = new ModalBuilder()
+            .setCustomId('submit_poll_modal')
+            .setTitle('Create Community Poll');
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_q').setLabel("Poll Question").setStyle(TextInputStyle.Paragraph).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o1').setLabel("Option 1").setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o2').setLabel("Option 2").setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o3').setLabel("Option 3 (Optional)").setStyle(TextInputStyle.Short).setRequired(false)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o4').setLabel("Option 4 (Optional)").setStyle(TextInputStyle.Short).setRequired(false))
+        );
+
+        await interaction.showModal(modal);
+        await interaction.message.delete().catch(() => {});
+    }
+
+    // 🔥 POLL SYSTEM: Modal Submit Hone Par 'p2p-chat' me Poll Generate Karna
+    if (interaction.isModalSubmit() && interaction.customId === 'submit_poll_modal') {
+        const question = interaction.fields.getTextInputValue('poll_q');
+        const opt1 = interaction.fields.getTextInputValue('poll_o1');
+        const opt2 = interaction.fields.getTextInputValue('poll_o2');
+        const opt3 = interaction.fields.getTextInputValue('poll_o3');
+        const opt4 = interaction.fields.getTextInputValue('poll_o4');
+
+        let description = `**${question}**\n\n`;
+        const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣'];
+        const options = [opt1, opt2];
+        if (opt3) options.push(opt3);
+        if (opt4) options.push(opt4);
+
+        options.forEach((opt, index) => {
+            description += `${emojis[index]} **${opt}**\n\n`;
+        });
+
+        const pollEmbed = new EmbedBuilder()
+            .setColor('#3498db')
+            .setAuthor({ name: '📊 Professor Network Community Poll', iconURL: client.user.displayAvatarURL() })
+            .setDescription(description)
+            .setFooter({ text: 'Cast your vote by reacting below! 👇' })
+            .setTimestamp();
+
+        // 🔥 Specific 'p2p-chat' channel ko dhoondhna
+        let pollChannel = interaction.guild.channels.cache.find(c => c.name === 'p2p-chat' || c.name === 'p2p chat');
+
+        if (!pollChannel) {
+            return interaction.reply({ content: '❌ Error: `p2p-chat` naam ka channel nahi mila! Kripya pehle wo channel banayein.', ephemeral: true });
+        }
+
+        // Admin ko success message dikhana
+        await interaction.reply({ content: `✅ Poll successfully sent to ${pollChannel}!`, ephemeral: true });
+        
+        // Specific channel me Poll Send Karna
+        const pollMessage = await pollChannel.send({ content: '@everyone', embeds: [pollEmbed] });
+        
+        // Bot automatically un options ke emojis par react karega
+        for (let i = 0; i < options.length; i++) {
+            await pollMessage.react(emojis[i]);
+        }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
