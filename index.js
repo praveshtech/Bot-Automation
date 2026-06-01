@@ -304,10 +304,10 @@ client.on('interactionCreate', async interaction => {
             .setTimestamp();
 
         // 🔥 Specific 'p2p-chat' channel ko dhoondhna
-        let pollChannel = interaction.guild.channels.cache.find(c => c.name === 'p2p-chat' || c.name === 'p2p chat');
+        let pollChannel = interaction.guild.channels.cache.find(c => c.name === '💬・p2p-chat' || c.name === '💬・p2p-chat');
 
         if (!pollChannel) {
-            return interaction.reply({ content: '❌ Error: `p2p-chat` naam ka channel nahi mila! Kripya pehle wo channel banayein.', ephemeral: true });
+            return interaction.reply({ content: '❌ Error: `💬・p2p-chat` naam ka channel nahi mila! Kripya pehle wo channel banayein.', ephemeral: true });
         }
 
         // Admin ko success message dikhana
