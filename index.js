@@ -55,16 +55,61 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
     const command = message.content.trim().toLowerCase();
 
-    // 🔥 NAYA CODE: One-Time Review Anti-Spam System
+    // 🔥 1. ROLE-BASED REVIEW SYSTEM (Anti-Spam)
     if (message.channel.id === '1495117550709903591') {
         try {
-            // Message aate hi user ki type karne ki permission hata do
-            await message.channel.permissionOverwrites.delete(message.author.id);
-            // Premium feel ke liye react karo
-            await message.react('⭐');
-            await message.react('✅');
+            const feedRole = message.guild.roles.cache.find(r => r.name === 'feedmember');
+            if (feedRole && message.member.roles.cache.has(feedRole.id)) {
+                await message.react('⭐');
+                await message.react('✅');
+                // Message aate hi turant role wapas le lo
+                await message.member.roles.remove(feedRole);
+            }
         } catch (error) {
-            console.error("Review permission remove error:", error);
+            console.error("Review role remove error:", error);
+        }
+    }
+
+    // 🔥 2. ADMIN COMMAND: .fb (Feedmember role dene aur Embed bhejne ke liye)
+    if (command === '.fb') {
+        // Sirf Admin ya Palermo isko use kar payenge
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        
+        try {
+            // Ticket channel se user ki ID nikalna
+            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
+            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel.", ephemeral: true });
+            
+            const userId = ticketDoc.data().discordUserId;
+            const targetMember = await message.guild.members.fetch(userId).catch(() => null);
+            
+            if (targetMember) {
+                let feedRole = message.guild.roles.cache.find(r => r.name === 'feedmember');
+                if (!feedRole) {
+                    feedRole = await message.guild.roles.create({
+                        name: 'feedmember',
+                        color: '#f1c40f',
+                        reason: 'Temporary role for leaving a transaction review'
+                    });
+                }
+                
+                // User ko role dena
+                await targetMember.roles.add(feedRole);
+
+                // 🔥 NAYA CODE: Beautiful & Convincing Embed Message
+                const feedbackPromptEmbed = new EmbedBuilder()
+                    .setColor('#f1c40f')
+                    .setTitle('⭐ Rate Your Experience!')
+                    .setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nYour trust means everything to us. Could you take a quick moment to share your experience with **Professor Network**? \n\nYour honest review helps our community grow and helps others trade safely. 🤝\n\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing us! ⚡`)
+                    .setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
+
+                // Original command msg ko delete karke embed bhejna taaki clean lage
+                await message.delete().catch(() => {});
+                await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
+            }
+        } catch (err) {
+            console.error("Error in .fb command:", err);
+            await message.channel.send("❌ Server error while granting feedback access.");
         }
     }
 
@@ -683,18 +728,7 @@ p2pModal.addComponents(
                     );
 
                     await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
-                    // 🔥 NAYA CODE: User ko Review Channel me type karne ki permission dena
-                    try {
-                        const reviewChannel = interaction.guild.channels.cache.get('1495117550709903591');
-                        if (reviewChannel) {
-                            await reviewChannel.permissionOverwrites.create(ticketData.discordUserId, {
-                                SendMessages: true,
-                                ViewChannel: true
-                            });
-                        }
-                    } catch (err) {
-                        console.log("Error granting review permission:", err);
-                    }
+                   
 
                 } else {
                     // MESSAGE: Cancelled Transaction 🔴
