@@ -153,6 +153,29 @@ client.on('messageCreate', async message => {
         
         await message.channel.send({ embeds: [setupEmbed], components: [pollBtn] });
     }
+     
+    // 🔥 NEW COMMAND: ADVANCED KYC BUTTON SETUP
+    if (command === '!setupadvkyc') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        try {
+            const advKycEmbed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('🛡️ Advanced KYC (Vault Verified)')
+                .setDescription('> **Unlock $0 Fee Trades by verifying your identity.**\n\nClick the button below to open a private, secure verification room where you can upload your Aadhaar and PAN Card.\n\n`Your data is securely encrypted and reviewed strictly by Admins.`')
+                .setFooter({ text: 'Professor Network - Secure KYC Terminal', iconURL: client.user.displayAvatarURL() });
+                
+            const advKycBtn = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('start_advanced_kyc')
+                    .setLabel('Start Advanced KYC')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('🛡️')
+            );
+            
+            await message.channel.send({ embeds: [advKycEmbed], components: [advKycBtn] });
+            await message.delete().catch(()=>{});
+        } catch (err) { console.error("❌ Error in !setupadvkyc:", err); }
+    }
 
     if (command === '!verify') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
@@ -435,60 +458,65 @@ client.on('interactionCreate', async interaction => {
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-        // 🔥 NAYA BUG FIX: Vault Verified users ko Without KYC use karne se rokna 🔥
-        if (!isVerifiedRoute && hasRole) {
+       
+
+       if (isVerifiedRoute && !hasRole) {
             return interaction.reply({ 
-                content: '❌ **Action Denied:** You are already **Vault Verified**!\nPlease use the **"🛡️ P2P With KYC"** option to enjoy $0 fee trades.', 
+                content: '❌ **Access Denied:** You need the **Vault Verified** role to use the $0 Fee route.\n\n👉 Please visit the designated **🪪・p2p-kyc** channel and click the button to get your identity verified first.', 
                 ephemeral: true 
             });
         }
-
-        if (isVerifiedRoute && !hasRole) {
-            // ...spam protection 
-            try {
-                const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
-                const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
-                
-                const existingKycDoc = await db.collection('users_kyc').doc(interaction.user.id).get();
-                const isPendingInDB = existingKycDoc.exists && existingKycDoc.data().status === 'Pending';
-
-                if (existingChannel || isPendingInDB) {
-                    let replyMsg = '❌ **Action Denied:** Your KYC verification is already in progress.\nPlease wait for an Admin to review your documents.';
-                    if (existingChannel) replyMsg += `\n\n👉 **Head over to your open room here:** ${existingChannel}`;
-                    return interaction.reply({ content: replyMsg, ephemeral: true }); // Using .reply instead of .update
-                }
-            } catch (err) { console.error("Spam Check Error:", err); }
-
-            await interaction.update({ content: '⏳ Creating your secure KYC verification room...', embeds: [], components: [] });
-
-            try {
-                let kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
-                if (!kycCategory) kycCategory = await interaction.guild.channels.create({ name: '📢 KYC REQUESTS', type: ChannelType.GuildCategory });
-
-                // 🔥 BUG FIX: Ticket create hote time ab DB me Pending save nahi hoga, load bachega.
-               // await db.collection('users_kyc').doc(interaction.user.id).set(...); 
-              // globalLastUpdate = Date.now();; 
-
-                const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
-                const channelPermissions = [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }];
-                if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
-
-                const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
-
-const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar(Front & Back) And PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });               
- const kycAdminButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger));
-
-                await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
-                await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.\n\n*(This message will auto-delete in 15 seconds)*` });
-                setTimeout(() => { interaction.deleteReply().catch(() => {}); }, 15000);
-            } catch (error) { console.error("KYC Room Creation Error:", error); await interaction.editReply({ content: '❌ Room create karne mein error aaya.' }); }
-            return;
-        }
-
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
         const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴' }]);
         const step1Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() }).setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC (Up to $3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
         await interaction.update({ content: '', embeds: [step1Embed], components: [new ActionRowBuilder().addComponents(typeDropdown)] });
+    }
+
+    // --- 🔥 NEW: ADVANCED KYC ROOM CREATION BUTTON ---
+    if (interaction.isButton() && interaction.customId === 'start_advanced_kyc') {
+        const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
+        if (hasRole) {
+            return interaction.reply({ content: '✅ **You are already Vault Verified!** No need to do this again.', ephemeral: true });
+        }
+
+        // Spam protection check
+        try {
+            const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
+            const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
+            
+            if (existingChannel) {
+                return interaction.reply({ content: `❌ **Action Denied:** Your KYC verification is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
+            }
+        } catch (err) { console.error("Spam Check Error:", err); }
+
+        await interaction.reply({ content: '⏳ Creating your secure KYC verification room...', ephemeral: true });
+
+        try {
+            let kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
+            if (!kycCategory) kycCategory = await interaction.guild.channels.create({ name: '📢 KYC REQUESTS', type: ChannelType.GuildCategory });
+
+            const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
+            const channelPermissions = [
+                { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, 
+                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
+            ];
+            if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
+
+            const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
+
+            const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar(Front & Back) And PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });               
+            const kycAdminButtons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), 
+                new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger)
+            );
+
+            await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
+            
+            await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.` });
+        } catch (error) { 
+            console.error("KYC Room Creation Error:", error); 
+            await interaction.editReply({ content: '❌ Room create karne mein error aaya.' }); 
+        }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
