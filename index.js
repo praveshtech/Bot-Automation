@@ -462,7 +462,7 @@ client.on('interactionCreate', async interaction => {
 
        if (isVerifiedRoute && !hasRole) {
             return interaction.reply({ 
-                content: '❌ **Access Denied:** You need the **Vault Verified** role to use the $0 Fee route.\n\n👉 Please visit the designated **🪪・p2p-kyc** channel and click the button to get your identity verified first.', 
+                content: '❌ **Access Denied:** You need the **Vault Verified** role to use the $0 Fee route.\n\n👉 Please visit the designated <#1511636240729116773> channel and click the button to get your identity verified first.', 
                 ephemeral: true 
             });
         }
