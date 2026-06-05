@@ -55,18 +55,17 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
     const command = message.content.trim().toLowerCase();
 
-    // 🔥 1. ROLE-BASED REVIEW SYSTEM (Anti-Spam)
+    // 🔥 1. ROLE-BASED REVIEW SYSTEM (Allow Edits)
     if (message.channel.id === '1495117550709903591') {
         try {
             const feedRole = message.guild.roles.cache.find(r => r.name === 'feedmember');
             if (feedRole && message.member.roles.cache.has(feedRole.id)) {
+                // Sirf react karega, role wapas nahi lega taaki user edit kar sake
                 await message.react('⭐');
                 await message.react('✅');
-                // Message aate hi turant role wapas le lo
-                await message.member.roles.remove(feedRole);
             }
         } catch (error) {
-            console.error("Review role remove error:", error);
+            console.error("Review reaction error:", error);
         }
     }
 
