@@ -1004,7 +1004,7 @@ async function approveUserKYC(userId, guild) {
             }, { merge: true }).catch(()=>{});
             
             globalLastUpdate = Date.now();
-        await member.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 Professor Network').setDescription('Your KYC verification has been successfully approved.\n\nYou have now received the **🏦 Vault Verified** role, unlocking:\n• $0 transaction fee  \n• Faster processing  \n• Higher trust status inside the network  \n\nWelcome to the verified side of the network. ⚡')] }).catch(() => {});
+        await member.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 Professor Network').setDescription('Your KYC verification has been successfully approved.\n\nYou have now received the **🏦 Vault Verified** role, unlocking:\n• $0 transaction fee  \n• Faster processing  \n• Higher trust status inside the network   \n**Please Visit <#1503666259244482642> To Start Trading **  \n\nWelcome to the verified side of the network. ⚡')] }).catch(() => {});
     } catch (e) {}
 }
 
