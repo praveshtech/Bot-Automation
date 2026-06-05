@@ -504,7 +504,7 @@ client.on('interactionCreate', async interaction => {
 
             const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
 
-            const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 **A clear photo of your Aadhaar(Front & Back) And PAN Card**\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });               
+            const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n📸 ***A clear photo of your Aadhaar(Front & Back) And PAN Card***\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });               
             const kycAdminButtons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), 
                 new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger)
