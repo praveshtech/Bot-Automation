@@ -718,8 +718,8 @@ p2pModal.addComponents(
         let easyCopyText = ""; 
         if (userState.type === 'Sell') {
             let walletAddress = "Waiting for Admin to provide address.";
-            if (userState.step2 === 'TRC20') walletAddress = "TJevdvFMXrfwDpdh9b3bEJLmhrgU3UCBie";
-            if (userState.step2 === 'ERC20' || userState.step2 === 'BEP20' || userState.step2 === 'USDC') walletAddress = "0x72c4956337A815FD03Ca960ca09543b6f049Fa42";
+            if (userState.step2 === 'TRC20') walletAddress = "Ask Admin for TRC20 Wallet Address";
+            if (userState.step2 === 'ERC20' || userState.step2 === 'BEP20' || userState.step2 === 'USDC') walletAddress = "Ask Admin for ERC20/BEP20 Wallet Address";
             easyCopyText = walletAddress; 
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
