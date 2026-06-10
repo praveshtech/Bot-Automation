@@ -233,10 +233,16 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // everyone role ke liye message block karna
-            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
-                SendMessages: false
-            });
+            // 1. @everyone ke liye block karein
+            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: false });
+
+            // 2. Verified role ke liye block karein
+            let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
+            if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false });
+
+            // 3. Vault Verified role ke liye block karein
+            let vaultRole = message.guild.roles.cache.find(r => r.name === 'Vault Verified');
+            if (vaultRole) await message.channel.permissionOverwrites.edit(vaultRole, { SendMessages: false });
 
             const lockEmbed = new EmbedBuilder()
                 .setColor('#e74c3c')
@@ -249,7 +255,7 @@ client.on('messageCreate', async message => {
             await message.channel.send({ content: '@everyone', embeds: [lockEmbed] });
         } catch (err) {
             console.error("Error locking chat:", err);
-            await message.reply("❌ Chat lock karne mein error aaya.");
+            await message.reply("❌ Chat lock karne mein error aaya. Bot ka role check karein.");
         }
     }
 
@@ -258,10 +264,14 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // permissions default (normal) kar dena
-            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
-                SendMessages: null
-            });
+            // Sabki permissions wapas Default (Allow) karein
+            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: null });
+
+            let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
+            if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null });
+
+            let vaultRole = message.guild.roles.cache.find(r => r.name === 'Vault Verified');
+            if (vaultRole) await message.channel.permissionOverwrites.edit(vaultRole, { SendMessages: null });
 
             const unlockEmbed = new EmbedBuilder()
                 .setColor('#2ecc71')
