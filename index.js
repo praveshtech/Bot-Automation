@@ -227,6 +227,55 @@ client.on('messageCreate', async message => {
             updateHeistLeaderboard(message.guild);
         } catch (err) { console.error("❌ Error setting up heist leaderboard:", err); }
     }
+
+    // 🌙 NIGHT MODE: CHAT LOCK COMMAND
+    if (command === '!lockchat') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        
+        try {
+            // everyone role ke liye message block karna
+            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
+                SendMessages: false
+            });
+
+            const lockEmbed = new EmbedBuilder()
+                .setColor('#e74c3c')
+                .setTitle('🌙 THE VAULT IS NOW RESTING')
+                .setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!')
+                .setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png')
+                .setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
+
+            await message.delete().catch(()=>{});
+            await message.channel.send({ content: '@everyone', embeds: [lockEmbed] });
+        } catch (err) {
+            console.error("Error locking chat:", err);
+            await message.reply("❌ Chat lock karne mein error aaya.");
+        }
+    }
+
+    // ☀️ DAY MODE: CHAT UNLOCK COMMAND
+    if (command === '!openchat') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        
+        try {
+            // permissions default (normal) kar dena
+            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, {
+                SendMessages: null
+            });
+
+            const unlockEmbed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('☀️ THE VAULT IS OPEN')
+                .setDescription('Good morning, Syndicate! General chat is now **OPEN**.\n\nTrade safely, verify admins before trading, and remember: **NO DM DEALS EVER!**')
+                .setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
+
+            await message.delete().catch(()=>{});
+            await message.channel.send({ embeds: [unlockEmbed] });
+        } catch (err) {
+            console.error("Error unlocking chat:", err);
+        }
+    }
+
 });
 
 // ==========================================
