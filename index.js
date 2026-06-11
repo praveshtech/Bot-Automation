@@ -233,26 +233,19 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // 1. @everyone ke liye block karein
-            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: false });
-
-            // 2. Verified role ke liye block karein
+            // 🔥 SIRF Verified role ko lock karenge
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
             if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false });
-
-            // 3. Vault Verified role ke liye block karein
-            let vaultRole = message.guild.roles.cache.find(r => r.name === 'Vault Verified');
-            if (vaultRole) await message.channel.permissionOverwrites.edit(vaultRole, { SendMessages: false });
 
             const lockEmbed = new EmbedBuilder()
                 .setColor('#e74c3c')
                 .setTitle('🌙 THE VAULT IS NOW RESTING')
-                .setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!')
+                .setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket here <1503666259244482642> to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!')
                 .setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png')
                 .setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
 
             await message.delete().catch(()=>{});
-            await message.channel.send({ content: '@everyone', embeds: [lockEmbed] });
+            await message.channel.send({ content: '🔔 **Notice for all Verified Members**', embeds: [lockEmbed] });
         } catch (err) {
             console.error("Error locking chat:", err);
             await message.reply("❌ Chat lock karne mein error aaya. Bot ka role check karein.");
@@ -264,14 +257,9 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // Sabki permissions wapas Default (Allow) karein
-            await message.channel.permissionOverwrites.edit(message.guild.roles.everyone, { SendMessages: null });
-
+            // 🔥 SIRF Verified role ko wapas Allow karenge
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
             if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null });
-
-            let vaultRole = message.guild.roles.cache.find(r => r.name === 'Vault Verified');
-            if (vaultRole) await message.channel.permissionOverwrites.edit(vaultRole, { SendMessages: null });
 
             const unlockEmbed = new EmbedBuilder()
                 .setColor('#2ecc71')
