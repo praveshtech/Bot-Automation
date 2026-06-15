@@ -657,8 +657,8 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                        { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 30 Minutes', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
-                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 30 Minutes to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                        { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 1 Hour', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
+                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 1 Hour to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                         // 🔥 NAYA FIX: CCW wapas add kar diya naye naam ke sath
                         
                     ]);
