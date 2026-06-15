@@ -911,6 +911,11 @@ p2pModal.addComponents(
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
                 if (isSuccess) {
+                    
+                    // 🔥 NAYA AUTOMATION: Ekdum silently feedmember role dena (No logs, no errors)
+                    let feedRole = interaction.guild.roles.cache.find(r => r.name === 'feedmember');
+                    if (feedRole) await member.roles.add(feedRole).catch(() => {});
+
                     // MESSAGE 1: Transaction Receipt 🟢
                     const receiptEmbed = new EmbedBuilder()
                         .setColor('#2ecc71')
