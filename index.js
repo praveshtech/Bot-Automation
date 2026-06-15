@@ -58,7 +58,7 @@ client.on('messageCreate', async message => {
     // 🔥 1. ROLE-BASED REVIEW SYSTEM (Allow Edits)
     if (message.channel.id === '1495117550709903591') {
         try {
-            const feedRole = message.guild.roles.cache.find(r => r.name === 'feedmember');
+            const feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
             if (feedRole && message.member.roles.cache.has(feedRole.id)) {
                 // Sirf react karega, role wapas nahi lega taaki user edit kar sake
                 await message.react('⭐');
@@ -69,7 +69,7 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 🔥 2. ADMIN COMMAND: .fb (Feedmember role dene aur Embed bhejne ke liye)
+    // 🔥 2. ADMIN COMMAND: .fb (transaction done role dene aur Embed bhejne ke liye)
     if (command === '.fb') {
         // Sirf Admin ya Palermo isko use kar payenge
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
@@ -83,10 +83,10 @@ client.on('messageCreate', async message => {
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
             if (targetMember) {
-                let feedRole = message.guild.roles.cache.find(r => r.name === 'feedmember');
+                let feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
                 if (!feedRole) {
                     feedRole = await message.guild.roles.create({
-                        name: 'feedmember',
+                        name: 'transaction done',
                         color: '#f1c40f',
                         reason: 'Temporary role for leaving a transaction review'
                     });
@@ -912,8 +912,8 @@ p2pModal.addComponents(
             if (member) {
                 if (isSuccess) {
                     
-                    // 🔥 NAYA AUTOMATION: Ekdum silently feedmember role dena (No logs, no errors)
-                    let feedRole = interaction.guild.roles.cache.find(r => r.name === 'feedmember');
+                    // 🔥 NAYA AUTOMATION: Ekdum silently transaction done role dena (No logs, no errors)
+                    let feedRole = interaction.guild.roles.cache.find(r => r.name === 'transaction done');
                     if (feedRole) await member.roles.add(feedRole).catch(() => {});
 
                     // MESSAGE 1: Transaction Receipt 🟢
