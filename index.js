@@ -641,10 +641,18 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
             if (userState.type === 'Sell') {
-                step2Dropdown.addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙', default: userState.step2 === 'USDC' }]);
-            } else {
                 step2Dropdown.addOptions([
-                    { label: 'CCW (HDFC, ICICI, SBI)', value: 'CCW', emoji: '💳', default: userState.step2 === 'CCW' }, 
+                    { label: 'USDT Trc20', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, 
+                    { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, 
+                    { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, 
+                    { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵', default: userState.step2 === 'ARBITRUM' },
+                    { label: 'USDT Polygon', value: 'POLYGON', emoji: '🟣', default: userState.step2 === 'POLYGON' },
+                    { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙', default: userState.step2 === 'USDC_ERC20' },
+                    { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙', default: userState.step2 === 'USDC_BEP20' }
+                ]);           
+             } else {
+                step2Dropdown.addOptions([
+                    { label: 'CCW (ICICI, SBI)', value: 'CCW', emoji: '💳', default: userState.step2 === 'CCW' }, 
                     { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧', default: userState.step2 === 'CDM' }
                 ]);
             }
@@ -671,7 +679,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                         .setColor('#2ecc71')
                         .setDescription('Click the **Next** button below to securely enter your bank details.')
-                        .addFields({ name: '🏦 Receiving Method', value: `${userState.step3 === 'CCW' ? 'CCW (HDFC, ICICI, SBI)' : userState.step3}`, inline: true });
+                        .addFields({ name: '🏦 Receiving Method', value: `${userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3}`, inline: true });
                 } else {
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3', iconURL: client.user.displayAvatarURL() })
                         .setDescription('Please select how you want to receive your INR from the dropdown below.');
@@ -700,10 +708,18 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
-            step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([{ label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, { label: 'USDC Erc20', value: 'USDC', emoji: '🪙' }]);
-        } else {
+            step2Dropdown.setPlaceholder('Select Crypto Network').addOptions([
+                { label: 'USDT Trc20', value: 'TRC20', emoji: '🔗' }, 
+                { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, 
+                { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, 
+                { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵' },
+                { label: 'USDT Polygon', value: 'POLYGON', emoji: '🟣' },
+                { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙' },
+                { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙' }
+            ]);     
+           } else {
             step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([
-                { label: 'CCW (HDFC, ICICI, SBI)', value: 'CCW', emoji: '💳' }, 
+                { label: 'CCW (ICICI, SBI)', value: 'CCW', emoji: '💳' }, 
                 { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }
             ]);
         }
@@ -721,7 +737,7 @@ const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡�
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setStyle(TextInputStyle.Short).setRequired(true)));
             } else if (userState.step3 === 'CDM') {
 p2pModal.addComponents(
-    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_bank_name').setLabel('Bank Name (e.g. SBI, HDFC)').setStyle(TextInputStyle.Short).setRequired(true)),
+    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_bank_name').setLabel('Bank Name (e.g. SBI, ICICI)').setStyle(TextInputStyle.Short).setRequired(true)),
     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), 
     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), 
     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_mobile_number').setLabel('Mobile Number').setStyle(TextInputStyle.Short).setRequired(true))
@@ -762,12 +778,34 @@ p2pModal.addComponents(
 
         const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${interaction.user.username}`, type: ChannelType.GuildText, parent: openTicketsCategory.id, permissionOverwrites: channelPermissions });
 
+        // 🔥 NAYA FEATURE: Auto Wallet Address & QR Code System
+        const walletData = {
+            'TRC20': { address: 'TXi6efejYXr8QLLd8YojB9dvtcikcYuhdG', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515982733107658833/trc20.jpeg?ex=6a30fc71&is=6a2faaf1&hm=45d566c1816dc564b2ed3ececebbbdf5391a35fb44d17cc7641f594bf8063141&=&format=webp&width=639&height=880' },
+            'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' },
+            'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' },
+            'ARBITRUM': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg?ex=6a30fe6e&is=6a2facee&hm=d1a171cd44b807dbdd00cb08c4561be0ebdf6c3d31ed4972c7e7c405c297de33&=&format=webp&width=664&height=879' },
+            'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' },
+            'USDC_ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg?ex=6a30ff07&is=6a2fad87&hm=b00ebb1a931cc1f260a38e55436172a92fc723ad3eb613cb53b4f523013fba5b&=&format=webp&width=679&height=880' },
+            'USDC_BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg?ex=6a31001d&is=6a2fae9d&hm=7c287ec6bfbe44b422c9cade0954846396b9dcc7f8c4b4ec3ba15728833d85e0&=&format=webp&width=674&height=879' },
+        };
+
         let easyCopyText = ""; 
+        let qrImageUrl = null;
+
         if (userState.type === 'Sell') {
-            let walletAddress = "Waiting for Admin to provide address.";
-            if (userState.step2 === 'TRC20') walletAddress = "Ask Admin for TRC20 Wallet Address";
-            if (userState.step2 === 'ERC20' || userState.step2 === 'BEP20' || userState.step2 === 'USDC') walletAddress = "Ask Admin for ERC20/BEP20 Wallet Address";
-            easyCopyText = walletAddress; 
+            // Agar aapne upar apna address daala hai toh wo aayega, warna "Ask Admin..." likha aayega
+            if (walletData[userState.step2] && !walletData[userState.step2].address.includes('YAHAN_APNA')) {
+                easyCopyText = walletData[userState.step2].address;
+            } else {
+                // 🔥 SMART UPDATE: Ye apne aap network ka naam le lega (jaise TRC20, POLYGON, ya USDC ERC20)
+                let networkName = userState.step2.replace('_', ' '); 
+                easyCopyText = `Ask Admin for ${networkName} Wallet Address`;
+            }
+            
+            // Image link check karega
+            if (walletData[userState.step2] && !walletData[userState.step2].qrImage.includes('Aapka_') && !walletData[userState.step2].qrImage.includes('SAHI_IMAGE_LINK')) {
+                qrImageUrl = walletData[userState.step2].qrImage;
+            }
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
             if (userState.step2 === 'UPI[CCW]') paymentDetails = "Talk to Admin for Payment Details";
@@ -777,7 +815,7 @@ p2pModal.addComponents(
         }
 
         const fee = userState.isVerifiedTrade ? 0 : 3;
-        const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (HDFC, ICICI, SBI)' : userState.step3;
+        const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
 
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
@@ -788,8 +826,7 @@ p2pModal.addComponents(
 
         let paymentInstructions = "";
         if (userState.type === 'Sell') {
-            // 🔥 Yahan humne '$${tradeAmount}' ki jagah '$${Number(tradeAmount) + fee}' kar diya hai
-            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${Number(tradeAmount) + fee} USDT** to this address and upload the payment screenshot here.\n\n👇 **Wallet address sent below**`;
+            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${Number(tradeAmount) + fee} USDT** to this address and upload the payment screenshot here.`;
         } else {
             paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
         }
@@ -800,18 +837,36 @@ p2pModal.addComponents(
         const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
         const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
 
+        // 1. Sabse pehle Main Ticket aur Payment Details bheje jayenge
         await ticketChannel.send({ content: palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`, embeds: [ticketEmbed], components: [actionButtonRow] });
         await ticketChannel.send({ embeds: [paymentEmbed] });
-        await ticketChannel.send(`${easyCopyText}`);
+
+        // 2. YAHAN AAYEGA TEXT: "Ask Admin..." bilkul apni purani jagah par
+        if (userState.type === 'Sell' && !easyCopyText.includes("Ask Admin") && !easyCopyText.includes("Waiting")) {
+             // Agar aapne address dala hai toh blue code format (copy karne ke liye) aayega
+             await ticketChannel.send(`\`${easyCopyText}\``);
+        } else {
+             // Agar address nahi dala toh normal text aayega
+             await ticketChannel.send(`${easyCopyText}`);
+        }
         await ticketChannel.send('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
 
+        // 3. Admin Access wala button
         const revealButtonsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
         await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
         
+        // 4. Sabse LAST mein QR Code Image aayegi (Agar aapne link set kiya hoga)
+        if (userState.type === 'Sell' && qrImageUrl) {
+            const qrEmbed = new EmbedBuilder()
+                .setColor('#f1c40f')
+                .setTitle(`📲 Scan to Pay (${userState.step2})`)
+                .setImage(qrImageUrl);
+            await ticketChannel.send({ embeds: [qrEmbed] });
+        }
+
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
 
-        // 🔥 FIX 2: 10 seconds baad success message khud gayab ho jayega screen clean rakhne ke liye
         setTimeout(() => { interaction.deleteReply().catch(() => {}); }, 10000);
     }
 
