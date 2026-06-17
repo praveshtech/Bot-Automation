@@ -55,6 +55,16 @@ client.once('ready', () => {
                 const p2pChannel = guild.channels.cache.find(c => c.name === '💬・p2p-chat' || c.name.includes('p2p-chat'));
                 
                 if (p2pChannel) {
+                    // 🔥 NAYA CHECK: Kya chat locked hai?
+                    const verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
+                    if (verifiedRole) {
+                        const overwrites = p2pChannel.permissionOverwrites.cache.get(verifiedRole.id);
+                        // Agar Verified role ka SendMessages band (deny) hai, matlab chat lock hai
+                        if (overwrites && overwrites.deny.has(PermissionsBitField.Flags.SendMessages)) {
+                            return; // Yahan se chup-chaap wapas laut jao, message mat bhejo
+                        }
+                    }
+
                     const scamAlertEmbed = new EmbedBuilder()
                         .setColor('#e74c3c') 
                         .setTitle('🚨 SCAM ALERT | NO DM DEALS')
