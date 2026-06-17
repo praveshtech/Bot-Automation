@@ -52,15 +52,14 @@ client.once('ready', () => {
     setInterval(() => {
         try {
             client.guilds.cache.forEach(async (guild) => {
-                // Apna P2P chat channel dhoondh raha hai
                 const p2pChannel = guild.channels.cache.find(c => c.name === '💬・p2p-chat' || c.name.includes('p2p-chat'));
                 
                 if (p2pChannel) {
                     const scamAlertEmbed = new EmbedBuilder()
-                        .setColor('#e74c3c') // Danger Red Color
-                        .setTitle('🚨 CRITICAL SECURITY WARNING 🚨')
-                        .setDescription('**Stay Alert, Syndicate! Scammers are actively targeting users in DMs.**\n\nWe have received reports of scammers impersonating Admins (like **[MOD]Berlin | No Personal Deals**) and messaging users privately to steal funds.\n\n⚠️ **STRICT VAULT RULES:**\n\n**1.** Admins will **NEVER** DM you first to offer a trade.\n**2.** **ALL** verified trades happen ONLY inside secure ticket rooms at the Exchange Desk.\n**3.** If someone sends you a DM offering a deal, asking for funds, or claiming to be support, **THEY ARE A SCAMMER. BLOCK THEM IMMEDIATELY.**\n\nProtect your assets. Never trust direct messages!')
-                        .setFooter({ text: 'Professor Network Security System', iconURL: client.user.displayAvatarURL() });
+                        .setColor('#e74c3c') 
+                        .setTitle('🚨 SCAM ALERT | NO DM DEALS')
+                        .setDescription('**Scammers are using fake Admin names (like Berlin) in DMs.**\n\n⚠️ **Admins will NEVER DM you first.**\n⚠️ **If anyone DMs you for a trade, THEY ARE A SCAMMER.**\n⚠️ **All real trades ONLY happen in Ticket Rooms.**\n\n> *Block unsolicited DMs immediately. Stay safe!*')
+                        .setFooter({ text: 'Professor Network Security', iconURL: client.user.displayAvatarURL() });
 
                     await p2pChannel.send({ embeds: [scamAlertEmbed] });
                 }
@@ -68,7 +67,7 @@ client.once('ready', () => {
         } catch (error) {
             console.error("Auto Scam Alert Error:", error);
         }
-    }, 10 * 60 * 1000); // 🔥 Yahan 10 minutes ka timer set kar diya gaya hai
+    }, 10 * 60 * 1000);
 
 // ==========================================
 // 🛠️ DISCORD COMMANDS
