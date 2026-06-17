@@ -48,42 +48,34 @@ client.once('ready', () => {
     }, 60 * 60 * 1000);
 });
 
-// 🔥 AUTO SCAM ALERT SYSTEM (Every 10 Minutes)
-    setInterval(() => {
-        try {
-            client.guilds.cache.forEach(async (guild) => {
-                const p2pChannel = guild.channels.cache.find(c => c.name === '💬・p2p-chat' || c.name.includes('p2p-chat'));
-                
-                if (p2pChannel) {
-                    // 🔥 NAYA CHECK: Kya chat locked hai?
-                    const verifiedRole = guild.roles.cache.find(r => r.name === 'Verified');
-                    if (verifiedRole) {
-                        const overwrites = p2pChannel.permissionOverwrites.cache.get(verifiedRole.id);
-                        // Agar Verified role ka SendMessages band (deny) hai, matlab chat lock hai
-                        if (overwrites && overwrites.deny.has(PermissionsBitField.Flags.SendMessages)) {
-                            return; // Yahan se chup-chaap wapas laut jao, message mat bhejo
-                        }
-                    }
 
-                    const scamAlertEmbed = new EmbedBuilder()
-                        .setColor('#e74c3c') 
-                        .setTitle('🚨 SCAM ALERT | NO DM DEALS')
-                        .setDescription('**Scammers are using fake Admin names (like Berlin) in DMs.**\n\n⚠️ **Admins will NEVER DM you first.**\n⚠️ **If anyone DMs you for a trade, THEY ARE A SCAMMER.**\n⚠️ **All real trades ONLY happen in Ticket Rooms.**\n\n> *Block unsolicited DMs immediately. Stay safe!*')
-                        .setFooter({ text: 'Professor Network Security', iconURL: client.user.displayAvatarURL() });
-
-                    await p2pChannel.send({ embeds: [scamAlertEmbed] });
-                }
-            });
-        } catch (error) {
-            console.error("Auto Scam Alert Error:", error);
-        }
-    }, 10 * 60 * 1000);
 
 // ==========================================
 // 🛠️ DISCORD COMMANDS
 // ==========================================
+// 🔥 Message Count Track karne ke liye ek variable
+let p2pMessageCount = 0;
+
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
+
+    // 🔥 NAYA FEATURE: Har 10 Message ke baad Auto Scam Alert
+    if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
+        p2pMessageCount++; // Jaise hi koi message bhejega, counter 1 badh jayega
+        
+        if (p2pMessageCount >= 10) {
+            p2pMessageCount = 0; // 10 hone par wapas 0 kar do
+            
+            const scamAlertEmbed = new EmbedBuilder()
+                .setColor('#e74c3c') 
+                .setTitle('🚨 SCAM ALERT | NO DM DEALS')
+                .setDescription('**Scammers are using fake Admin names (like Berlin) in DMs.**\n\n⚠️ **Admins will NEVER DM you first.**\n⚠️ **If anyone DMs you for a trade, THEY ARE A SCAMMER.**\n⚠️ **All real trades ONLY happen in Ticket Rooms.**\n\n> *Block unsolicited DMs immediately. Stay safe!*')
+                .setFooter({ text: 'Professor Network Security', iconURL: client.user.displayAvatarURL() });
+
+            await message.channel.send({ embeds: [scamAlertEmbed] });
+        }
+    }
+
     const command = message.content.trim().toLowerCase();
 
     // 🔥 1. ROLE-BASED REVIEW SYSTEM (Allow Edits)
