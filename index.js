@@ -59,7 +59,7 @@ client.once('ready', () => {
                     const scamAlertEmbed = new EmbedBuilder()
                         .setColor('#e74c3c') // Danger Red Color
                         .setTitle('🚨 CRITICAL SECURITY WARNING 🚨')
-                        .setDescription('**Stay Alert, Syndicate! Scammers are actively targeting users in DMs.**\n\nWe have received reports of scammers impersonating Admins (like **Berlin**) and messaging users privately to steal funds.\n\n⚠️ **STRICT VAULT RULES:**\n\n**1.** Admins will **NEVER** DM you first to offer a trade.\n**2.** **ALL** verified trades happen ONLY inside secure ticket rooms at the Exchange Desk.\n**3.** If someone sends you a DM offering a deal, asking for funds, or claiming to be support, **THEY ARE A SCAMMER. BLOCK THEM IMMEDIATELY.**\n\nProtect your assets. Never trust direct messages!')
+                        .setDescription('**Stay Alert, Syndicate! Scammers are actively targeting users in DMs.**\n\nWe have received reports of scammers impersonating Admins (like **[MOD]Berlin | No Personal Deals**) and messaging users privately to steal funds.\n\n⚠️ **STRICT VAULT RULES:**\n\n**1.** Admins will **NEVER** DM you first to offer a trade.\n**2.** **ALL** verified trades happen ONLY inside secure ticket rooms at the Exchange Desk.\n**3.** If someone sends you a DM offering a deal, asking for funds, or claiming to be support, **THEY ARE A SCAMMER. BLOCK THEM IMMEDIATELY.**\n\nProtect your assets. Never trust direct messages!')
                         .setFooter({ text: 'Professor Network Security System', iconURL: client.user.displayAvatarURL() });
 
                     await p2pChannel.send({ embeds: [scamAlertEmbed] });
