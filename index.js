@@ -573,9 +573,11 @@ client.on('interactionCreate', async interaction => {
             ];
             if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
 
-            const kycChannel = await interaction.guild.channels.create({ name: `kyc-${interaction.user.username}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
+        // 🔥 NAYA FEATURE: Anonymous KYC Names
+            const randomKycId = Math.random().toString(36).substring(2, 8);
+            const kycChannel = await interaction.guild.channels.create({ name: `kyc-${randomKycId}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
 
-const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            const kycAdminButtons = new ActionRowBuilder().addComponents(
+            const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            const kycAdminButtons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), 
                 new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger)
             );
@@ -799,8 +801,9 @@ p2pModal.addComponents(
         if (verifiedRole) channelPermissions.push({ id: verifiedRole.id, deny: [PermissionsBitField.Flags.ViewChannel] });
         if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages] });
 
-        const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${interaction.user.username}`, type: ChannelType.GuildText, parent: openTicketsCategory.id, permissionOverwrites: channelPermissions });
-
+       // 🔥 NAYA FEATURE: Anonymous Ticket Names to prevent Vencord Scams
+        const randomId = Math.random().toString(36).substring(2, 8);
+        const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${randomId}`, type: ChannelType.GuildText, parent: openTicketsCategory.id, permissionOverwrites: channelPermissions });
         // 🔥 NAYA FEATURE: Auto Wallet Address & QR Code System
         const walletData = {
             'TRC20': { address: 'TXi6efejYXr8QLLd8YojB9dvtcikcYuhdG', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515982733107658833/trc20.jpeg?ex=6a30fc71&is=6a2faaf1&hm=45d566c1816dc564b2ed3ececebbbdf5391a35fb44d17cc7641f594bf8063141&=&format=webp&width=639&height=880' },
