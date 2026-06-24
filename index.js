@@ -7,6 +7,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
 const excelJS = require('exceljs'); // 🔥 EXCEL KE LIYE NAYI LINE
+const faqData = require('./faqs.json');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -77,6 +78,37 @@ client.on('messageCreate', async message => {
     }
 
     const command = message.content.trim().toLowerCase();
+
+    // ==========================================
+    // 💡 FAQ QUICK REPLY SYSTEM (Reads from faqs.json)
+    // ==========================================
+    if (faqData[command]) {
+        // Sirf Admins aur Palermo role wale ye commands use kar sakte hain
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        const faqEmbed = new EmbedBuilder()
+            .setColor(faqData[command].color)
+            .setTitle(faqData[command].title)
+            .setDescription(faqData[command].desc)
+            .setFooter({ text: 'Professor Network Support', iconURL: client.user.displayAvatarURL() });
+
+        // Agar user ke message par reply karke command di hai
+        if (message.reference) {
+            try {
+                const repliedMsg = await message.channel.messages.fetch(message.reference.messageId);
+                await repliedMsg.reply({ content: `Hey ${repliedMsg.author.toString()}, here is the information you requested:`, embeds: [faqEmbed] });
+                await message.delete().catch(()=>{}); // Admin ki .command delete kar dega
+            } catch (e) {
+                await message.channel.send({ embeds: [faqEmbed] });
+            }
+        } else {
+            // Agar bina reply kiye normal command bheji hai
+            await message.channel.send({ embeds: [faqEmbed] });
+            await message.delete().catch(()=>{});
+        }
+        return; // Execute hone ke baad aage ke commands check nahi karega
+    }
+
 
     // 🔥 1. ROLE-BASED REVIEW SYSTEM (Allow Edits)
     if (message.channel.id === '1495117550709903591') {

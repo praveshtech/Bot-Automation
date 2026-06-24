@@ -1,0 +1,27 @@
+{
+    ".fees": {
+        "title": "💸 P2P Fee Structure",
+        "desc": "**1. Vault Verified (With KYC):** $0 Fee 🛡️\n**2. Non-KYC Trade:** $3 Fee ⚠️\n\n*To enjoy 0 fees, please complete your Advanced KYC at the Exchange Desk.*",
+        "color": "#f1c40f"
+    },
+    ".time": {
+        "title": "⏳ Estimated Transaction Time",
+        "desc": "**Crypto Transfers:** Instant ⚡\n**IMPS (Bank Transfer):** Approx 1 Hour 🏦\n**CDM (Cash Deposit):** 1 to 4 Hours 🏧\n\n*Please be patient while our Admins process your secure transfer.*",
+        "color": "#3498db"
+    },
+    ".kyc": {
+        "title": "🛡️ How to do Advanced KYC?",
+        "desc": "To unlock **$0 Fee** trades, you need the **Vault Verified** tag.\n\nPlease go to the verification channel and click **Start Advanced KYC**. You will need to securely upload a clear photo of your Aadhaar (Front & Back) and PAN Card.",
+        "color": "#2ecc71"
+    },
+    ".trade": {
+        "title": "🚀 How to Start a Trade?",
+        "desc": "We **DO NOT** trade in DMs. All trades happen securely inside the Vault.\n\n👉 Go to our Exchange Desk channel.\n👉 Click the **🚀 Start Trade** button.\n👉 Follow the steps to open your secure private ticket.",
+        "color": "#9b59b6"
+    },
+    ".min": {
+        "title": "⚖️ Minimum Trade Limits",
+        "desc": "**Buy USDT (Pay INR):** Minimum $100 🟢\n**Sell USDT (Get INR):** Minimum $50 🔴\n\n*Please ensure your trade amount meets these network limits before opening a ticket.*",
+        "color": "#e67e22"
+    }
+}
