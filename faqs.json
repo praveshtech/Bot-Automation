@@ -11,12 +11,12 @@
     },
     ".kyc": {
         "title": "🛡️ How to do Advanced KYC?",
-        "desc": "To unlock **$0 Fee** trades, you need the **Vault Verified** tag.\n\nPlease go to the verification channel and click **Start Advanced KYC**. You will need to securely upload a clear photo of your Aadhaar (Front & Back) and PAN Card.",
+        "desc": "To unlock **$0 Fee** trades, you need the **Vault Verified** tag.\n\nPlease go to the verification channel <#1511636240729116773> and click **Start Advanced KYC**. You will need to securely upload a clear photo of your Aadhaar (Front & Back) and PAN Card.",
         "color": "#2ecc71"
     },
     ".trade": {
         "title": "🚀 How to Start a Trade?",
-        "desc": "We **DO NOT** trade in DMs. All trades happen securely inside the Vault.\n\n👉 Go to our Exchange Desk channel.\n👉 Click the **🚀 Start Trade** button.\n👉 Follow the steps to open your secure private ticket.",
+        "desc": "We **DO NOT** trade in DMs. All trades happen securely inside the Vault.\n\n👉 Go to our Exchange Desk channel <#1503666259244482642>.\n👉 Click the **🚀 Start Trade** button.\n👉 Follow the steps to open your secure private ticket.",
         "color": "#9b59b6"
     },
     ".min": {
