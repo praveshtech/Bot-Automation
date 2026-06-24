@@ -23,5 +23,10 @@
         "title": "⚖️ Minimum Trade Limits",
         "desc": "**Buy USDT (Pay INR):** Minimum $100 🟢\n**Sell USDT (Get INR):** Minimum $50 🔴\n\n*Please ensure your trade amount meets these network limits before opening a ticket.*",
         "color": "#e67e22"
+    },
+    ".up": {
+        "title": "🪪 Hi There!",
+        "desc": "**Hi There please upload related documents so that we can Verify you!**",
+        "color": "#e67e22"
     }
 }
