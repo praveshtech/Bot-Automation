@@ -603,9 +603,15 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: '⏳ Creating your secure UPI Video KYC room...', ephemeral: true });
 
         try {
-            let kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
-            if (!kycCategory) kycCategory = await interaction.guild.channels.create({ name: '📢 KYC REQUESTS', type: ChannelType.GuildCategory });
+            // 🔥 NAYA: Specific Category ID use kar rahe hain
+            let kycCategory = interaction.guild.channels.cache.get('1520318957863829565');
+            
+            // Agar kisi wajah se woh category nahi mili (jaise delete ho gayi ho), toh fallback mein purani category dhoondhega
+            if (!kycCategory) {
+                kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
+            }
 
+            // Permissions setup (Sirf User, Bot aur Palermo dekh payenge)
             const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
             const channelPermissions = [
                 { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, 
@@ -614,13 +620,16 @@ client.on('interactionCreate', async interaction => {
             if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
 
             const randomKycId = Math.random().toString(36).substring(2, 8);
+            
+            // Agar category mil gayi toh usme banayega, nahi toh root channel mein
             const upiKycChannel = await interaction.guild.channels.create({ 
                 name: `upi-${randomKycId}`, 
                 type: ChannelType.GuildText, 
-                parent: kycCategory.id, 
+                parent: kycCategory ? kycCategory.id : null, // Yahan parent ID set ho rahi hai
                 permissionOverwrites: channelPermissions,
                 topic: interaction.user.id 
             });
+            // ... baaki ka code waisa hi rahega
 
             const upiEmbed = new EmbedBuilder()
                 .setColor('#3498db')
