@@ -221,7 +221,7 @@ client.on('messageCreate', async message => {
         } catch (err) { console.error("❌ Error in !verify:", err); }
     }
 
-    // 1. COMMAND: GRANT UPI KYC ACCESS
+   // 🔥 COMMAND: GRANT UPI KYC ACCESS (UPDATE)
     if (command.startsWith('!grantupi')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
 
@@ -242,13 +242,15 @@ client.on('messageCreate', async message => {
                 .setDescription(`Successfully granted **UPI KYC Access** to ${targetUser.toString()}.\nThey can now see the exclusive UPI channel.`);
                 
             await message.reply({ embeds: [successEmbed] });
+            // 🔥 Yahan add kiya:
+            await message.delete().catch(() => {}); 
         } catch (err) {
             console.error("Grant UPI Error:", err);
             await message.reply("❌ Error granting access. Please check bot permissions.");
         }
     }
 
-    // 2. COMMAND: REVOKE UPI KYC ACCESS
+    // 🔥 COMMAND: REVOKE UPI KYC ACCESS (UPDATE)
     if (command.startsWith('!revokeupi')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
 
@@ -266,6 +268,8 @@ client.on('messageCreate', async message => {
                     .setDescription(`Successfully removed **UPI KYC Access** from ${targetUser.toString()}.`);
                     
                 await message.reply({ embeds: [revokeEmbed] });
+                // 🔥 Yahan add kiya:
+                await message.delete().catch(() => {});
             } else {
                 await message.reply({ content: `⚠️ ${targetUser.user.username} doesn't have the UPI Eligible role.`, ephemeral: true });
             }
