@@ -53,6 +53,9 @@
             <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update</button>
             <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings</button>
             <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC</button>
+            <!-- 🔥 NAYA: UPI Video KYC Button -->
+            <button onclick="showTab('upi-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-video mr-4 text-lg"></i> UPI Video KYC</button>
+            
             <button onclick="showTab('wallet-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-wallet mr-4 text-lg"></i> Wallet Addresses</button>
             <button onclick="showTab('logs-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-list-check mr-4 text-lg"></i> Transaction Logs</button>
         </nav>
@@ -120,7 +123,6 @@
                         <i class="fa-solid fa-hand-holding-dollar text-yellow-500/50 text-lg"></i>
                     </div>
                     <% 
-                       // 🔥 Dashboard ke liye total fee revenue calculate kar rahe hain
                        const totalNonKycRev = (typeof allLogs !== 'undefined' ? allLogs : [])
                            .filter(t => t.isVerifiedTrade !== true)
                            .reduce((sum, trade) => sum + (trade.fee || 0), 0);
@@ -190,7 +192,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-10">
-                <!-- LIVE FEED SECTION -->
                 <div class="glass-panel p-0 lg:col-span-2 overflow-hidden flex flex-col">
                     <div class="p-6 border-b border-slate-700/50 flex items-center justify-between shrink-0">
                         <div class="flex items-center"><div class="p-2 bg-red-500/10 rounded-lg mr-3"><i class="fa-solid fa-bolt text-red-400"></i></div><h4 class="font-black uppercase text-sm text-slate-300 tracking-wider">Live Feed</h4></div>
@@ -279,6 +280,55 @@
                                 </td>
                             </tr>
                             <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 🔥 NAYA: UPI Video KYC View -->
+        <section id="upi-view" class="hidden-section fade-in">
+            <div class="glass-panel p-6 border-t-4 border-emerald-500 relative overflow-hidden">
+                <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-emerald-500 text-glow-green"><i class="fa-solid fa-video mr-2"></i> UPI Video KYC Database</h3>
+                <div class="overflow-x-auto w-full custom-scrollbar">
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-slate-800/30">
+                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest border-b border-slate-700/50">
+                                <th class="py-4 px-6">User Details</th>
+                                <th class="py-4 px-6">Approved By</th>
+                                <th class="py-4 px-6">Status</th>
+                                <th class="py-4 px-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm font-medium">
+                            <% if (typeof upiKycUsers !== 'undefined' && upiKycUsers.length > 0) { %>
+                                <% upiKycUsers.forEach(user => { %>
+                                <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition">
+                                    <td class="py-4 px-6 text-gray-200">
+                                        <div class="font-bold text-base"><%= user.discordContact || user.username || 'Unknown' %></div>
+                                        <div class="text-[10px] text-slate-500 uppercase tracking-widest">ID: <%= user.discordId || user.id %></div>
+                                    </td>
+                                    <td class="py-4 px-6 text-slate-300"><%= user.upiApprovedBy || 'Admin' %></td>
+                                    <td class="py-4 px-6">
+                                        <span class="px-3 py-1.5 rounded-md text-[10px] font-black tracking-widest uppercase bg-green-500/10 text-green-400 border border-green-500/20">Verified</span>
+                                    </td>
+                                    <td class="py-4 px-6 text-right">
+                                        <div class="flex items-center justify-end space-x-3">
+                                            <% if(user.upiMediaUrls && user.upiMediaUrls.length > 0) { %>
+                                                <% let mediaStr = user.upiMediaUrls.join(','); %>
+                                                <button onclick="openUpiDocs('<%= user.username || 'User' %>', '<%= mediaStr %>')" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-play mr-1"></i> View Media</button>
+                                            <% } else { %>
+                                                <span class="text-slate-600 text-xs italic font-bold">No Media</span>
+                                            <% } %>
+                                            <!-- UPI KYC bhi delete ho sake isliye button add kiya hai -->
+                                            <button onclick="deleteKyc('<%= user.discordId || user.id %>')" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 w-8 h-8 rounded-lg flex items-center justify-center transition duration-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]" title="Delete User"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            <% } else { %>
+                                <tr><td colspan="4" class="text-center py-8 text-slate-500 italic">No UPI KYC records found.</td></tr>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>
@@ -402,7 +452,6 @@
                    const nonKycTotalFee = nonKycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
                 %>
 
-                <!-- TABS, FILTER & STATS HEADER -->
                 <div class="flex flex-wrap justify-between items-end mb-6 border-b border-slate-700/50 pb-2 gap-4">
                     <div class="flex flex-wrap items-center gap-4 sm:gap-6">
                         <div class="flex space-x-6">
@@ -410,7 +459,6 @@
                             <button onclick="switchLogTab('non-kyc-logs')" id="btn-non-kyc-logs" class="text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300">⚠️ Non-KYC Trades</button>
                         </div>
                         
-                        <!-- 🔥 NAYA FILTER DROPDOWN -->
                         <div class="relative pb-2">
                             <select id="log-action-filter" onchange="filterLogs()" class="appearance-none bg-slate-900/80 border border-slate-700 text-slate-300 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded-lg py-1.5 pl-3 pr-8 focus:outline-none focus:border-indigo-500 cursor-pointer shadow-inner">
                                 <option value="All">All Actions</option>
@@ -421,13 +469,11 @@
                         </div>
                     </div>
                     
-                    <!-- KYC STATS -->
                     <div id="kyc-stats" class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
                         <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1" id="kyc-stat-trades"><%= kycLogs.length %></span></span>
                         <span class="bg-green-900/20 px-3 py-1.5 rounded-md border border-green-500/30">Volume: <span class="text-green-400 ml-1" id="kyc-stat-vol">$<%= kycTotalVolume.toLocaleString() %></span></span>
                     </div>
                     
-                    <!-- NON-KYC STATS -->
                     <div id="non-kyc-stats" class="hidden text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400 pb-1 flex flex-wrap gap-2">
                         <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50">Total Trades: <span class="text-white ml-1" id="nonkyc-stat-trades"><%= nonKycLogs.length %></span></span>
                         <span class="bg-orange-900/20 px-3 py-1.5 rounded-md border border-orange-500/30">Volume: <span class="text-orange-400 ml-1" id="nonkyc-stat-vol">$<%= nonKycTotalVolume.toLocaleString() %></span></span>
@@ -435,7 +481,6 @@
                     </div>
                 </div>
 
-                <!-- KYC TRADES TABLE -->
                 <div id="kyc-logs" class="overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap">
                         <thead class="bg-slate-800/30">
@@ -446,7 +491,6 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No KYC transactions found.</td></tr>
                             <% } else { %>
                                 <% kycLogs.forEach((trade) => { %>
-                                    <!-- 🔥 Rows mein class "kyc-row" aur data attributes lagaye -->
                                     <tr class="log-row kyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
@@ -460,7 +504,6 @@
                     </table>
                 </div>
 
-                <!-- NON-KYC TRADES TABLE -->
                 <div id="non-kyc-logs" class="hidden overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap">
                         <thead class="bg-slate-800/30">
@@ -471,7 +514,6 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No Non-KYC transactions found.</td></tr>
                             <% } else { %>
                                 <% nonKycLogs.forEach((trade) => { %>
-                                    <!-- 🔥 Rows mein class "nonkyc-row" aur data attributes lagaye -->
                                     <tr class="log-row nonkyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-fee="<%= trade.fee || 0 %>">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
@@ -489,7 +531,6 @@
 
     </main>
 
-    <!-- CUSTOM DATE VOLUME MODAL -->
     <div id="customVolModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeCustomVolModal()"></div>
         <div class="glass-panel relative z-10 w-full max-w-md p-6 border-t-4 border-purple-500 transform scale-95 opacity-0 transition-all duration-300" id="customVolModalContent">
@@ -525,7 +566,6 @@
         </div>
     </div>
 
-    <!-- 🔥 NAYA: DAILY LOGS MODAL (Calendar pe click karne ke liye) -->
     <div id="dailyLogsModal" class="fixed inset-0 z-[120] hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeDailyLogsModal()"></div>
         <div class="glass-panel relative z-10 w-full max-w-4xl p-0 border-t-4 border-emerald-500 transform scale-95 opacity-0 transition-all duration-300 overflow-hidden flex flex-col" id="dailyLogsModalContent">
@@ -538,20 +578,17 @@
                 </div>
             </div>
 
-            <!-- STATS STRIP -->
             <div class="px-6 py-3 bg-[#050b14]/80 flex gap-4 border-b border-slate-800/80 shrink-0">
                 <span class="bg-slate-800/50 px-3 py-1.5 rounded-md border border-slate-700/50 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Total Trades: <span class="text-white ml-1 font-black" id="daily-total-trades">0</span></span>
                 <span class="bg-emerald-900/20 px-3 py-1.5 rounded-md border border-emerald-500/30 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Volume: <span class="text-emerald-400 ml-1 font-black text-glow-green" id="daily-total-volume">$0</span></span>
             </div>
 
-            <!-- TABLE WITH SCROLL & STICKY HEADER -->
             <div class="overflow-x-auto overflow-y-auto max-h-[50vh] w-full custom-scrollbar">
                 <table class="w-full text-left whitespace-nowrap min-w-[500px] lg:min-w-0 relative">
                     <thead class="bg-slate-800/95 backdrop-blur-md sticky top-0 z-20 shadow-md">
                         <tr class="text-slate-400 text-[10px] sm:text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Time</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
                     </thead>
                     <tbody class="text-sm font-medium" id="daily-logs-tbody">
-                        <!-- 🔥 JS se Auto-fill Hoga -->
                     </tbody>
                 </table>
             </div>
@@ -616,7 +653,6 @@
     </script>
 
     <script>
-        // --- 🚀 MODERN ALERT SETUP ---
         const VaultAlert = Swal.mixin({
             background: '#0f172a', color: '#f8fafc',
             customClass: { popup: 'border border-slate-700 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)]', confirmButton: 'font-black uppercase tracking-widest px-6 py-2.5 rounded-lg', cancelButton: 'font-bold uppercase tracking-widest px-6 py-2.5 rounded-lg' }
@@ -659,7 +695,6 @@
             } catch (e) { VaultAlert.fire('Error', 'API Connection Error!', 'error'); }
         }
 
-        // --- 🔥 ZERO-READ SMART REFRESH SYSTEM 🔥 ---
         let currentServerTime = Date.now();
         let isSyncPaused = false;
         let syncInterval;
@@ -670,8 +705,8 @@
                     try {
                         const response = await fetch('/api/check-updates');
                         const data = await response.json();
-                        if (data.timestamp > currentServerTime) { console.log("New data detected! Refreshing..."); window.location.reload(); }
-                    } catch (error) { console.log("Update check paused/failed."); }
+                        if (data.timestamp > currentServerTime) { window.location.reload(); }
+                    } catch (error) {}
                 }
             }, 5000);
         }
@@ -692,22 +727,24 @@
             else { sidebar.classList.remove('-translate-x-full'); overlay.classList.add('active'); overlay.classList.remove('opacity-0'); arrowIcon.className = 'fa-solid fa-chevron-left text-lg'; }
         }
 
+        // 🔥 NAYA: Tab switching logic update kiya
         function showTab(tabId, btn) {
-            document.getElementById('dashboard-view').classList.add('hidden-section'); 
-            document.getElementById('settings-view').classList.add('hidden-section'); 
-            document.getElementById('price-view').classList.add('hidden-section'); 
-            document.getElementById('kyc-view').classList.add('hidden-section'); 
-            document.getElementById('wallet-view').classList.add('hidden-section'); 
-            document.getElementById('logs-view').classList.add('hidden-section'); 
+            const allTabs = ['dashboard-view', 'settings-view', 'price-view', 'kyc-view', 'upi-view', 'wallet-view', 'logs-view'];
+            allTabs.forEach(id => { document.getElementById(id).classList.add('hidden-section'); });
             
             const selectedTab = document.getElementById(tabId);
-            selectedTab.classList.remove('hidden-section'); selectedTab.classList.remove('fade-in'); void selectedTab.offsetWidth; selectedTab.classList.add('fade-in');
+            selectedTab.classList.remove('hidden-section'); 
+            selectedTab.classList.remove('fade-in'); 
+            void selectedTab.offsetWidth; 
+            selectedTab.classList.add('fade-in');
+            
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active')); btn.classList.add('active');
             
             const titles = { 
                 'dashboard-view': 'Executive Analytics', 
                 'settings-view': 'Vault Settings', 
                 'kyc-view': 'Verified Users Database', 
+                'upi-view': 'UPI Video Verification',
                 'price-view': 'Market Prices',
                 'wallet-view': 'Secure Wallet Details',
                 'logs-view': 'Complete Transaction Logs' 
@@ -740,139 +777,62 @@
             pauseOnModalOpen();
             const modal = document.getElementById('customVolModal');
             const content = document.getElementById('customVolModalContent');
-            
-            // Purana data clear karein
-            document.getElementById('cv-start').value = '';
-            document.getElementById('cv-end').value = '';
-            document.getElementById('cv-result-box').classList.add('hidden');
-            
-            modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
+            document.getElementById('cv-start').value = ''; document.getElementById('cv-end').value = ''; document.getElementById('cv-result-box').classList.add('hidden');
+            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
         }
 
         function closeCustomVolModal() {
-            resumeOnModalClose();
-            const modal = document.getElementById('customVolModal');
-            const content = document.getElementById('customVolModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            resumeOnModalClose(); const modal = document.getElementById('customVolModal'); const content = document.getElementById('customVolModalContent');
+            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // --- 🔥 INSTANT LOGS FILTER LOGIC 🔥 ---
         function filterLogs() {
             const filterValue = document.getElementById('log-action-filter').value;
-            
-            let kycTrades = 0, kycVol = 0;
-            let nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
+            let kycTrades = 0, kycVol = 0, nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
 
-            // Handle KYC Table
             document.querySelectorAll('.kyc-row').forEach(row => {
-                const action = row.getAttribute('data-action');
-                const amount = parseFloat(row.getAttribute('data-amount') || 0);
-                
-                if (filterValue === 'All' || action === filterValue) {
-                    row.style.display = ''; // Show
-                    kycTrades++;
-                    kycVol += amount;
-                } else {
-                    row.style.display = 'none'; // Hide
-                }
+                const action = row.getAttribute('data-action'); const amount = parseFloat(row.getAttribute('data-amount') || 0);
+                if (filterValue === 'All' || action === filterValue) { row.style.display = ''; kycTrades++; kycVol += amount; } else { row.style.display = 'none'; }
             });
-
-            // Handle Non-KYC Table
             document.querySelectorAll('.nonkyc-row').forEach(row => {
-                const action = row.getAttribute('data-action');
-                const amount = parseFloat(row.getAttribute('data-amount') || 0);
-                const fee = parseFloat(row.getAttribute('data-fee') || 0);
-                
-                if (filterValue === 'All' || action === filterValue) {
-                    row.style.display = ''; // Show
-                    nonKycTrades++;
-                    nonKycVol += amount;
-                    nonKycFee += fee;
-                } else {
-                    row.style.display = 'none'; // Hide
-                }
+                const action = row.getAttribute('data-action'); const amount = parseFloat(row.getAttribute('data-amount') || 0); const fee = parseFloat(row.getAttribute('data-fee') || 0);
+                if (filterValue === 'All' || action === filterValue) { row.style.display = ''; nonKycTrades++; nonKycVol += amount; nonKycFee += fee; } else { row.style.display = 'none'; }
             });
 
-            // Update KYC Stats Box instantly
             document.getElementById('kyc-stat-trades').innerText = kycTrades;
             document.getElementById('kyc-stat-vol').innerText = '$' + kycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
-            
-            // Update Non-KYC Stats Box instantly
             document.getElementById('nonkyc-stat-trades').innerText = nonKycTrades;
             document.getElementById('nonkyc-stat-vol').innerText = '$' + nonKycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('nonkyc-stat-fee').innerText = '$' + nonKycFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
         }
 
         function calculateCustomVolume() {
-            const startVal = document.getElementById('cv-start').value;
-            const endVal = document.getElementById('cv-end').value;
-            
-            if (!startVal || !endVal) {
-                VaultAlert.fire('Oops!', 'Please select both Start and End dates.', 'warning');
-                return;
-            }
+            const startVal = document.getElementById('cv-start').value; const endVal = document.getElementById('cv-end').value;
+            if (!startVal || !endVal) { VaultAlert.fire('Oops!', 'Please select both Start and End dates.', 'warning'); return; }
+            const startDate = new Date(startVal); startDate.setHours(0, 0, 0, 0);
+            const endDate = new Date(endVal); endDate.setHours(23, 59, 59, 999);
+            if (startDate > endDate) { VaultAlert.fire('Invalid Date', 'Start Date cannot be after End Date.', 'error'); return; }
 
-            // Dates set karein taaki poora din cover ho
-            const startDate = new Date(startVal);
-            startDate.setHours(0, 0, 0, 0);
-            
-            const endDate = new Date(endVal);
-            endDate.setHours(23, 59, 59, 999);
-
-            if (startDate > endDate) {
-                VaultAlert.fire('Invalid Date', 'Start Date cannot be after End Date.', 'error');
-                return;
-            }
-
-            let totalVol = 0;
-            let totalFee = 0;
-            let tradeCount = 0;
-
-            // Har trade ko filter karke sum nikalna
+            let totalVol = 0, totalFee = 0, tradeCount = 0;
             allLogsDataClient.forEach(trade => {
                 if (trade.closedAt && trade.closedAt._seconds) {
                     const tradeDate = new Date(trade.closedAt._seconds * 1000);
-                    if (tradeDate >= startDate && tradeDate <= endDate) {
-                        totalVol += (trade.amountUsd || 0);
-                        totalFee += (trade.fee || 0);
-                        tradeCount++;
-                    }
+                    if (tradeDate >= startDate && tradeDate <= endDate) { totalVol += (trade.amountUsd || 0); totalFee += (trade.fee || 0); tradeCount++; }
                 }
             });
 
-            // Result HTML mein push karna
             document.getElementById('cv-total-vol').innerText = '$' + totalVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('cv-total-trades').innerText = tradeCount;
             document.getElementById('cv-total-fee').innerText = '$' + totalFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
-            
-            document.getElementById('cv-result-box').classList.remove('hidden');
-            document.getElementById('cv-result-box').classList.add('fade-in');
+            document.getElementById('cv-result-box').classList.remove('hidden'); document.getElementById('cv-result-box').classList.add('fade-in');
         }
 
-        // --- 📋 COPY TO CLIPBOARD FUNCTION ---
         function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => {
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: 'Copied to clipboard!',
-                    showConfirmButton: false,
-                    timer: 2000,
-                    background: '#0f172a',
-                    color: '#f8fafc',
-                    customClass: { popup: 'border border-slate-700 shadow-xl' }
-                });
-            });
+            navigator.clipboard.writeText(text).then(() => { Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Copied to clipboard!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#f8fafc', customClass: { popup: 'border border-slate-700 shadow-xl' } }); });
         }
 
         function openTxModal(index) {
-            pauseOnModalOpen();
-            const trade = recentTrades[index];
-            if(!trade) return;
+            pauseOnModalOpen(); const trade = recentTrades[index]; if(!trade) return;
             document.getElementById('modal-avatar').innerText = trade.username.charAt(0).toUpperCase(); document.getElementById('modal-username').innerText = trade.username;
             let dateStr = "Date Not Available"; if (trade.closedAt && trade.closedAt._seconds) dateStr = new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' });
             document.getElementById('modal-date').innerText = dateStr;
@@ -884,10 +844,7 @@
             const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent');
             modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
         }
-        function closeTxModal() {
-            resumeOnModalClose(); const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent');
-            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
-        }
+        function closeTxModal() { resumeOnModalClose(); const modal = document.getElementById('txModal'); const content = document.getElementById('txModalContent'); content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300); }
 
         function openKycModal() { pauseOnModalOpen(); const modal = document.getElementById('kycModal'); const content = document.getElementById('kycModalContent'); modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10); }
         function closeKycModal() { resumeOnModalClose(); const modal = document.getElementById('kycModal'); const content = document.getElementById('kycModalContent'); content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300); }
@@ -907,12 +864,9 @@
 
         function openDocs(username, photosStr) { 
             document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> ${username}'s Documents`; 
-            
-            const container = document.getElementById('photoContainer');
-            container.innerHTML = ''; // Purani photo hata do
-            
+            const container = document.getElementById('photoContainer'); container.innerHTML = ''; 
             if (photosStr) {
-                const photos = photosStr.split(','); // Comma se alag karke array banao
+                const photos = photosStr.split(','); 
                 photos.forEach((url, idx) => {
                     container.innerHTML += `
                         <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner w-full flex flex-col items-center">
@@ -923,12 +877,48 @@
                         </div>
                     `;
                 });
-            } else {
-                container.innerHTML = `<p class="text-slate-400 italic">No documents found.</p>`;
-            }
-            
+            } else { container.innerHTML = `<p class="text-slate-400 italic">No documents found.</p>`; }
             document.getElementById('photoModal').classList.remove('hidden'); 
         }
+
+        // 🔥 NAYA: UPI Video Player Function
+        function openUpiDocs(username, mediaStr) { 
+            document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-video text-emerald-500 mr-3"></i> ${username}'s UPI Media`; 
+            const container = document.getElementById('photoContainer'); container.innerHTML = ''; 
+            
+            if (mediaStr) {
+                const urls = mediaStr.split(','); 
+                urls.forEach((url, idx) => {
+                    // Check if the URL is a video (.mp4, .mov, etc.)
+                    const isVideo = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm');
+                    let mediaElement = '';
+                    
+                    if (isVideo) {
+                        mediaElement = `
+                            <video controls class="w-full rounded-lg h-48 sm:h-64 border border-slate-700 bg-black object-contain">
+                                <source src="${url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>`;
+                    } else {
+                        mediaElement = `
+                            <a href="${url}" target="_blank" title="Click to view full image">
+                                <img src="${url}" class="w-full rounded-lg object-cover h-48 sm:h-64 transition hover:scale-105 border border-slate-700" alt="Media ${idx+1}">
+                            </a>`;
+                    }
+
+                    container.innerHTML += `
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner w-full flex flex-col items-center">
+                            <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 px-4 rounded w-full">Media ${idx + 1}</h4>
+                            ${mediaElement}
+                        </div>
+                    `;
+                });
+            } else {
+                container.innerHTML = `<p class="text-slate-400 italic">No media found.</p>`;
+            }
+            document.getElementById('photoModal').classList.remove('hidden'); 
+        }
+
         function closeDocs() { document.getElementById('photoModal').classList.add('hidden'); }
 
         const ctxBar = document.getElementById('volumeChart').getContext('2d');
@@ -938,44 +928,16 @@
 
         const ctxDoughnut = document.getElementById('ratioChart').getContext('2d');
         const buyV = Number('<%= buyVol %>'), sellV = Number('<%= sellVol %>');
-        
-        // 🔥 Percentage Calculate Karna
         const totalVSum = buyV + sellV;
         const buyPercent = totalVSum > 0 ? Math.round((buyV / totalVSum) * 100) : 0;
         const sellPercent = totalVSum > 0 ? Math.round((sellV / totalVSum) * 100) : 0;
 
         new Chart(ctxDoughnut, { 
             type: 'doughnut', 
-            data: { 
-                // 🔥 Labels mein percentage add kar diya
-                labels: [`Buy (INR in) : ${buyPercent}%`, `Sell (Crypto out) : ${sellPercent}%`], 
-                datasets: [{ 
-                    data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV], 
-                    backgroundColor: ['#22c55e', '#ef4444'], 
-                    borderColor: '#0f172a', 
-                    borderWidth: 5 
-                }] 
-            }, 
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                cutout: '75%', 
-                plugins: { 
-                    legend: { 
-                        position: 'bottom', 
-                        labels: { color: '#94a3b8', font: { family:'Outfit', weight:'800', size: 12 }, padding: 20 } 
-                    },
-                    // 🔥 Hover karne par exact Amount ($) dikhayega
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return ' Amount: $' + context.raw.toLocaleString();
-                            }
-                        }
-                    }
-                } 
-            } 
+            data: { labels: [`Buy (INR in) : ${buyPercent}%`, `Sell (Crypto out) : ${sellPercent}%`], datasets: [{ data: [buyV === 0 && sellV === 0 ? 1 : buyV, buyV === 0 && sellV === 0 ? 1 : sellV], backgroundColor: ['#22c55e', '#ef4444'], borderColor: '#0f172a', borderWidth: 5 }] }, 
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', font: { family:'Outfit', weight:'800', size: 12 }, padding: 20 } }, tooltip: { callbacks: { label: function(context) { return ' Amount: $' + context.raw.toLocaleString(); } } } } } 
         });
+
         const calData = <%- calendarData %>, monthDataRaw = <%- monthWiseData %>;
         new Chart(document.getElementById('monthlyBarChart').getContext('2d'), { type: 'bar', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Volume ($)', data: monthDataRaw, backgroundColor: 'rgba(99, 102, 241, 0.5)', borderColor: 'rgba(99, 102, 241, 1)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(99, 102, 241, 0.8)' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false }, ticks: { color: '#64748b', font: { family: 'Outfit', weight: '600' } } }, x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: '800' } }, border: { display: false } } } } });
 
@@ -1015,19 +977,16 @@
         }
         renderCalendar(currentMonth, currentYear);
 
-        // --- 🔥 DAILY LOGS MODAL LOGIC 🔥 ---
         function openDailyLogsModal(dateString) {
             pauseOnModalOpen();
             const modal = document.getElementById('dailyLogsModal');
             const content = document.getElementById('dailyLogsModalContent');
             const tbody = document.getElementById('daily-logs-tbody');
 
-            // Format date for Header
             const targetDate = new Date(dateString);
             const displayDate = targetDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
             document.getElementById('daily-logs-date').innerText = displayDate;
 
-            // Date ke hisaab se saare logs filter karo
             let dailyTrades = allLogsDataClient.filter(trade => {
                 if (trade.closedAt && trade.closedAt._seconds) {
                     const tradeDate = new Date(trade.closedAt._seconds * 1000);
@@ -1036,13 +995,11 @@
                 return false;
             });
 
-            // Total Calculate
             let totalVol = 0;
             dailyTrades.forEach(t => totalVol += (t.amountUsd || 0));
             document.getElementById('daily-total-trades').innerText = dailyTrades.length;
             document.getElementById('daily-total-volume').innerText = '$' + totalVol.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-            // Table Body Generate Karo
             if (dailyTrades.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-ghost text-3xl mb-3 block opacity-20"></i>No transactions recorded on this day.</td></tr>`;
             } else {
@@ -1073,22 +1030,12 @@
                     `;
                 }).join('');
             }
-
-            // Popup Animate karke kholo
-            modal.classList.remove('hidden');
-            setTimeout(() => { 
-                content.classList.remove('scale-95', 'opacity-0'); 
-                content.classList.add('scale-100', 'opacity-100'); 
-            }, 10);
+            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
         }
 
         function closeDailyLogsModal() {
-            resumeOnModalClose();
-            const modal = document.getElementById('dailyLogsModal');
-            const content = document.getElementById('dailyLogsModalContent');
-            content.classList.remove('scale-100', 'opacity-100');
-            content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            resumeOnModalClose(); const modal = document.getElementById('dailyLogsModal'); const content = document.getElementById('dailyLogsModalContent');
+            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
         document.addEventListener("DOMContentLoaded", () => {

@@ -6,7 +6,7 @@ const axios = require('axios');
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, PermissionsBitField, ChannelType, AttachmentBuilder } = require('discord.js');
 const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
-const excelJS = require('exceljs'); // 🔥 EXCEL KE LIYE NAYI LINE
+const excelJS = require('exceljs'); 
 const faqData = require('./faqs.json');
 
 // ==========================================
@@ -49,24 +49,18 @@ client.once('ready', () => {
     }, 60 * 60 * 1000);
 });
 
-
-
 // ==========================================
 // 🛠️ DISCORD COMMANDS
 // ==========================================
-// 🔥 Message Count Track karne ke liye ek variable
 let p2pMessageCount = 0;
 
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // 🔥 NAYA FEATURE: Har 10 Message ke baad Auto Scam Alert
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
-        p2pMessageCount++; // Jaise hi koi message bhejega, counter 1 badh jayega
-        
+        p2pMessageCount++; 
         if (p2pMessageCount >= 10) {
-            p2pMessageCount = 0; // 10 hone par wapas 0 kar do
-            
+            p2pMessageCount = 0; 
             const scamAlertEmbed = new EmbedBuilder()
                 .setColor('#e74c3c') 
                 .setTitle('🚨 SCAM ALERT | NO DM DEALS')
@@ -79,11 +73,8 @@ client.on('messageCreate', async message => {
 
     const command = message.content.trim().toLowerCase();
 
-    // ==========================================
-    // 💡 FAQ QUICK REPLY SYSTEM (Reads from faqs.json)
-    // ==========================================
+    // 💡 FAQ QUICK REPLY SYSTEM
     if (faqData[command]) {
-        // Sirf Admins aur Palermo role wale ye commands use kar sakte hain
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
 
         const faqEmbed = new EmbedBuilder()
@@ -92,30 +83,26 @@ client.on('messageCreate', async message => {
             .setDescription(faqData[command].desc)
             .setFooter({ text: 'Professor Network Support', iconURL: client.user.displayAvatarURL() });
 
-        // Agar user ke message par reply karke command di hai
         if (message.reference) {
             try {
                 const repliedMsg = await message.channel.messages.fetch(message.reference.messageId);
                 await repliedMsg.reply({ content: `Hey ${repliedMsg.author.toString()}, here is the information you requested:`, embeds: [faqEmbed] });
-                await message.delete().catch(()=>{}); // Admin ki .command delete kar dega
+                await message.delete().catch(()=>{}); 
             } catch (e) {
                 await message.channel.send({ embeds: [faqEmbed] });
             }
         } else {
-            // Agar bina reply kiye normal command bheji hai
             await message.channel.send({ embeds: [faqEmbed] });
             await message.delete().catch(()=>{});
         }
-        return; // Execute hone ke baad aage ke commands check nahi karega
+        return; 
     }
 
-
-    // 🔥 1. ROLE-BASED REVIEW SYSTEM (Allow Edits)
+    // ROLE-BASED REVIEW SYSTEM
     if (message.channel.id === '1495117550709903591') {
         try {
             const feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
             if (feedRole && message.member.roles.cache.has(feedRole.id)) {
-                // Sirf react karega, role wapas nahi lega taaki user edit kar sake
                 await message.react('⭐');
                 await message.react('✅');
             }
@@ -124,13 +111,11 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 🔥 2. ADMIN COMMAND: .fb (transaction done role dene aur Embed bhejne ke liye)
+    // ADMIN COMMAND: .fb
     if (command === '.fb') {
-        // Sirf Admin ya Palermo isko use kar payenge
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // Ticket channel se user ki ID nikalna
             const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
             if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel.", ephemeral: true });
             
@@ -147,17 +132,14 @@ client.on('messageCreate', async message => {
                     });
                 }
                 
-                // User ko role dena
                 await targetMember.roles.add(feedRole);
 
-                // 🔥 NAYA CODE: Beautiful & Convincing Embed Message
                 const feedbackPromptEmbed = new EmbedBuilder()
                     .setColor('#f1c40f')
                     .setTitle('⭐ Rate Your Experience!')
                     .setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nYour trust means everything to us. Could you take a quick moment to share your experience with **Professor Network**? \n\nYour honest review helps our community grow and helps others trade safely. 🤝\n\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing us! ⚡`)
                     .setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
 
-                // Original command msg ko delete karke embed bhejna taaki clean lage
                 await message.delete().catch(() => {});
                 await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
             }
@@ -186,7 +168,6 @@ client.on('messageCreate', async message => {
         setTimeout(() => { setupMsg.delete().catch(() => {}); }, 15000);
     }
 
-    // 🔥 NEW COMMAND: SERVER POLL SETUP
     if (command === '!poll') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         await message.delete().catch(() => {});
@@ -208,7 +189,6 @@ client.on('messageCreate', async message => {
         await message.channel.send({ embeds: [setupEmbed], components: [pollBtn] });
     }
      
-    // 🔥 NEW COMMAND: ADVANCED KYC BUTTON SETUP
     if (command === '!setupadvkyc') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
@@ -241,6 +221,85 @@ client.on('messageCreate', async message => {
         } catch (err) { console.error("❌ Error in !verify:", err); }
     }
 
+    // 1. COMMAND: GRANT UPI KYC ACCESS
+    if (command.startsWith('!grantupi')) {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        const targetUser = message.mentions.members.first();
+        if (!targetUser) return message.reply({ content: '❌ Please mention a user. Example: `!grantupi @username`', ephemeral: true });
+
+        try {
+            let upiRole = message.guild.roles.cache.find(r => r.name === 'UPI Eligible');
+            if (!upiRole) {
+                upiRole = await message.guild.roles.create({ name: 'UPI Eligible', color: '#3498db', reason: 'Role for Exclusive UPI P2P Access' });
+            }
+
+            await targetUser.roles.add(upiRole);
+            
+            const successEmbed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('🎥 UPI Access Granted')
+                .setDescription(`Successfully granted **UPI KYC Access** to ${targetUser.toString()}.\nThey can now see the exclusive UPI channel.`);
+                
+            await message.reply({ embeds: [successEmbed] });
+        } catch (err) {
+            console.error("Grant UPI Error:", err);
+            await message.reply("❌ Error granting access. Please check bot permissions.");
+        }
+    }
+
+    // 2. COMMAND: REVOKE UPI KYC ACCESS
+    if (command.startsWith('!revokeupi')) {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        const targetUser = message.mentions.members.first();
+        if (!targetUser) return message.reply({ content: '❌ Please mention a user. Example: `!revokeupi @username`', ephemeral: true });
+
+        try {
+            const upiRole = message.guild.roles.cache.find(r => r.name === 'UPI Eligible');
+            if (upiRole && targetUser.roles.cache.has(upiRole.id)) {
+                await targetUser.roles.remove(upiRole);
+                
+                const revokeEmbed = new EmbedBuilder()
+                    .setColor('#e74c3c')
+                    .setTitle('🔒 UPI Access Revoked')
+                    .setDescription(`Successfully removed **UPI KYC Access** from ${targetUser.toString()}.`);
+                    
+                await message.reply({ embeds: [revokeEmbed] });
+            } else {
+                await message.reply({ content: `⚠️ ${targetUser.user.username} doesn't have the UPI Eligible role.`, ephemeral: true });
+            }
+        } catch (err) {
+            console.error("Revoke UPI Error:", err);
+            await message.reply("❌ Error revoking access.");
+        }
+    }
+
+    // 3. COMMAND: SETUP UPI KYC DESK (Fixed interaction crash bug)
+    if (command === '!setupupidesk') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        
+        try {
+            const upiEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('🎥 Exclusive UPI Video KYC')
+                .setDescription(`Welcome to the Exclusive UPI Verification Desk!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Click the button below to create your private secure room. Upload the video and images directly in that chat. Our Admin will review them and save them securely to the Firebase Cloud Vault.*`);
+            
+            const upiBtn = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('start_upi_video_kyc')
+                    .setLabel('Start UPI Video KYC')
+                    .setStyle(ButtonStyle.Primary)
+                    .setEmoji('🎥')
+            );
+
+            await message.channel.send({ embeds: [upiEmbed], components: [upiBtn] });
+            await message.delete().catch(()=>{});
+        } catch (err) {
+            console.error("Error setting up UPI desk:", err);
+        }
+    }
+
     if (command === '!setupdashboard') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
@@ -254,10 +313,7 @@ client.on('messageCreate', async message => {
     if (command === '!setupleaderboard') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
-            // Pehle direct ID se channel dhoondho
             let leaderboardChannel = message.guild.channels.cache.get('1506661433335746560');
-            
-            // Agar ID se nahi milta (ya delete ho gaya ho), tab naye naam se banayega
             if (!leaderboardChannel) {
                 leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-recap' || c.name === 'weekly-recap');
                 if (!leaderboardChannel) {
@@ -288,7 +344,6 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // 🔥 SIRF Verified role ko lock karenge
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
             if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false });
 
@@ -300,7 +355,6 @@ client.on('messageCreate', async message => {
                 .setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
 
             await message.delete().catch(()=>{});
-            // 🔥 UPDATE: Yahan @everyone tag add kiya gaya hai
             await message.channel.send({ content: '@everyone 🔔 **Notice for all Verified Members**', embeds: [lockEmbed] });
         } catch (err) {
             console.error("Error locking chat:", err);
@@ -313,7 +367,6 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
         try {
-            // 🔥 SIRF Verified role ko wapas Allow karenge
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
             if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null });
 
@@ -324,13 +377,11 @@ client.on('messageCreate', async message => {
                 .setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
 
             await message.delete().catch(()=>{});
-            // 🔥 UPDATE: Yahan @everyone tag add kiya gaya hai
             await message.channel.send({ content: '@everyone', embeds: [unlockEmbed] });
         } catch (err) {
             console.error("Error unlocking chat:", err);
         }
     }
-
 });
 
 // ==========================================
@@ -386,7 +437,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.channel.send({ content: '@everyone', embeds: [flashEmbed] });
     }
 
-    // 🔥 POLL SYSTEM: Modal Open Karna
     if (interaction.isButton() && interaction.customId === 'open_poll_modal') {
         const modal = new ModalBuilder()
             .setCustomId('submit_poll_modal')
@@ -404,7 +454,6 @@ client.on('interactionCreate', async interaction => {
         await interaction.message.delete().catch(() => {});
     }
 
-    // 🔥 POLL SYSTEM: Modal Submit Hone Par 'p2p-chat' me Poll Generate Karna
     if (interaction.isModalSubmit() && interaction.customId === 'submit_poll_modal') {
         const question = interaction.fields.getTextInputValue('poll_q');
         const opt1 = interaction.fields.getTextInputValue('poll_o1');
@@ -429,20 +478,15 @@ client.on('interactionCreate', async interaction => {
             .setFooter({ text: 'Cast your vote by reacting below! 👇' })
             .setTimestamp();
 
-        // 🔥 Specific 'p2p-chat' channel ko dhoondhna
-        let pollChannel = interaction.guild.channels.cache.find(c => c.name === '💬・p2p-chat' || c.name === '💬・p2p-chat');
+        let pollChannel = interaction.guild.channels.cache.find(c => c.name === '💬・p2p-chat');
 
         if (!pollChannel) {
-            return interaction.reply({ content: '❌ Error: `💬・p2p-chat` naam ka channel nahi mila! Kripya pehle wo channel banayein.', ephemeral: true });
+            return interaction.reply({ content: '❌ Error: `💬・p2p-chat` naam ka channel nahi mila!', ephemeral: true });
         }
 
-        // Admin ko success message dikhana
         await interaction.reply({ content: `✅ Poll successfully sent to ${pollChannel}!`, ephemeral: true });
-        
-        // Specific channel me Poll Send Karna
         const pollMessage = await pollChannel.send({ content: '@everyone', embeds: [pollEmbed] });
         
-        // Bot automatically un options ke emojis par react karega
         for (let i = 0; i < options.length; i++) {
             await pollMessage.react(emojis[i]);
         }
@@ -483,11 +527,8 @@ client.on('interactionCreate', async interaction => {
         setTimeout(() => interaction.channel.delete().catch(()=> {}), 5000);
     }
     
-    // --- 🛡️ 1. AUTO-KYC BASIC LOGIC ---
     if (interaction.isButton() && interaction.customId === 'start_kyc_form') {
         const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
-        
-        // 🔥 User Verification Check: Agar data pehle se hai toh form open mat karo
         if (existingKyc.exists && existingKyc.data().basicVerified) {
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (basicRole && !interaction.member.roles.cache.has(basicRole.id)) {
@@ -497,31 +538,10 @@ client.on('interactionCreate', async interaction => {
         }
 
         const kycModal = new ModalBuilder().setCustomId('submit_kyc_modal').setTitle('🛡️ Instant Verification Form');
-        
         kycModal.addComponents(
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId('kyc_name')
-                    .setLabel('Full Name / Alias')
-                    .setStyle(TextInputStyle.Short)
-                    .setRequired(true)
-            ), 
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId('kyc_discord_contact')
-                    .setLabel('Discord ID / Name')
-                    .setStyle(TextInputStyle.Short)
-                    .setValue(interaction.user.username) // 🔥 NAYA UPDATE: Ye line apne aap Discord username utha legi
-                    .setRequired(true)
-            ), 
-            new ActionRowBuilder().addComponents(
-                new TextInputBuilder()
-                    .setCustomId('welcome_message')
-                    .setLabel('🙏 Welcome To Professor Network')
-                    .setStyle(TextInputStyle.Paragraph)
-                    .setValue('💎 Trusted P2P Platform For Usdt Buy/Sell')
-                    .setRequired(false)
-            )
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_name').setLabel('Full Name / Alias').setStyle(TextInputStyle.Short).setRequired(true)), 
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('kyc_discord_contact').setLabel('Discord ID / Name').setStyle(TextInputStyle.Short).setValue(interaction.user.username).setRequired(true)), 
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('welcome_message').setLabel('🙏 Welcome To Professor Network').setStyle(TextInputStyle.Paragraph).setValue('💎 Trusted P2P Platform For Usdt Buy/Sell').setRequired(false))
         );
         await interaction.showModal(kycModal);
     }
@@ -530,19 +550,16 @@ client.on('interactionCreate', async interaction => {
         await interaction.deferReply({ ephemeral: true });
         try {
             const existingKyc = await db.collection('users_kyc').doc(interaction.user.id).get();
-            // Agar network lag ki wajah se 2 baar form submit ho jaye
             if (existingKyc.exists && existingKyc.data().basicVerified) {
                 return interaction.editReply({ content: `✅ **You Are Already Verified!**` });
             }
             
-            // Database me basicVerified flag true set kar rahe hain
             await db.collection('users_kyc').doc(interaction.user.id).set({ discordId: interaction.user.id, username: interaction.user.username, name: interaction.fields.getTextInputValue('kyc_name'), discordContact: interaction.fields.getTextInputValue('kyc_discord_contact'), paymentInfo: 'N/A', basicVerified: true, createdAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
             
             let basicRole = interaction.guild.roles.cache.find(r => r.name === 'Verified');
             if (!basicRole) basicRole = await interaction.guild.roles.create({ name: 'Verified', color: '#3498db' });
             await interaction.member.roles.add(basicRole).catch(console.error);
             globalLastUpdate = Date.now(); 
-            
             await interaction.editReply({ content: '✅ **Registration Successful!** You have received the **Verified** role.\n*(Note: To get the **Vault Verified** tag, Select "P2P With KYC" at the Exchange Desk).*' });
         } catch (error) { 
             console.error("KYC Error:", error); 
@@ -550,7 +567,6 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- 🔥 P2P TRADE FLOW ---
     if (interaction.isButton() && interaction.customId === 'start_p2p_trade') {
         const modeEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Mode Selection', iconURL: client.user.displayAvatarURL() }).setDescription('Please choose your trade mode:\n\n🛡️ **P2P With KYC:** $0 Fee (Requires Vault Verified tag)\n💸 **P2P Without KYC:** $3 Fee (Instant, No ID required)');
         const modeButtons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_with_kyc').setLabel('🛡️ P2P With KYC').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('start_p2p_without_kyc').setLabel('💸 P2P Without KYC').setStyle(ButtonStyle.Secondary));
@@ -561,9 +577,7 @@ client.on('interactionCreate', async interaction => {
         const isVerifiedRoute = interaction.customId === 'start_p2p_with_kyc';
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
 
-       
-
-       if (isVerifiedRoute && !hasRole) {
+        if (isVerifiedRoute && !hasRole) {
             return interaction.reply({ 
                 content: '❌ **Access Denied:** You need the **Vault Verified** role to use the $0 Fee route.\n\n👉 Please visit the designated <#1511636240729116773> channel and click the button to get your identity verified first.', 
                 ephemeral: true 
@@ -575,14 +589,156 @@ client.on('interactionCreate', async interaction => {
         await interaction.update({ content: '', embeds: [step1Embed], components: [new ActionRowBuilder().addComponents(typeDropdown)] });
     }
 
-    // --- 🔥 NEW: ADVANCED KYC ROOM CREATION BUTTON ---
+    // ==========================================
+    // 🔥 STEP 2: UPI VIDEO KYC ROOM CREATION 
+    // ==========================================
+    if (interaction.isButton() && interaction.customId === 'start_upi_video_kyc') {
+        try {
+            const existingChannel = interaction.guild.channels.cache.find(c => c.name.startsWith('upi-') && c.topic === interaction.user.id);
+            if (existingChannel) {
+                return interaction.reply({ content: `❌ **Action Denied:** Your UPI Video KYC is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
+            }
+        } catch (err) { console.error("Spam Check Error:", err); }
+
+        await interaction.reply({ content: '⏳ Creating your secure UPI Video KYC room...', ephemeral: true });
+
+        try {
+            let kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
+            if (!kycCategory) kycCategory = await interaction.guild.channels.create({ name: '📢 KYC REQUESTS', type: ChannelType.GuildCategory });
+
+            const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
+            const channelPermissions = [
+                { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, 
+                { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles] }
+            ];
+            if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
+
+            const randomKycId = Math.random().toString(36).substring(2, 8);
+            const upiKycChannel = await interaction.guild.channels.create({ 
+                name: `upi-${randomKycId}`, 
+                type: ChannelType.GuildText, 
+                parent: kycCategory.id, 
+                permissionOverwrites: channelPermissions,
+                topic: interaction.user.id 
+            });
+
+            const upiEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setAuthor({ name: '🎥 VIP UPI Video Verification', iconURL: client.user.displayAvatarURL() })
+                .setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Upload the video and images directly in this chat. Our Admin will review them and save them securely to the Firebase Cloud Vault.*`)
+                .setFooter({ text: 'Professor Network - Secure UPI Terminal' });            
+
+            const upiAdminButtons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId(`approve_upikyc_${interaction.user.id}`).setLabel('✅ Approve UPI KYC').setStyle(ButtonStyle.Success), 
+                new ButtonBuilder().setCustomId(`reject_upikyc_${interaction.user.id}`).setLabel('❌ Reject').setStyle(ButtonStyle.Danger)
+            );
+
+            await upiKycChannel.send({ content: `🔔 Admin Notification: VIP UPI Video KYC Pending for ${interaction.user.toString()}`, embeds: [upiEmbed], components: [upiAdminButtons] });
+            await interaction.editReply({ content: `✅ VIP Room created! Please head over to ${upiKycChannel} to submit your video and documents.` });
+        } catch (error) { 
+            console.error("UPI KYC Room Creation Error:", error); 
+            await interaction.editReply({ content: '❌ Room create karne mein error aaya. Permissions check karein.' }); 
+        }
+    }
+
+    // ==========================================
+    // 🔥 STEP 3: APPROVE / REJECT & SAVE TO FIREBASE STORAGE
+    // ==========================================
+    if (interaction.isButton() && interaction.customId.startsWith('approve_upikyc_')) {
+        const userId = interaction.customId.replace('approve_upikyc_', '');
+        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
+        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+        
+        if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
+
+        await interaction.deferUpdate(); 
+        await interaction.followUp({ content: '⏳ Downloading media and securely uploading to Firebase Storage... Please wait.', ephemeral: true });
+        
+        try {
+            const messages = await interaction.channel.messages.fetch({ limit: 50 });
+            let attachments = [];
+            messages.forEach(msg => { 
+                msg.attachments.forEach(att => attachments.push(att)); 
+            });
+
+            if (attachments.length === 0) {
+                return interaction.followUp({ content: '⚠️ Error: No video or photo found from the user! Please ask them to upload before approving.', ephemeral: true });
+            }
+
+            let uploadedUrls = [];
+
+            for (const att of attachments) {
+                const response = await axios.get(att.url, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data);
+                
+                const filePath = `upi_video_kyc/${userId}/${Date.now()}_${att.name}`;
+                const file = bucket.file(filePath); 
+                
+                await file.save(buffer, {
+                    contentType: att.contentType,
+                    metadata: { cacheControl: 'public, max-age=31536000' }
+                });
+                
+                const [downloadUrl] = await file.getSignedUrl({
+                    action: 'read',
+                    expires: '01-01-2099' 
+                });
+                
+                uploadedUrls.push(downloadUrl);
+            }
+
+            await db.collection('users_kyc').doc(userId).set({ 
+                upiVerified: true,
+                upiMediaUrls: uploadedUrls, 
+                upiApprovedBy: interaction.user.username,
+                upiUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            const targetMember = await interaction.guild.members.fetch(userId).catch(()=>null);
+            if(targetMember) {
+                 let verifiedRole = interaction.guild.roles.cache.find(r => r.name === 'UPI Verified');
+                 if (!verifiedRole) verifiedRole = await interaction.guild.roles.create({ name: 'UPI Verified', color: '#9b59b6' }); 
+                 
+                 await targetMember.roles.add(verifiedRole);
+                 await targetMember.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Verification Successful').setDescription('Your UPI Video KYC has been approved!\n\nYou can now use UPI payment methods for trading in Professor Network.')] }).catch(()=>{});
+            }
+
+            await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ UPI KYC Approved')], components: [] });
+            await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! Files saved to Firebase securely. Room closing in 5 seconds...`, ephemeral: true });
+            
+            setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
+
+        } catch (error) {
+            console.error("Firebase Upload Error:", error);
+            await interaction.followUp({ content: '❌ Error: Failed to upload files to Firebase. Please check the bot console.', ephemeral: true });
+        }
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('reject_upikyc_')) {
+        const userId = interaction.customId.replace('reject_upikyc_', '');
+        const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
+        const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
+        
+        if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
+
+        await interaction.deferUpdate();
+        await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#e74c3c').setTitle('❌ UPI KYC Rejected')], components: [] });
+        await interaction.followUp({ content: `❌ UPI KYC Rejected for <@${userId}>. Room will close in 5 seconds.`, ephemeral: true });
+        
+        const targetMember = await interaction.guild.members.fetch(userId).catch(()=>null);
+        if(targetMember) {
+             await targetMember.send({ embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('❌ UPI Verification Failed').setDescription('Your UPI Video KYC has been rejected by Admin.\n\nPlease ensure your video and IDs are clear and try again.')] }).catch(()=>{});
+        }
+
+        setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
+    }
+      
     if (interaction.isButton() && interaction.customId === 'start_advanced_kyc') {
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
         if (hasRole) {
             return interaction.reply({ content: '✅ **You are already Vault Verified!** No need to do this again.', ephemeral: true });
         }
 
-        // Spam protection check
         try {
             const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
             const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
@@ -605,17 +761,16 @@ client.on('interactionCreate', async interaction => {
             ];
             if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
 
-        // 🔥 NAYA FEATURE: Anonymous KYC Names
             const randomKycId = Math.random().toString(36).substring(2, 8);
             const kycChannel = await interaction.guild.channels.create({ name: `kyc-${randomKycId}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
 
-            const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            const kycAdminButtons = new ActionRowBuilder().addComponents(
+            const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            
+            const kycAdminButtons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`approve_kyc_${interaction.user.id}`).setLabel('✅ Approve KYC').setStyle(ButtonStyle.Success), 
                 new ButtonBuilder().setCustomId(`reject_kyc_${interaction.user.id}`).setLabel('❌ Reject KYC').setStyle(ButtonStyle.Danger)
             );
 
             await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
-            
             await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.` });
         } catch (error) { 
             console.error("KYC Room Creation Error:", error); 
@@ -636,15 +791,12 @@ client.on('interactionCreate', async interaction => {
         let attachments = [];
         messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
 
-        // 🔥 NAYA FIX: User ki 1 se zyada (max 3) photos ko Firebase pe upload aur save karna
         let uploadedPhotos = [];
         for (let i = 0; i < Math.min(attachments.length, 3); i++) {
             let url = await uploadImageToFirebase(attachments[i], userId, `Doc_${i+1}`);
             if (url) uploadedPhotos.push(url);
         }
 
-        
-        // 🔥 FIX: Ab direct .set() use kar rahe hain taaki DB me direct data bane
         await db.collection('users_kyc').doc(userId).set({ photos: uploadedPhotos }, { merge: true }).catch(err => console.error(err));
         await approveUserKYC(userId, interaction.guild);
         
@@ -670,9 +822,6 @@ client.on('interactionCreate', async interaction => {
         if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
 
         await interaction.deferUpdate();
-        // 🔥 FIX: Reject hone par bhi DB me kuch save nahi karenge, DB clean rahega.
-// await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' }).catch(()=>{});
-        
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#e74c3c').setTitle('❌ KYC Rejected')], components: [] });
         await interaction.followUp({ content: `❌ KYC Rejected for <@${userId}>. This room will close in 5 seconds.`, ephemeral: true });
         if (interaction.channel.name.startsWith('kyc-') && interaction.channel.name !== 'kyc-requests') setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
@@ -717,22 +866,18 @@ client.on('interactionCreate', async interaction => {
             const components = [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)];
             const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true }, { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true });
 
-          if (userState.type === 'Sell') {
+            if (userState.type === 'Sell') {
                 const step3Dropdown = new StringSelectMenuBuilder()
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
                         { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 1 Hour', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
                         { label: 'CDM (Cash Deposit)', description: 'Estimated Time 1 Hour to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
-                        // 🔥 NAYA FIX: CCW wapas add kar diya naye naam ke sath
-                        
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
                 if (userState.step3) {
                     components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success)));
-                    
-                    // Yahan display mein bhi CCW ka naya naam dikhega
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                         .setColor('#2ecc71')
                         .setDescription('Click the **Next** button below to securely enter your bank details.')
@@ -774,7 +919,7 @@ client.on('interactionCreate', async interaction => {
                 { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙' },
                 { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙' }
             ]);     
-           } else {
+        } else {
             step2Dropdown.setPlaceholder('Choose Payment Method').addOptions([
                 { label: 'CCW (ICICI, SBI)', value: 'CCW', emoji: '💳' }, 
                 { label: 'Cash Deposit (CDM)', value: 'CDM', emoji: '🏧' }
@@ -793,12 +938,13 @@ client.on('interactionCreate', async interaction => {
             if (userState.step3 === 'IMPS') {
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setStyle(TextInputStyle.Short).setRequired(true)));
             } else if (userState.step3 === 'CDM') {
-p2pModal.addComponents(
-    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_bank_name').setLabel('Bank Name (e.g. SBI, ICICI)').setStyle(TextInputStyle.Short).setRequired(true)),
-    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), 
-    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), 
-    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_mobile_number').setLabel('Mobile Number').setStyle(TextInputStyle.Short).setRequired(true))
-);            } else if (userState.step3 === 'CCW') {
+                p2pModal.addComponents(
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_bank_name').setLabel('Bank Name (e.g. SBI, ICICI)').setStyle(TextInputStyle.Short).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), 
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_mobile_number').setLabel('Mobile Number').setStyle(TextInputStyle.Short).setRequired(true))
+                );            
+            } else if (userState.step3 === 'CCW') {
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Phone Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)));
             }
         } else {
@@ -820,7 +966,6 @@ p2pModal.addComponents(
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
 
-        // 🔥 FIX 1: 'reply' ki jagah 'update' use kiya, taaki purana form wala message replace ho jaye
         await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
         let openTicketsCategory = interaction.guild.channels.cache.find(c => (c.name === '🤖 OPEN TICKETS' || c.name === 'OPEN TICKETS') && c.type === ChannelType.GuildCategory);
@@ -833,10 +978,9 @@ p2pModal.addComponents(
         if (verifiedRole) channelPermissions.push({ id: verifiedRole.id, deny: [PermissionsBitField.Flags.ViewChannel] });
         if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages] });
 
-       // 🔥 NAYA FEATURE: Anonymous Ticket Names to prevent Vencord Scams
         const randomId = Math.random().toString(36).substring(2, 8);
         const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${randomId}`, type: ChannelType.GuildText, parent: openTicketsCategory.id, permissionOverwrites: channelPermissions });
-        // 🔥 NAYA FEATURE: Auto Wallet Address & QR Code System
+        
         const walletData = {
             'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' },
             'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' },
@@ -851,24 +995,18 @@ p2pModal.addComponents(
         let qrImageUrl = null;
 
         if (userState.type === 'Sell') {
-            // Agar aapne upar apna address daala hai toh wo aayega, warna "Ask Admin..." likha aayega
             if (walletData[userState.step2] && !walletData[userState.step2].address.includes('YAHAN_APNA')) {
                 easyCopyText = walletData[userState.step2].address;
             } else {
-                // 🔥 SMART UPDATE: Ye apne aap network ka naam le lega (jaise TRC20, POLYGON, ya USDC ERC20)
                 let networkName = userState.step2.replace('_', ' '); 
                 easyCopyText = `Ask Admin for ${networkName} Wallet Address`;
             }
-            
-            // Image link check karega
             if (walletData[userState.step2] && !walletData[userState.step2].qrImage.includes('Aapka_') && !walletData[userState.step2].qrImage.includes('SAHI_IMAGE_LINK')) {
                 qrImageUrl = walletData[userState.step2].qrImage;
             }
         } else {
             let paymentDetails = "Waiting for Admin to provide bank details.";
-            if (userState.step2 === 'UPI[CCW]') paymentDetails = "Talk to Admin for Payment Details";
-            if (userState.step2 === 'CCW') paymentDetails = "Talk to Admin for Payment Details";
-            if (userState.step2 === 'CDM') paymentDetails = "Talk to Admin for Payment Details";
+            if (userState.step2 === 'UPI[CCW]' || userState.step2 === 'CCW' || userState.step2 === 'CDM') paymentDetails = "Talk to Admin for Payment Details";
             easyCopyText = paymentDetails; 
         }
 
@@ -895,25 +1033,19 @@ p2pModal.addComponents(
         const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
         const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
 
-        // 1. Sabse pehle Main Ticket aur Payment Details bheje jayenge
         await ticketChannel.send({ content: palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`, embeds: [ticketEmbed], components: [actionButtonRow] });
         await ticketChannel.send({ embeds: [paymentEmbed] });
 
-        // 2. YAHAN AAYEGA TEXT: "Ask Admin..." bilkul apni purani jagah par
         if (userState.type === 'Sell' && !easyCopyText.includes("Ask Admin") && !easyCopyText.includes("Waiting")) {
-             // Agar aapne address dala hai toh blue code format (copy karne ke liye) aayega
              await ticketChannel.send(`\`${easyCopyText}\``);
         } else {
-             // Agar address nahi dala toh normal text aayega
              await ticketChannel.send(`${easyCopyText}`);
         }
         await ticketChannel.send('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
 
-        // 3. Admin Access wala button
         const revealButtonsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
         await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
         
-        // 4. Sabse LAST mein QR Code Image aayegi (Agar aapne link set kiya hoga)
         if (userState.type === 'Sell' && qrImageUrl) {
             const qrEmbed = new EmbedBuilder()
                 .setColor('#f1c40f')
@@ -965,16 +1097,12 @@ p2pModal.addComponents(
 
             await interaction.reply({ content: `🔒 Ticket is being marked as **${finalStatus}** in 5 seconds...` });
 
-            // 🔥 Send DM Receipt & Separate Feedback Message to the user
             const member = await interaction.guild.members.fetch(ticketData.discordUserId).catch(() => null);
             if (member) {
                 if (isSuccess) {
-                    
-                    // 🔥 NAYA AUTOMATION: Ekdum silently transaction done role dena (No logs, no errors)
                     let feedRole = interaction.guild.roles.cache.find(r => r.name === 'transaction done');
                     if (feedRole) await member.roles.add(feedRole).catch(() => {});
 
-                    // MESSAGE 1: Transaction Receipt 🟢
                     const receiptEmbed = new EmbedBuilder()
                         .setColor('#2ecc71')
                         .setTitle('✅ Transaction Completed')
@@ -982,15 +1110,11 @@ p2pModal.addComponents(
                         .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
 
                     const receiptBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setLabel('Return to Exchange Desk')
-                            .setStyle(ButtonStyle.Link)
-                            .setURL('https://discord.gg/2wvPqE5e4Z')
+                        new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
                     );
                     
                     await member.send({ embeds: [receiptEmbed], components: [receiptBtn] }).catch(()=>{});
 
-                    // MESSAGE 2: Feedback Request ⭐ (Sent immediately after)
                     const feedbackEmbed = new EmbedBuilder()
                         .setColor('#f1c40f')
                         .setTitle('⭐ Rate Your Experience')
@@ -998,17 +1122,11 @@ p2pModal.addComponents(
                         .setFooter({ text: 'Professor Network • Reviews' });
 
                     const feedbackBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setLabel('⭐ Give Feedback Here')
-                            .setStyle(ButtonStyle.Link)
-                            .setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
+                        new ButtonBuilder().setLabel('⭐ Give Feedback Here').setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
                     );
 
                     await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
-                   
-
                 } else {
-                    // MESSAGE: Cancelled Transaction 🔴
                     const cancelEmbed = new EmbedBuilder()
                         .setColor('#e74c3c')
                         .setTitle('❌ Transaction Cancelled')
@@ -1016,10 +1134,7 @@ p2pModal.addComponents(
                         .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
 
                     const cancelBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder()
-                            .setLabel('Return to Exchange Desk')
-                            .setStyle(ButtonStyle.Link)
-                            .setURL('https://discord.gg/2wvPqE5e4Z')
+                        new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
                     );
 
                     await member.send({ embeds: [cancelEmbed], components: [cancelBtn] }).catch(()=>{});
@@ -1039,11 +1154,10 @@ p2pModal.addComponents(
             const vaultEmbed = new EmbedBuilder().setColor(isSuccess ? '#f1c40f' : '#e74c3c').setTitle(`🏦 Vault Record: Transaction ${finalStatus}`).addFields({ name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, { name: 'Status', value: `\`${finalStatus}\``, inline: true }).setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
             await logChannel.send({ embeds: [vaultEmbed] });
             
-           if (isSuccess) {
+            if (isSuccess) {
                 let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
                 if (!publicLogChannel) publicLogChannel = await interaction.guild.channels.create({ name: '✅・completed-transactions', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }] });
                 
-                // 🔥 NAYA UPDATE: "Trader" aur "Method" lines ko yahan description se hata diya gaya hai
                 await publicLogChannel.send({ 
                     embeds: [
                         new EmbedBuilder()
@@ -1072,17 +1186,17 @@ p2pModal.addComponents(
         } catch (error) { console.error("Error Closing Ticket: ", error); }
     }
 });
+
 async function updateWeeklyLeaderboard(guild) {
     if (!guild) return;
     try {
-        // 🔥 UPDATE YAHAN BHI KIYA HAI: Direct ID se fetch ya naye naam se fetch karega
         const channel = guild.channels.cache.get('1506661433335746560') || guild.channels.cache.find(c => c.name === '📈・weekly-recap' || c.name.includes('weekly-recap'));
         if (!channel) return; 
 
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
         const now = new Date();
         const userVolumes = {};
-        // ... (Baaki poora function same rahega usme koi change mat karna)
+        
         snapshot.forEach(doc => {
             const data = doc.data();
             if (data.closedAt && typeof data.closedAt.toDate === 'function') {
@@ -1160,16 +1274,15 @@ async function approveUserKYC(userId, guild) {
     try {
         const member = await guild.members.fetch(userId);
         await member.roles.add(verifiedRole);
-        // 🔥 FIX: Approved hone par hi poora data seedha DB me save hoga
-            await db.collection('users_kyc').doc(userId).set({ 
-                discordId: userId,
-                username: member.user.username,
-                status: 'Approved',
-                kycType: 'Advanced (Vault Verified)',
-                updatedAt: admin.firestore.FieldValue.serverTimestamp()
-            }, { merge: true }).catch(()=>{});
-            
-            globalLastUpdate = Date.now();
+        await db.collection('users_kyc').doc(userId).set({ 
+            discordId: userId,
+            username: member.user.username,
+            status: 'Approved',
+            kycType: 'Advanced (Vault Verified)',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(()=>{});
+        
+        globalLastUpdate = Date.now();
         await member.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 Professor Network').setDescription('Your KYC verification has been successfully approved.\n\nYou have now received the **🏦 Vault Verified** role, unlocking:\n• $0 transaction fee  \n• Faster processing  \n• Higher trust status inside the network   \n**Please Visit <#1503666259244482642> To Start Trading **  \n\nWelcome to the verified side of the network. ⚡')] }).catch(() => {});
     } catch (e) {}
 }
@@ -1215,13 +1328,10 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
-
-        // 📊 1. Excel Workbook & Sheet Setup
         const workbook = new excelJS.Workbook();
         workbook.creator = 'Professor Network';
         const worksheet = workbook.addWorksheet('Vault Ledger');
 
-        // 🎨 2. Columns Setup (Width & Names)
         worksheet.columns = [
             { header: 'DATE', key: 'date', width: 25 },
             { header: 'TRADE', key: 'trade', width: 12 },
@@ -1232,15 +1342,12 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
             { header: 'KYC STATUS', key: 'kyc', width: 18 }
         ];
 
-        // 🖌️ 3. Header Styling (Premium Look)
         worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2D31' } }; // Dark Grey Background
+        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2D31' } }; 
         worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
-        // 📝 4. Data Add Karna
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
-            
             const dateStr = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString('en-IN') : 'N/A';
             const tradeType = d.tradeType || 'N/A';
             const discordName = d.username || 'N/A';
@@ -1261,23 +1368,20 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
                 details: detailsStr,
                 kyc: kycStatus
             });
-
-            // Data rows ko thoda clean dikhane ke liye align karna
             row.alignment = { vertical: 'middle' };
         });
 
-        // 🚀 5. Excel File Response send karna
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename="The_Vault_Ledger_Report.xlsx"');
 
         await workbook.xlsx.write(res);
         res.end();
-
     } catch(e) { 
         console.error("Excel Export Error:", e);
         res.send("Export Error: " + e.message); 
     }
 });
+
 const GUILD_ID = '1450915791338737757';
 
 app.post('/api/kyc-approve', requireLogin, async (req, res) => {
@@ -1302,7 +1406,6 @@ app.post('/api/kyc-reject', requireLogin, async (req, res) => {
 app.post('/api/kyc-delete', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        // 🔥 STEP 1: Firebase Storage se user ki photos delete karna
         try {
             const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` });
             await Promise.all(files.map(file => file.delete()));
@@ -1311,25 +1414,18 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
             console.error("Storage delete error:", storageErr);
         }
 
-        // 🔥 STEP 2: Discord Server se "Vault Verified" Tag (Role) remove karna
         try {
-            // GUILD_ID humne file me pehle hi define kiya hua hai
             const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
             if (guild) {
                 const member = await guild.members.fetch(userId).catch(() => null);
                 if (member) {
                     const verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
-                    
-                    // Agar user ke paas role hai, toh usko remove karo
                     if (verifiedRole && member.roles.cache.has(verifiedRole.id)) {
                         await member.roles.remove(verifiedRole);
-                        console.log(`✅ Removed 'Vault Verified' role from ${member.user.username}`);
-                        
-                        // User ko alert bhejo (Optional but recommended)
                         const revokeEmbed = new EmbedBuilder()
                             .setColor('#e74c3c')
                             .setTitle('⚠️ KYC Status Revoked')
-                            .setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.\n\nYou will no longer have access to $0 fee trades. If you believe this is a mistake, please open a support ticket.')
+                            .setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.')
                             .setFooter({ text: 'Professor Network Security' });
                             
                         await member.send({ embeds: [revokeEmbed] }).catch(() => {});
@@ -1340,14 +1436,10 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
             console.error("Discord Role Remove Error:", discordErr);
         }
 
-        // 🔥 STEP 3: Firestore Database se user ka KYC record delete karna
         await db.collection('users_kyc').doc(userId).delete();
-        
         globalLastUpdate = Date.now(); 
         res.json({ success: true });
-    } catch (e) { 
-        res.json({ success: false, error: e.message }); 
-    }
+    } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/update-price', requireLogin, async (req, res) => {
@@ -1356,7 +1448,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
         res.send(`
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
-            <body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK', customClass: { popup: 'border border-slate-700 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)]' }}).then(() => { window.location.href = "/"; });</script></body>
+            <body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK'}).then(() => { window.location.href = "/"; });</script></body>
         `);
     };
 
@@ -1368,8 +1460,8 @@ app.post('/update-price', requireLogin, async (req, res) => {
 
         const priceEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 USDT Market Price Update').setDescription('**Professor Network** has updated the real-time P2P exchange rates.').addFields({ name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
-     await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });       
-      sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
+        await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });       
+        sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
     } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
@@ -1384,9 +1476,11 @@ app.get('/', requireLogin, async (req, res) => {
         
         const allKycSnap = await db.collection('users_kyc').get();
         const allKycUsers = [];
+        const upiKycUsers = []; // 🔥 NAYI LINE: UPI Users array
         allKycSnap.forEach(doc => {
             const data = doc.data();
             if (data.kycType === 'Advanced (Vault Verified)') allKycUsers.push({ id: doc.id, ...data });
+            if (data.upiVerified === true) upiKycUsers.push({ id: doc.id, ...data }); // 🔥 NAYI LINE: UPI Data fetch
         });
 
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
@@ -1432,33 +1526,29 @@ app.get('/', requireLogin, async (req, res) => {
         
         const topTraders = Object.keys(userVolumes).map(username => ({ username, totalVolume: userVolumes[username] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
 
-       res.render('dashboard', { 
+        res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders, pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
-            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), allLogs: allCompleted, monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers
-        });
+            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), allLogs: allCompleted, monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers, upiKycUsers
+        }); // 🔥 upiKycUsers add kiya end mein
     } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
-// ==========================================
+
 // ==========================================
 // 🔥 ADVANCED SERVER STATS (THE VAULT STYLE) 🔥
 // ==========================================
+const WELCOME_CHANNEL_ID = '1509523189389332480'; 
 
-const WELCOME_CHANNEL_ID = '1509523189389332480'; // Aapka Welcome Text Channel ID
-
-// 🔴 NEECHE APNE NAYE 3 VOICE CHANNELS KI IDs DAALEIN:
-const STATS_DATE_ID = '1509533726902849586';      // 📅 Date wala voice channel
-const STATS_TOTAL_ID = '1509533817986089062';     // 🏦 Total Traders wala voice channel
-const STATS_ONLINE_ID = '1509533898949005373';    // 🟢 Active Now wala voice channel
+const STATS_DATE_ID = '1509533726902849586';      
+const STATS_TOTAL_ID = '1509533817986089062';     
+const STATS_ONLINE_ID = '1509533898949005373';    
 
 const updateServerStats = async (guild) => {
     try {
-        // 🔥 FIX 1: 'withPresences: true' add kiya hai taaki live online status fetch ho sake
         await guild.members.fetch({ withPresences: true });
 
-        // 1. Date Update (Vault Style: "Thursday, 28th May")
         const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const day = d.getDate();
         const suffix = ["th", "st", "nd", "rd"][((day % 10 > 3) || (Math.floor(day % 100 / 10) === 1)) ? 0 : day % 10];
@@ -1469,14 +1559,11 @@ const updateServerStats = async (guild) => {
         const dateChannel = guild.channels.cache.get(STATS_DATE_ID);
         if (dateChannel) dateChannel.setName(`📅 | ${todayDate}`).catch(()=>{});
 
-        // 2. Total Traders Update (Vault Theme)
         const totalChannel = guild.channels.cache.get(STATS_TOTAL_ID);
         if (totalChannel) totalChannel.setName(`🏦 | Total Traders: ${guild.memberCount}`).catch(()=>{});
 
-        // 3. Online Members Update (Active Now) - 🔥 FIX 2: 100% ACCURATE LOGIC 🔥
         const onlineCount = guild.presences.cache.filter(presence => {
             const member = guild.members.cache.get(presence.userId);
-            // Bots ko ignore karega aur sirf real online/idle/dnd members ko count karega
             return member && !member.user.bot && ['online', 'idle', 'dnd'].includes(presence.status);
         }).size;
         
@@ -1490,25 +1577,17 @@ const updateServerStats = async (guild) => {
 
 client.on('ready', () => {
     console.log("Vault Style Stats Activated!");
-    
-    // Bot start hote hi pehli baar update karega
     client.guilds.cache.forEach(guild => updateServerStats(guild));
-
-    // Har 10 minute me data refresh karega (Discord Rate Limit se bachne ke liye safe limit)
     setInterval(() => {
         client.guilds.cache.forEach(guild => updateServerStats(guild));
     }, 10 * 60 * 1000); 
 });
 
 client.on('guildMemberAdd', async (member) => {
-    // Welcome message bhejna
     const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
     if (welcomeChannel) {
         welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`);
     }
 });
-
-// ==========================================
-
 
 client.login(process.env.DISCORD_TOKEN);
