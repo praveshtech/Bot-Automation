@@ -33,5 +33,21 @@
         "title": "🪙Please",
         "desc": "**Check Out <#1503666351594799205>**",
         "color": "#e67e22"
+    },
+    ".bpo": {
+        "title": "🙋🏻 Hi There",
+        "desc": "** We Have 2 Options CDM,CCW**",
+        "color": "#e67e22"
+    },
+    ".spo": {
+        "title": "🙋🏻 Hi There",
+        "desc": "**We Have 2 Options IMPS,CDM**",
+        "color": "#e67e22"
     }
+
+
+
+    
 }
+
+
