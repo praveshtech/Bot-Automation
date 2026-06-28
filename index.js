@@ -981,8 +981,16 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
-        let openTicketsCategory = interaction.guild.channels.cache.find(c => (c.name === '🤖 OPEN TICKETS' || c.name === 'OPEN TICKETS') && c.type === ChannelType.GuildCategory);
-        if (!openTicketsCategory) openTicketsCategory = await interaction.guild.channels.create({ name: '🤖 OPEN TICKETS', type: ChannelType.GuildCategory });
+       // ==========================================
+        // 🔥 NAYA LOGIC: Buy aur Sell ke liye alag category
+        // ==========================================
+        const categoryName = userState.type === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
+        
+        let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
+        
+        if (!targetCategory) {
+            targetCategory = await interaction.guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory });
+        }
 
         const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
         const verifiedRole = interaction.guild.roles.cache.find(role => role.name === 'Vault Verified');
@@ -992,7 +1000,13 @@ client.on('interactionCreate', async interaction => {
         if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ManageMessages] });
 
         const randomId = Math.random().toString(36).substring(2, 8);
-        const ticketChannel = await interaction.guild.channels.create({ name: `ticket-${randomId}`, type: ChannelType.GuildText, parent: openTicketsCategory.id, permissionOverwrites: channelPermissions });
+        const ticketChannel = await interaction.guild.channels.create({ 
+            name: `ticket-${randomId}`, 
+            type: ChannelType.GuildText, 
+            parent: targetCategory.id, // 🔥 Ticket ab apni sahi category me jayegi
+            permissionOverwrites: channelPermissions 
+        });
+        // ==========================================
         
         const walletData = {
             'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' },
