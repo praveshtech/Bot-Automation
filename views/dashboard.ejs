@@ -53,9 +53,7 @@
             <button onclick="showTab('price-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-money-bill-trend-up mr-4 text-lg"></i> Price Update</button>
             <button onclick="showTab('settings-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-shield-halved mr-4 text-lg"></i> Settings</button>
             <button onclick="showTab('kyc-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-address-card mr-4 text-lg"></i> User KYC</button>
-            <!-- 🔥 NAYA: UPI Video KYC Button -->
             <button onclick="showTab('upi-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-video mr-4 text-lg"></i> UPI Video KYC</button>
-            
             <button onclick="showTab('wallet-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-wallet mr-4 text-lg"></i> Wallet Addresses</button>
             <button onclick="showTab('logs-view', this)" class="sidebar-link w-full flex items-center px-5 py-3.5 text-sm font-bold uppercase tracking-widest text-slate-400 rounded-lg"><i class="fa-solid fa-list-check mr-4 text-lg"></i> Transaction Logs</button>
         </nav>
@@ -286,7 +284,6 @@
             </div>
         </section>
 
-        <!-- 🔥 NAYA: UPI Video KYC View -->
         <section id="upi-view" class="hidden-section fade-in">
             <div class="glass-panel p-6 border-t-4 border-emerald-500 relative overflow-hidden">
                 <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-6 text-emerald-500 text-glow-green"><i class="fa-solid fa-video mr-2"></i> UPI Video KYC Database</h3>
@@ -320,7 +317,6 @@
                                             <% } else { %>
                                                 <span class="text-slate-600 text-xs italic font-bold">No Media</span>
                                             <% } %>
-                                            <!-- UPI KYC bhi delete ho sake isliye button add kiya hai -->
                                             <button onclick="deleteKyc('<%= user.discordId || user.id %>')" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-500/30 w-8 h-8 rounded-lg flex items-center justify-center transition duration-300 shadow-[0_0_10px_rgba(239,68,68,0.1)]" title="Delete User"><i class="fa-solid fa-trash-can"></i></button>
                                         </div>
                                     </td>
@@ -451,7 +447,6 @@
                    const nonKycTotalFee = nonKycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
                 %>
 
-                <!-- 🔥 NAYA: DATE FILTER & BUY/SELL RATIO DISPLAY 🔥 -->
                 <div class="glass-panel p-4 mb-6 border border-slate-700/50 flex flex-wrap gap-4 items-center justify-between bg-slate-800/20 rounded-xl">
                     <div class="flex flex-wrap gap-4 items-end">
                         <div>
@@ -464,14 +459,26 @@
                         </div>
                         <button onclick="clearLogDates()" class="bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-bold uppercase tracking-widest py-1.5 px-4 rounded-lg transition duration-300 border border-slate-600/50"><i class="fa-solid fa-rotate-right mr-1"></i> Reset</button>
                     </div>
-                    <div class="flex gap-4">
+                    
+                    <div id="kyc-vol-boxes" class="flex gap-4">
                         <div class="bg-green-900/20 border border-green-500/30 px-5 py-2 rounded-lg text-center shadow-inner">
-                            <p class="text-[9px] uppercase tracking-widest text-green-500/70 font-bold mb-0.5"><i class="fa-solid fa-arrow-down mr-1"></i>Total Buy Volume</p>
-                            <p class="text-xl font-black text-green-400 text-glow-green" id="log-buy-vol">$0.00</p>
+                            <p class="text-[9px] uppercase tracking-widest text-green-500/70 font-bold mb-0.5"><i class="fa-solid fa-arrow-down mr-1"></i>KYC Buy Volume</p>
+                            <p class="text-xl font-black text-green-400 text-glow-green" id="log-kyc-buy-vol">$0.00</p>
                         </div>
                         <div class="bg-red-900/20 border border-red-500/30 px-5 py-2 rounded-lg text-center shadow-inner">
-                            <p class="text-[9px] uppercase tracking-widest text-red-500/70 font-bold mb-0.5"><i class="fa-solid fa-arrow-up mr-1"></i>Total Sell Volume</p>
-                            <p class="text-xl font-black text-red-400 text-glow" id="log-sell-vol">$0.00</p>
+                            <p class="text-[9px] uppercase tracking-widest text-red-500/70 font-bold mb-0.5"><i class="fa-solid fa-arrow-up mr-1"></i>KYC Sell Volume</p>
+                            <p class="text-xl font-black text-red-400 text-glow" id="log-kyc-sell-vol">$0.00</p>
+                        </div>
+                    </div>
+
+                    <div id="nonkyc-vol-boxes" class="hidden gap-4">
+                        <div class="bg-green-900/10 border border-green-500/30 px-5 py-2 rounded-lg text-center shadow-inner opacity-90 border-dashed">
+                            <p class="text-[9px] uppercase tracking-widest text-green-500/60 font-bold mb-0.5"><i class="fa-solid fa-arrow-down mr-1"></i>Non-KYC Buy Vol</p>
+                            <p class="text-xl font-black text-green-400/90 text-glow-green" id="log-nonkyc-buy-vol">$0.00</p>
+                        </div>
+                        <div class="bg-red-900/10 border border-red-500/30 px-5 py-2 rounded-lg text-center shadow-inner opacity-90 border-dashed">
+                            <p class="text-[9px] uppercase tracking-widest text-red-500/60 font-bold mb-0.5"><i class="fa-solid fa-arrow-up mr-1"></i>Non-KYC Sell Vol</p>
+                            <p class="text-xl font-black text-red-400/90 text-glow" id="log-nonkyc-sell-vol">$0.00</p>
                         </div>
                     </div>
                 </div>
@@ -751,7 +758,6 @@
             else { sidebar.classList.remove('-translate-x-full'); overlay.classList.add('active'); overlay.classList.remove('opacity-0'); arrowIcon.className = 'fa-solid fa-chevron-left text-lg'; }
         }
 
-        // 🔥 NAYA: Tab switching logic update kiya
         function showTab(tabId, btn) {
             const allTabs = ['dashboard-view', 'settings-view', 'price-view', 'kyc-view', 'upi-view', 'wallet-view', 'logs-view'];
             allTabs.forEach(id => { document.getElementById(id).classList.add('hidden-section'); });
@@ -783,6 +789,10 @@
             document.getElementById('kyc-stats').classList.add('hidden');
             document.getElementById('non-kyc-stats').classList.add('hidden');
             
+            // UI boxes ko switch karne ka logic
+            const kycBoxes = document.getElementById('kyc-vol-boxes');
+            const nonKycBoxes = document.getElementById('nonkyc-vol-boxes');
+            
             document.getElementById('btn-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
             document.getElementById('btn-non-kyc-logs').className = 'text-slate-500 hover:text-slate-300 font-bold uppercase tracking-widest pb-2 px-2 transition duration-300';
             
@@ -791,23 +801,18 @@
             if (tabId === 'kyc-logs') {
                 document.getElementById('btn-kyc-logs').className = 'text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300';
                 document.getElementById('kyc-stats').classList.remove('hidden');
+                
+                // Show KYC Buy/Sell
+                kycBoxes.classList.remove('hidden'); kycBoxes.classList.add('flex');
+                nonKycBoxes.classList.remove('flex'); nonKycBoxes.classList.add('hidden');
             } else {
                 document.getElementById('btn-non-kyc-logs').className = 'text-orange-400 font-black uppercase tracking-widest border-b-2 border-orange-500 pb-2 px-2 transition duration-300';
                 document.getElementById('non-kyc-stats').classList.remove('hidden');
+                
+                // Show Non-KYC Buy/Sell
+                nonKycBoxes.classList.remove('hidden'); nonKycBoxes.classList.add('flex');
+                kycBoxes.classList.remove('flex'); kycBoxes.classList.add('hidden');
             }
-        }
-
-        function openCustomVolModal() {
-            pauseOnModalOpen();
-            const modal = document.getElementById('customVolModal');
-            const content = document.getElementById('customVolModalContent');
-            document.getElementById('cv-start').value = ''; document.getElementById('cv-end').value = ''; document.getElementById('cv-result-box').classList.add('hidden');
-            modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
-        }
-
-        function closeCustomVolModal() {
-            resumeOnModalClose(); const modal = document.getElementById('customVolModal'); const content = document.getElementById('customVolModalContent');
-            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
         // --- 🔥 INSTANT LOGS FILTER & CALCULATE LOGIC 🔥 ---
@@ -838,8 +843,10 @@
 
             let kycTrades = 0, kycVol = 0;
             let nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
-            let totalBuyVol = 0;
-            let totalSellVol = 0;
+            
+            // Separate Variables
+            let kycBuyVol = 0, kycSellVol = 0;
+            let nonKycBuyVol = 0, nonKycSellVol = 0;
 
             document.querySelectorAll('.kyc-row').forEach(row => {
                 const action = row.getAttribute('data-action');
@@ -853,8 +860,8 @@
                     row.style.display = ''; 
                     kycTrades++;
                     kycVol += amount;
-                    if (action === 'Buy') totalBuyVol += amount;
-                    if (action === 'Sell') totalSellVol += amount;
+                    if (action === 'Buy') kycBuyVol += amount;
+                    if (action === 'Sell') kycSellVol += amount;
                 } else {
                     row.style.display = 'none'; 
                 }
@@ -874,21 +881,26 @@
                     nonKycTrades++;
                     nonKycVol += amount;
                     nonKycFee += fee;
-                    if (action === 'Buy') totalBuyVol += amount;
-                    if (action === 'Sell') totalSellVol += amount;
+                    if (action === 'Buy') nonKycBuyVol += amount;
+                    if (action === 'Sell') nonKycSellVol += amount;
                 } else {
                     row.style.display = 'none'; 
                 }
             });
 
+            // Standard Stats
             document.getElementById('kyc-stat-trades').innerText = kycTrades;
             document.getElementById('kyc-stat-vol').innerText = '$' + kycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('nonkyc-stat-trades').innerText = nonKycTrades;
             document.getElementById('nonkyc-stat-vol').innerText = '$' + nonKycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('nonkyc-stat-fee').innerText = '$' + nonKycFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
-            document.getElementById('log-buy-vol').innerText = '$' + totalBuyVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
-            document.getElementById('log-sell-vol').innerText = '$' + totalSellVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            // Push values to the specific KYC / Non-KYC boxes
+            document.getElementById('log-kyc-buy-vol').innerText = '$' + kycBuyVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            document.getElementById('log-kyc-sell-vol').innerText = '$' + kycSellVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            
+            document.getElementById('log-nonkyc-buy-vol').innerText = '$' + nonKycBuyVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            document.getElementById('log-nonkyc-sell-vol').innerText = '$' + nonKycSellVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
         }
 
         document.addEventListener("DOMContentLoaded", () => {
