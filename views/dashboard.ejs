@@ -446,11 +446,35 @@
               <% 
                    const kycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade === true);
                    const nonKycLogs = (typeof allLogs !== 'undefined' ? allLogs : []).filter(t => t.isVerifiedTrade !== true);
-                   
                    const kycTotalVolume = kycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
                    const nonKycTotalVolume = nonKycLogs.reduce((sum, trade) => sum + (trade.amountUsd || 0), 0);
                    const nonKycTotalFee = nonKycLogs.reduce((sum, trade) => sum + (trade.fee || 0), 0);
                 %>
+
+                <!-- 🔥 NAYA: DATE FILTER & BUY/SELL RATIO DISPLAY 🔥 -->
+                <div class="glass-panel p-4 mb-6 border border-slate-700/50 flex flex-wrap gap-4 items-center justify-between bg-slate-800/20 rounded-xl">
+                    <div class="flex flex-wrap gap-4 items-end">
+                        <div>
+                            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1 tracking-widest">Start Date</label>
+                            <input type="date" id="log-start-date" onchange="filterLogs()" class="bg-slate-900/80 border border-slate-700 text-slate-300 text-xs rounded-lg py-1.5 px-3 focus:outline-none focus:border-indigo-500 shadow-inner">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1 tracking-widest">End Date</label>
+                            <input type="date" id="log-end-date" onchange="filterLogs()" class="bg-slate-900/80 border border-slate-700 text-slate-300 text-xs rounded-lg py-1.5 px-3 focus:outline-none focus:border-indigo-500 shadow-inner">
+                        </div>
+                        <button onclick="clearLogDates()" class="bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-[10px] font-bold uppercase tracking-widest py-1.5 px-4 rounded-lg transition duration-300 border border-slate-600/50"><i class="fa-solid fa-rotate-right mr-1"></i> Reset</button>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="bg-green-900/20 border border-green-500/30 px-5 py-2 rounded-lg text-center shadow-inner">
+                            <p class="text-[9px] uppercase tracking-widest text-green-500/70 font-bold mb-0.5"><i class="fa-solid fa-arrow-down mr-1"></i>Total Buy Volume</p>
+                            <p class="text-xl font-black text-green-400 text-glow-green" id="log-buy-vol">$0.00</p>
+                        </div>
+                        <div class="bg-red-900/20 border border-red-500/30 px-5 py-2 rounded-lg text-center shadow-inner">
+                            <p class="text-[9px] uppercase tracking-widest text-red-500/70 font-bold mb-0.5"><i class="fa-solid fa-arrow-up mr-1"></i>Total Sell Volume</p>
+                            <p class="text-xl font-black text-red-400 text-glow" id="log-sell-vol">$0.00</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="flex flex-wrap justify-between items-end mb-6 border-b border-slate-700/50 pb-2 gap-4">
                     <div class="flex flex-wrap items-center gap-4 sm:gap-6">
@@ -491,7 +515,7 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No KYC transactions found.</td></tr>
                             <% } else { %>
                                 <% kycLogs.forEach((trade) => { %>
-                                    <tr class="log-row kyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>">
+                                    <tr class="log-row kyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-timestamp="<%= (trade.closedAt && trade.closedAt._seconds) ? (trade.closedAt._seconds * 1000) : 0 %>">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
                                         <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
@@ -507,24 +531,24 @@
                 <div id="non-kyc-logs" class="hidden overflow-x-auto w-full custom-scrollbar">
                     <table class="w-full text-left whitespace-nowrap">
                         <thead class="bg-slate-800/30">
-                            <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Date</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
+                             <tr class="text-slate-400 text-xs font-bold uppercase tracking-widest"><th class="py-4 px-6">Date</th><th class="py-4 px-6">User</th><th class="py-4 px-6">Action</th><th class="py-4 px-6">Method</th><th class="py-4 px-6 text-right">Amount (USD)</th></tr>
                         </thead>
                         <tbody class="text-sm font-medium">
                             <% if (nonKycLogs.length === 0) { %>
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No Non-KYC transactions found.</td></tr>
                             <% } else { %>
-                                <% nonKycLogs.forEach((trade) => { %>
-                                    <tr class="log-row nonkyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-fee="<%= trade.fee || 0 %>">
+                                 <% nonKycLogs.forEach((trade) => { %>
+                                    <tr class="log-row nonkyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-fee="<%= trade.fee || 0 %>" data-timestamp="<%= (trade.closedAt && trade.closedAt._seconds) ? (trade.closedAt._seconds * 1000) : 0 %>">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
                                         <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
                                         <td class="py-4 px-6 text-slate-400"><%= trade.networkOrMethod %></td>
                                         <td class="py-4 px-6 text-right font-black text-orange-400">$<%= trade.amountUsd.toLocaleString() %></td>
                                     </tr>
-                                <% }) %>
+                                 <% }) %>
                             <% } %>
                         </tbody>
-                    </table>
+                     </table>
                 </div>
             </div>
         </section>
@@ -786,17 +810,75 @@
             content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
+        // --- 🔥 INSTANT LOGS FILTER & CALCULATE LOGIC 🔥 ---
+        function clearLogDates() {
+            document.getElementById('log-start-date').value = '';
+            document.getElementById('log-end-date').value = '';
+            filterLogs();
+        }
+
         function filterLogs() {
             const filterValue = document.getElementById('log-action-filter').value;
-            let kycTrades = 0, kycVol = 0, nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
+            const startDateStr = document.getElementById('log-start-date').value;
+            const endDateStr = document.getElementById('log-end-date').value;
+
+            let startTimestamp = 0;
+            let endTimestamp = Infinity;
+
+            if (startDateStr) {
+                const sd = new Date(startDateStr);
+                sd.setHours(0, 0, 0, 0);
+                startTimestamp = sd.getTime();
+            }
+            if (endDateStr) {
+                const ed = new Date(endDateStr);
+                ed.setHours(23, 59, 59, 999);
+                endTimestamp = ed.getTime();
+            }
+
+            let kycTrades = 0, kycVol = 0;
+            let nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
+            let totalBuyVol = 0;
+            let totalSellVol = 0;
 
             document.querySelectorAll('.kyc-row').forEach(row => {
-                const action = row.getAttribute('data-action'); const amount = parseFloat(row.getAttribute('data-amount') || 0);
-                if (filterValue === 'All' || action === filterValue) { row.style.display = ''; kycTrades++; kycVol += amount; } else { row.style.display = 'none'; }
+                const action = row.getAttribute('data-action');
+                const amount = parseFloat(row.getAttribute('data-amount') || 0);
+                const timestamp = parseInt(row.getAttribute('data-timestamp') || 0);
+                
+                const matchesAction = (filterValue === 'All' || action === filterValue);
+                const matchesDate = (timestamp >= startTimestamp && timestamp <= endTimestamp) || timestamp === 0;
+
+                if (matchesAction && matchesDate) {
+                    row.style.display = ''; 
+                    kycTrades++;
+                    kycVol += amount;
+                    if (action === 'Buy') totalBuyVol += amount;
+                    if (action === 'Sell') totalSellVol += amount;
+                } else {
+                    row.style.display = 'none'; 
+                }
             });
+
             document.querySelectorAll('.nonkyc-row').forEach(row => {
-                const action = row.getAttribute('data-action'); const amount = parseFloat(row.getAttribute('data-amount') || 0); const fee = parseFloat(row.getAttribute('data-fee') || 0);
-                if (filterValue === 'All' || action === filterValue) { row.style.display = ''; nonKycTrades++; nonKycVol += amount; nonKycFee += fee; } else { row.style.display = 'none'; }
+                const action = row.getAttribute('data-action');
+                const amount = parseFloat(row.getAttribute('data-amount') || 0);
+                const fee = parseFloat(row.getAttribute('data-fee') || 0);
+                const timestamp = parseInt(row.getAttribute('data-timestamp') || 0);
+                
+                const matchesAction = (filterValue === 'All' || action === filterValue);
+                const matchesDate = (timestamp >= startTimestamp && timestamp <= endTimestamp) || timestamp === 0;
+
+                if (matchesAction && matchesDate) {
+                    row.style.display = ''; 
+                    nonKycTrades++;
+                    nonKycVol += amount;
+                    nonKycFee += fee;
+                    if (action === 'Buy') totalBuyVol += amount;
+                    if (action === 'Sell') totalSellVol += amount;
+                } else {
+                    row.style.display = 'none'; 
+                }
             });
 
             document.getElementById('kyc-stat-trades').innerText = kycTrades;
@@ -804,7 +886,14 @@
             document.getElementById('nonkyc-stat-trades').innerText = nonKycTrades;
             document.getElementById('nonkyc-stat-vol').innerText = '$' + nonKycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('nonkyc-stat-fee').innerText = '$' + nonKycFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+            document.getElementById('log-buy-vol').innerText = '$' + totalBuyVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            document.getElementById('log-sell-vol').innerText = '$' + totalSellVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
         }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            filterLogs();
+        });
 
         function calculateCustomVolume() {
             const startVal = document.getElementById('cv-start').value; const endVal = document.getElementById('cv-end').value;
@@ -889,7 +978,6 @@
             if (mediaStr) {
                 const urls = mediaStr.split(','); 
                 urls.forEach((url, idx) => {
-                    // Check if the URL is a video (.mp4, .mov, etc.)
                     const isVideo = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm');
                     let mediaElement = '';
                     
