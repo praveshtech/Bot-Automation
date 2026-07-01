@@ -6,7 +6,7 @@
     },
     ".time": {
         "title": "⏳ Estimated Transaction Time",
-        "desc": "**Crypto Transfers:** Instant ⚡\n**IMPS (Bank Transfer):** Approx 1 Hour 🏦\n**CDM (Cash Deposit):** 1 to 4 Hours 🏧\n\n*Please be patient while our Admins process your secure transfer.*",
+        "desc": "**Crypto Transfers:** Instant ⚡\n**IMPS (Bank Transfer):** Approx 1 Hour 🏦\n**CDM (Cash Deposit):** 45 Minutes to 1 Hour 🏧\n\n*Please be patient while our Admins process your secure transfer.*",
         "color": "#3498db"
     },
     ".kyc": {

@@ -934,7 +934,7 @@ const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
                         { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 1 Hour', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
-                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 1 Hour to 4 Hours', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 45 Minutes to 1 Hour', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
