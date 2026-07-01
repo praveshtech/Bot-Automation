@@ -588,7 +588,7 @@ client.on('interactionCreate', async interaction => {
             });
         }
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
-        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴' }]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '1521698702794690560' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '1521698747459833906' }]);
         const step1Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() }).setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC (Up to $3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
         await interaction.update({ content: '', embeds: [step1Embed], components: [new ActionRowBuilder().addComponents(typeDropdown)] });
     }
