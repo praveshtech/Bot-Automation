@@ -44,9 +44,47 @@ const userSelections = new Map();
 client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
+    
+    // Existing Leaderboard Interval
     setInterval(() => {
-        client.guilds.cache.forEach(guild => { updateWeeklyLeaderboard(guild); updateHeistLeaderboard(guild); });
+        client.guilds.cache.forEach(guild => { 
+            updateWeeklyLeaderboard(guild); 
+            updateHeistLeaderboard(guild); 
+        });
     }, 60 * 60 * 1000);
+
+    // 🔥 NAYA: Inactive KYC/UPI Ticket Auto-Delete System
+    setInterval(() => {
+        const TWELVE_HOURS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+        const now = Date.now();
+
+        client.guilds.cache.forEach(async guild => {
+            // Sirf KYC aur UPI channels ko filter karega
+            const kycChannels = guild.channels.cache.filter(c => 
+                (c.name.startsWith('kyc-') && c.name !== 'kyc-requests') || 
+                c.name.startsWith('upi-')
+            );
+
+            for (const [id, channel] of kycChannels) {
+                try {
+                    // Channel ka aakhri message fetch karenge
+                    const messages = await channel.messages.fetch({ limit: 1 });
+                    const lastMessage = messages.first();
+                    
+                    // Agar message hai toh uska time lenge, nahi toh channel banne ka time
+                    const lastActivityTime = lastMessage ? lastMessage.createdTimestamp : channel.createdTimestamp;
+
+                    // Agar aakhri activity 12 ghante se purani hai, toh delete!
+                    if (now - lastActivityTime > TWELVE_HOURS) {
+                        console.log(`🗑️ Auto-Deleting inactive KYC channel: ${channel.name}`);
+                        await channel.delete('Inactive for 12 hours');
+                    }
+                } catch (err) {
+                    console.error(`Error checking/deleting channel ${channel.name}:`, err);
+                }
+            }
+        });
+    }, 60 * 60 * 1000); // Yeh system har 1 ghante mein background mein check karega
 });
 
 // ==========================================
@@ -756,8 +794,8 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         }
 
         try {
-            const expectedChannelName = `kyc-${interaction.user.username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
-            const existingChannel = interaction.guild.channels.cache.find(c => c.name === expectedChannelName || (c.name.startsWith('kyc-') && c.name.includes(interaction.user.username.toLowerCase())));
+            // 🔥 NAYA LOGIC: Ab username ki jagah User ID (Topic) se check karega
+            const existingChannel = interaction.guild.channels.cache.find(c => c.name.startsWith('kyc-') && c.topic === interaction.user.id);
             
             if (existingChannel) {
                 return interaction.reply({ content: `❌ **Action Denied:** Your KYC verification is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
@@ -777,8 +815,14 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             ];
             if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
 
-            const randomKycId = Math.random().toString(36).substring(2, 8);
-            const kycChannel = await interaction.guild.channels.create({ name: `kyc-${randomKycId}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions });
+           const randomKycId = Math.random().toString(36).substring(2, 8);
+            const kycChannel = await interaction.guild.channels.create({ 
+                name: `kyc-${randomKycId}`, 
+                type: ChannelType.GuildText, 
+                parent: kycCategory.id, 
+                permissionOverwrites: channelPermissions,
+                topic: interaction.user.id // 🔥 NAYA: Topic mein ID save karna zaroori hai tabhi upar wala check kaam karega
+            });
 
             const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            
             const kycAdminButtons = new ActionRowBuilder().addComponents(
