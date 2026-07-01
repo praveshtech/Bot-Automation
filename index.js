@@ -856,7 +856,7 @@ client.on('interactionCreate', async interaction => {
             else { userState.step3 = interaction.values[0]; }
             userSelections.set(interaction.user.id, userState);
             
-            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '🟢', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '🔴', default: userState.type === 'Sell' }]);
+            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([{ label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: '1521698702794690560', default: userState.type === 'Buy' }, { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: '1521698747459833906', default: userState.type === 'Sell' }]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
             if (userState.type === 'Sell') {
