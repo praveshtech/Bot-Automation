@@ -883,8 +883,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             }
             
             const components = [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)];
-            const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true }, { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true });
-
+const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '<:buy_sign:1521708980647231648> Buy USDT' : '<:sell_sign:1521709256947269803> Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true }, { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true });
             if (userState.type === 'Sell') {
                 const step3Dropdown = new StringSelectMenuBuilder()
                     .setCustomId('dropdown_step3')
@@ -948,8 +947,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             ]);
         }
 
-        const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() }).setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`).addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '🟢 Buy USDT' : '🔴 Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true });
-        await interaction.update({ content: '', embeds: [step2Embed], components: [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)] });
+const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() }).setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`).addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '<:buy_sign:1521708980647231648> Buy USDT' : '<:sell_sign:1521709256947269803> Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true });        await interaction.update({ content: '', embeds: [step2Embed], components: [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)] });
     }
 
     if (interaction.isButton() && interaction.customId === 'proceed_to_details') {
