@@ -589,8 +589,8 @@ client.on('interactionCreate', async interaction => {
         }
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
 const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
-    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521698702794690560' } }, 
-    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521698747459833906' } }
+    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' } }, 
+    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' } }
 ]);
         const step1Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() }).setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC (Up to $3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
         await interaction.update({ content: '', embeds: [step1Embed], components: [new ActionRowBuilder().addComponents(typeDropdown)] });
@@ -860,8 +860,8 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             userSelections.set(interaction.user.id, userState);
             
 const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
-    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521698702794690560' }, default: userState.type === 'Buy' }, 
-    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521698747459833906' }, default: userState.type === 'Sell' }
+    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' }, default: userState.type === 'Buy' }, 
+    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' }, default: userState.type === 'Sell' }
 ]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
@@ -926,8 +926,8 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         userSelections.set(interaction.user.id, userState);
 
 const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
-    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521698702794690560' }, default: userState.type === 'Buy' }, 
-    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521698747459833906' }, default: userState.type === 'Sell' }
+    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' }, default: userState.type === 'Buy' }, 
+    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' }, default: userState.type === 'Sell' }
 ]);
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
