@@ -852,7 +852,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att.url)); });
 
         let uploadedPhotos = [];
-        for (let i = 0; i < Math.min(attachments.length, 3); i++) {
+        for (let i = 0; i < Math.min(attachments.length, 5); i++) {
             let url = await uploadImageToFirebase(attachments[i], userId, `Doc_${i+1}`);
             if (url) uploadedPhotos.push(url);
         }
