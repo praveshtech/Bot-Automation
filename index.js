@@ -1645,10 +1645,37 @@ adminApp.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/lo
 
 // 🔥 ADMIN DASHBOARD ROUTE (Loads administrator.ejs)
 adminApp.get('/', requireAdminLogin, async (req, res) => {
-    let appSettings = { wallets: {}, estTimes: { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' } };
+    // 💡 Agar Firebase khali hai, toh yeh default addresses aur QR Links UI mein dikhayega
+    let appSettings = { 
+        wallets: {
+            'TRC20': { 
+                address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', 
+                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' 
+            },
+            'ERC20': { 
+                address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', 
+                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' 
+            },
+            'BEP20': { 
+                address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', 
+                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' 
+            },
+            'POLYGON': { 
+                address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', 
+                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' 
+            }
+        }, 
+        estTimes: { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' } 
+    };
+
     try {
         const settingsDoc = await db.collection('settings').doc('app_data').get();
-        if (settingsDoc.exists) appSettings = settingsDoc.data();
+        // Agar aapne Dashboard se kuch save kiya hai, toh wo in defaults ko overwrite kar dega
+        if (settingsDoc.exists) {
+            const savedData = settingsDoc.data();
+            if (savedData.wallets) appSettings.wallets = { ...appSettings.wallets, ...savedData.wallets };
+            if (savedData.estTimes) appSettings.estTimes = { ...appSettings.estTimes, ...savedData.estTimes };
+        }
     } catch (e) { console.error("Error loading settings", e); }
     
     res.render('administrator', { appSettings });
