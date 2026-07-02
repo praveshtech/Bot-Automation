@@ -1615,6 +1615,78 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
 
 // ==========================================
+// 🛡️ SEPARATE ADMINISTRATOR DASHBOARD (PORT 4000)
+// ==========================================
+const adminApp = express();
+adminApp.set('view engine', 'ejs');
+adminApp.use(express.urlencoded({ extended: true }));
+adminApp.use(express.json());
+adminApp.use(cors());
+// Admin portal ke liye alag session
+adminApp.use(session({ secret: 'master-admin-secret-2026', resave: true, saveUninitialized: true, cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 } }));
+
+const requireAdminLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
+
+// Admin Login Page (You can use the same login.ejs)
+adminApp.get('/login', (req, res) => { if (req.session.loggedIn) return res.redirect('/'); res.render('login', { error: null }); });
+
+adminApp.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const authDoc = await db.collection('settings').doc('admin_auth').get();
+        let validUser = 'professor', validPass = 'heist2026';
+        if (authDoc.exists) { validUser = authDoc.data().username; validPass = authDoc.data().password; } 
+        if (username === validUser && password === validPass) { req.session.loggedIn = true; res.redirect('/'); } 
+        else { res.render('login', { error: 'Access Denied. Incorrect Credentials.' }); }
+    } catch (error) { res.render('login', { error: 'Database Connection Error.' }); }
+});
+
+adminApp.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
+
+// 🔥 ADMIN DASHBOARD ROUTE (Loads administrator.ejs)
+adminApp.get('/', requireAdminLogin, async (req, res) => {
+    let appSettings = { wallets: {}, estTimes: { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' } };
+    try {
+        const settingsDoc = await db.collection('settings').doc('app_data').get();
+        if (settingsDoc.exists) appSettings = settingsDoc.data();
+    } catch (e) { console.error("Error loading settings", e); }
+    
+    res.render('administrator', { appSettings });
+});
+
+// 🔥 SAVE SETTINGS ROUTE
+adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
+    try {
+        const newData = {
+            wallets: {
+                'TRC20': { address: req.body.trc20_address, qrImage: req.body.trc20_qr },
+                'ERC20': { address: req.body.erc20_address, qrImage: req.body.erc20_qr },
+                'BEP20': { address: req.body.bep20_address, qrImage: req.body.bep20_qr },
+                'POLYGON': { address: req.body.polygon_address, qrImage: req.body.polygon_qr }
+            },
+            estTimes: {
+                imps: req.body.imps_time || '1 Hour',
+                cdm: req.body.cdm_time || '45 Minutes to 1 Hour'
+            },
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
+        await db.collection('settings').doc('app_data').set(newData, { merge: true });
+        
+        res.send(`
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
+            <body><script>Swal.fire({title: 'Updated!', text: 'Settings Saved Successfully!', icon: 'success', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '#22c55e'}).then(() => { window.location.href = "/"; });</script></body>
+        `);
+    } catch (error) { res.send(`Error saving settings: ${error.message}`); }
+});
+
+// START ADMIN SERVER ON PORT 4000
+const ADMIN_PORT = 4000;
+adminApp.listen(ADMIN_PORT, () => { 
+    console.log(`🔐 Master Administrator Panel is LIVE on Port ${ADMIN_PORT}`); 
+});
+
+// ==========================================
 // 🔥 ADVANCED SERVER STATS (THE VAULT STYLE) 🔥
 // ==========================================
 const WELCOME_CHANNEL_ID = '1509523189389332480'; 

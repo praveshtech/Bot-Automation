@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Administrator | Port 4000</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #0b1120; color: #f8fafc; }
+        .glass-panel { background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1.25rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6">
+
+    <div class="w-full max-w-5xl glass-panel p-8 border-t-4 border-purple-500 relative overflow-hidden">
+        <i class="fa-solid fa-server absolute -right-10 -bottom-10 text-[15rem] text-slate-800/40 z-0"></i>
+        
+        <div class="relative z-10">
+            <div class="flex justify-between items-start mb-8 border-b border-slate-700/50 pb-6">
+                <div>
+                    <h2 class="text-3xl font-black uppercase tracking-widest text-purple-500 flex items-center">
+                        <i class="fa-solid fa-user-shield mr-3"></i> Master Control Panel
+                    </h2>
+                    <p class="text-slate-400 text-sm font-medium mt-2">Manage backend bot settings, wallet addresses, and time estimates globally.</p>
+                </div>
+                <a href="/logout" class="bg-red-900/30 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-5 py-2.5 rounded-lg text-xs font-bold uppercase transition duration-300">
+                    <i class="fa-solid fa-power-off mr-2"></i> Logout
+                </a>
+            </div>
+            
+            <form action="/update-app-settings" method="POST" class="space-y-8">
+                
+                <div class="bg-slate-900/80 p-6 rounded-xl border border-slate-700/50">
+                    <h4 class="text-base font-black uppercase tracking-widest text-slate-300 mb-5 flex items-center"><i class="fa-solid fa-clock text-blue-400 mr-2"></i> Estimated Processing Times</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">IMPS Time</label>
+                            <input type="text" name="imps_time" value="<%= typeof appSettings !== 'undefined' && appSettings.estTimes ? appSettings.estTimes.imps : '1 Hour' %>" class="w-full bg-[#050b14] border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500" placeholder="e.g. 1 Hour">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest">CDM Time</label>
+                            <input type="text" name="cdm_time" value="<%= typeof appSettings !== 'undefined' && appSettings.estTimes ? appSettings.estTimes.cdm : '45 Minutes to 1 Hour' %>" class="w-full bg-[#050b14] border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500" placeholder="e.g. 45 Mins">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900/80 p-6 rounded-xl border border-slate-700/50">
+                    <h4 class="text-base font-black uppercase tracking-widest text-slate-300 mb-5 flex items-center"><i class="fa-solid fa-wallet text-green-400 mr-2"></i> Crypto Wallet Configurations</h4>
+                    
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-green-400">TRC20 Address</label><input type="text" name="trc20_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.TRC20 ? appSettings.wallets.TRC20.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-green-500" required></div>
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-green-400">TRC20 QR Image URL</label><input type="text" name="trc20_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.TRC20 ? appSettings.wallets.TRC20.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-green-500"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-blue-400">ERC20 Address</label><input type="text" name="erc20_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.ERC20 ? appSettings.wallets.ERC20.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-blue-500" required></div>
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-blue-400">ERC20 QR Image URL</label><input type="text" name="erc20_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.ERC20 ? appSettings.wallets.ERC20.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-blue-500"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-yellow-400">BEP20 Address</label><input type="text" name="bep20_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.BEP20 ? appSettings.wallets.BEP20.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-yellow-500" required></div>
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-yellow-400">BEP20 QR Image URL</label><input type="text" name="bep20_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.BEP20 ? appSettings.wallets.BEP20.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-yellow-500"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-purple-400">Polygon Address</label><input type="text" name="polygon_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.POLYGON ? appSettings.wallets.POLYGON.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-purple-500" required></div>
+                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-purple-400">Polygon QR Image URL</label><input type="text" name="polygon_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.POLYGON ? appSettings.wallets.POLYGON.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-purple-500"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 text-right">
+                    <button type="submit" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black uppercase tracking-widest py-4 px-10 rounded-xl transition duration-300 shadow-[0_0_25px_rgba(168,85,247,0.4)]">
+                        <i class="fa-solid fa-server mr-2"></i> Deploy Global Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</body>
+</html>
