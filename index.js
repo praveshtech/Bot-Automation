@@ -1132,9 +1132,15 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
             await ticketChannel.send({ embeds: [qrEmbed] });
         }
 
+        // 🔥 NAYA FIX: Sell ticket me sabse last me Berlin ko chat ping karna
+        if (userState.type === 'Sell') {
+            await ticketChannel.send({ content: `<@1336703883711479896>` });
+        }
+
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
 
+        
         setTimeout(() => { interaction.deleteReply().catch(() => {}); }, 10000);
     }
 
