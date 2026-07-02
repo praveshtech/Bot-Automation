@@ -12,9 +12,9 @@
         .glass-panel { background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 1.25rem; box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5); }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-6">
+<body class="min-h-screen p-4 sm:p-10">
 
-    <div class="w-full max-w-5xl glass-panel p-8 border-t-4 border-purple-500 relative overflow-hidden">
+    <div class="w-full max-w-5xl mx-auto glass-panel p-8 border-t-4 border-purple-500 relative overflow-hidden">
         <i class="fa-solid fa-server absolute -right-10 -bottom-10 text-[15rem] text-slate-800/40 z-0"></i>
         
         <div class="relative z-10">
@@ -23,7 +23,7 @@
                     <h2 class="text-3xl font-black uppercase tracking-widest text-purple-500 flex items-center">
                         <i class="fa-solid fa-user-shield mr-3"></i> Master Control Panel
                     </h2>
-                    <p class="text-slate-400 text-sm font-medium mt-2">Manage backend bot settings, wallet addresses, and time estimates globally.</p>
+                    <p class="text-slate-400 text-sm font-medium mt-2">Global configuration for P2P trading bot.</p>
                 </div>
                 <a href="/logout" class="bg-red-900/30 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/30 px-5 py-2.5 rounded-lg text-xs font-bold uppercase transition duration-300">
                     <i class="fa-solid fa-power-off mr-2"></i> Logout
@@ -49,26 +49,31 @@
                 <div class="bg-slate-900/80 p-6 rounded-xl border border-slate-700/50">
                     <h4 class="text-base font-black uppercase tracking-widest text-slate-300 mb-5 flex items-center"><i class="fa-solid fa-wallet text-green-400 mr-2"></i> Crypto Wallet Configurations</h4>
                     
-                    <div class="space-y-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-green-400">TRC20 Address</label><input type="text" name="trc20_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.TRC20 ? appSettings.wallets.TRC20.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-green-500" required></div>
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-green-400">TRC20 QR Image URL</label><input type="text" name="trc20_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.TRC20 ? appSettings.wallets.TRC20.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-green-500"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-blue-400">ERC20 Address</label><input type="text" name="erc20_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.ERC20 ? appSettings.wallets.ERC20.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-blue-500" required></div>
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-blue-400">ERC20 QR Image URL</label><input type="text" name="erc20_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.ERC20 ? appSettings.wallets.ERC20.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-blue-500"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-yellow-400">BEP20 Address</label><input type="text" name="bep20_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.BEP20 ? appSettings.wallets.BEP20.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-yellow-500" required></div>
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-yellow-400">BEP20 QR Image URL</label><input type="text" name="bep20_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.BEP20 ? appSettings.wallets.BEP20.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-yellow-500"></div>
-                        </div>
+                    <div class="space-y-4">
+                        <% 
+                            const networks = [
+                                { id: 'TRC20', label: 'TRC20', color: 'text-green-400' },
+                                { id: 'ERC20', label: 'ERC20', color: 'text-blue-400' },
+                                { id: 'BEP20', label: 'BEP20', color: 'text-yellow-400' },
+                                { id: 'ARBITRUM', label: 'Arbitrum', color: 'text-sky-400' },
+                                { id: 'POLYGON', label: 'Polygon', color: 'text-purple-400' },
+                                { id: 'USDC_ERC20', label: 'USDC ERC20', color: 'text-gray-300' },
+                                { id: 'USDC_BEP20', label: 'USDC BEP20', color: 'text-orange-400' }
+                            ];
+                        %>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-5 rounded-lg border border-slate-800">
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-purple-400">Polygon Address</label><input type="text" name="polygon_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.POLYGON ? appSettings.wallets.POLYGON.address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-purple-500" required></div>
-                            <div><label class="block text-slate-400 text-xs font-bold uppercase mb-2 tracking-widest text-purple-400">Polygon QR Image URL</label><input type="text" name="polygon_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets.POLYGON ? appSettings.wallets.POLYGON.qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-3 px-4 focus:border-purple-500"></div>
-                        </div>
+                        <% networks.forEach(net => { %>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#050b14] p-4 rounded-lg border border-slate-800">
+                                <div>
+                                    <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1 <%= net.color %>"><%= net.label %> Address</label>
+                                    <input type="text" name="<%= net.id.toLowerCase() %>_address" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets[net.id] ? appSettings.wallets[net.id].address : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-2 px-3 focus:border-purple-500 text-xs" required>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-400 text-[10px] font-bold uppercase mb-1 <%= net.color %>"><%= net.label %> QR Image URL</label>
+                                    <input type="text" name="<%= net.id.toLowerCase() %>_qr" value="<%= typeof appSettings !== 'undefined' && appSettings.wallets && appSettings.wallets[net.id] ? appSettings.wallets[net.id].qrImage : '' %>" class="w-full bg-slate-900 border border-slate-700 text-white rounded-lg py-2 px-3 focus:border-purple-500 text-xs">
+                                </div>
+                            </div>
+                        <% }) %>
                     </div>
                 </div>
 
@@ -80,6 +85,5 @@
             </form>
         </div>
     </div>
-
 </body>
 </html>

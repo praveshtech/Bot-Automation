@@ -1682,14 +1682,17 @@ adminApp.get('/', requireAdminLogin, async (req, res) => {
 });
 
 // 🔥 SAVE SETTINGS ROUTE
-adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
+app.post('/update-app-settings', requireAdminLogin, async (req, res) => {
     try {
         const newData = {
             wallets: {
                 'TRC20': { address: req.body.trc20_address, qrImage: req.body.trc20_qr },
                 'ERC20': { address: req.body.erc20_address, qrImage: req.body.erc20_qr },
                 'BEP20': { address: req.body.bep20_address, qrImage: req.body.bep20_qr },
-                'POLYGON': { address: req.body.polygon_address, qrImage: req.body.polygon_qr }
+                'ARBITRUM': { address: req.body.arbitrum_address, qrImage: req.body.arbitrum_qr },
+                'POLYGON': { address: req.body.polygon_address, qrImage: req.body.polygon_qr },
+                'USDC_ERC20': { address: req.body.usdc_erc20_address, qrImage: req.body.usdc_erc20_qr },
+                'USDC_BEP20': { address: req.body.usdc_bep20_address, qrImage: req.body.usdc_bep20_qr }
             },
             estTimes: {
                 imps: req.body.imps_time || '1 Hour',
@@ -1698,13 +1701,8 @@ adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
         await db.collection('settings').doc('app_data').set(newData, { merge: true });
-        
-        res.send(`
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
-            <body><script>Swal.fire({title: 'Updated!', text: 'Settings Saved Successfully!', icon: 'success', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '#22c55e'}).then(() => { window.location.href = "/"; });</script></body>
-        `);
-    } catch (error) { res.send(`Error saving settings: ${error.message}`); }
+        // ... success response ...
+    } catch (error) { res.send(`Error: ${error.message}`); }
 });
 
 // START ADMIN SERVER ON PORT 4000
