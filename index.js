@@ -235,6 +235,7 @@ client.on('messageCreate', async message => {
                     .setFooter({ text: 'Professor Network - Escrow Matching' });
                 
                 await message.reply({ embeds: [matchEmbed] });
+                await message.delete().catch(() => {});
 
             } else {
                 // ACTION 2: MOVE TO EXISTING MATCH CATEGORY
@@ -257,6 +258,7 @@ client.on('messageCreate', async message => {
                     .setFooter({ text: 'Professor Network - Escrow Matching' });
 
                 await message.reply({ embeds: [matchEmbed] });
+                await message.delete().catch(() => {});
             }
         } catch (err) {
             console.error("Match Error:", err);
@@ -297,6 +299,7 @@ client.on('messageCreate', async message => {
                 .setFooter({ text: 'Professor Network - Escrow Matching' });
 
             await message.reply({ embeds: [unmatchEmbed] });
+            await message.delete().catch(() => {});
 
             // Optional cleanup: Delete MATCH category if it's completely empty now
             if (parentCat.children.cache.size === 0) {
