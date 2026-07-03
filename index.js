@@ -45,6 +45,34 @@ client.once('ready', () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
     
+
+    // 🔥 NAYA: Slash Commands Register Karna
+    try {
+        await client.application.commands.set([
+            { 
+                name: 'complete', 
+                description: 'Shift ticket to completed category for night settlement' 
+            },
+            {
+                name: 'match',
+                description: 'Match this ticket with another (Escrow)',
+                options: [{ 
+                    name: 'target', 
+                    type: 3, // 3 means STRING type
+                    description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', 
+                    required: false 
+                }]
+            },
+            { 
+                name: 'unmatch', 
+                description: 'Unmatch this ticket and return to original category' 
+            }
+        ]);
+        console.log(`✅ Slash Commands Registered!`);
+    } catch (err) {
+        console.error("Slash Command Registration Error:", err);
+    }
+
     // Existing Leaderboard Interval
     setInterval(() => {
         client.guilds.cache.forEach(guild => { 
@@ -149,168 +177,7 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 🔥 COMMAND: SHIFT TICKET TO COMPLETED CATEGORY (.complete)
-    if (command === '.complete') {
-        // Sirf Admins aur Palermo use kar sakte hain
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
-        try {
-            // Firebase se ticket ka data nikalna taaki pata chale Buy hai ya Sell
-            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.complete` inside a valid P2P ticket channel.", ephemeral: true });
-            
-            const ticketData = ticketDoc.data();
-            const isBuy = ticketData.tradeType === 'Buy';
-
-            // Nayi Category ka naam decide karna
-            const targetCategoryName = isBuy ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
-
-            // Check karna ki kya yeh category pehle se bani hui hai server mein
-            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
-            
-            // Agar category nahi bani hai, toh nayi banayega
-            if (!targetCategory) {
-                targetCategory = await message.guild.channels.create({ 
-                    name: targetCategoryName, 
-                    type: ChannelType.GuildCategory 
-                });
-            }
-
-            // Ticket ko nayi category mein shift karna (bina permissions lock kiye)
-            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
-
-            // Confirmation Message
-            const completeEmbed = new EmbedBuilder()
-                .setColor('#2ecc71')
-                .setTitle('✅ Ticket Shifted to Queue')
-                .setDescription(`This ticket has been successfully moved to the **${targetCategoryName}** category.\n> **Note:** The channel remains open for any post-trade discussions or feedback.`)
-                .setFooter({ text: 'Professor Network - Night Queue System', iconURL: client.user.displayAvatarURL() });
-
-            await message.reply({ embeds: [completeEmbed] });
-            
-            // Trigger command ko delete kar dena clean dikhne ke liye
-            await message.delete().catch(() => {});
-
-        } catch (err) {
-            console.error("Error in .complete command:", err);
-            await message.channel.send("❌ Server error while shifting ticket category. Please check bot permissions.");
-        }
-    }
-
-    // 🔥 COMMAND: MATCH TICKETS (.match OR .match match 01)
-    if (command.startsWith('.match')) {
-        // Sirf Admins aur Palermo use kar sakte hain
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
-        try {
-            // Firebase se ticket verify karna
-            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
-
-            // Check if user provided a category name (e.g., ".match match 01")
-            const args = message.content.split(' ').slice(1);
-            
-            if (args.length === 0) {
-                // ACTION 1: CREATE NEW MATCH CATEGORY
-                // Find highest existing MATCH number
-                const matchCategories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory && c.name.startsWith('MATCH '));
-                let maxNum = 0;
-                matchCategories.forEach(cat => {
-                    const num = parseInt(cat.name.replace('MATCH ', ''));
-                    if (!isNaN(num) && num > maxNum) maxNum = num;
-                });
-                
-                const newCatName = `MATCH ${String(maxNum + 1).padStart(2, '0')}`; // Format: MATCH 01, MATCH 02
-                const newCategory = await message.guild.channels.create({
-                    name: newCatName,
-                    type: ChannelType.GuildCategory
-                });
-
-                await message.channel.setParent(newCategory.id, { lockPermissions: false });
-                
-                const matchEmbed = new EmbedBuilder()
-                    .setColor('#9b59b6')
-                    .setTitle('🔗 Ticket Matched & Shifted')
-                    .setDescription(`New category **${newCatName}** created.\nThis ticket has been successfully shifted here!`)
-                    .setFooter({ text: 'Professor Network - Escrow Matching' });
-                
-                await message.reply({ embeds: [matchEmbed] });
-                await message.delete().catch(() => {});
-
-            } else {
-                // ACTION 2: MOVE TO EXISTING MATCH CATEGORY
-                const targetCatName = args.join(' ').toUpperCase(); // E.g., "MATCH 01"
-                const targetCategory = message.guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === targetCatName);
-                
-                if (!targetCategory) return message.reply(`❌ Category **${targetCatName}** not found.`);
-                
-                // Max 2 tickets limit check
-                if (targetCategory.children.cache.size >= 2) {
-                    return message.reply(`❌ **${targetCatName}** already contains 2 tickets. Please run \`.match\` to create a new category.`);
-                }
-
-                await message.channel.setParent(targetCategory.id, { lockPermissions: false });
-                
-                const matchEmbed = new EmbedBuilder()
-                    .setColor('#9b59b6')
-                    .setTitle('🔗 Ticket Shifted')
-                    .setDescription(`This ticket has been successfully joined into **${targetCatName}**!`)
-                    .setFooter({ text: 'Professor Network - Escrow Matching' });
-
-                await message.reply({ embeds: [matchEmbed] });
-                await message.delete().catch(() => {});
-            }
-        } catch (err) {
-            console.error("Match Error:", err);
-            await message.reply("❌ Error shifting ticket. Please check bot permissions.");
-        }
-    }
-
-    // 🔥 COMMAND: UNMATCH TICKET (.unmatch)
-    if (command === '.unmatch') {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
-        try {
-            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
-
-            const ticketData = ticketDoc.data();
-            const parentCat = message.channel.parent;
-
-            if (!parentCat || !parentCat.name.startsWith('MATCH ')) {
-                return message.reply("❌ This ticket is not inside a MATCH category.");
-            }
-
-            // Figure out original category based on Buy/Sell
-            const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
-            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
-            
-            if (!targetCategory) {
-                targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
-            }
-
-            // Move back
-            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
-            
-            const unmatchEmbed = new EmbedBuilder()
-                .setColor('#e74c3c')
-                .setTitle('💔 Ticket Unmatched')
-                .setDescription(`Ticket has been moved back to its original location: **${targetCategoryName}**.`)
-                .setFooter({ text: 'Professor Network - Escrow Matching' });
-
-            await message.reply({ embeds: [unmatchEmbed] });
-            await message.delete().catch(() => {});
-
-            // Optional cleanup: Delete MATCH category if it's completely empty now
-            if (parentCat.children.cache.size === 0) {
-                await parentCat.delete().catch(()=>{});
-            }
-
-        } catch (err) {
-            console.error("Unmatch Error:", err);
-            await message.reply("❌ Error unmatching ticket.");
-        }
-    }
+    
 
     // ADMIN COMMAND: .fb
     if (command === '.fb') {
@@ -593,6 +460,97 @@ client.on('messageCreate', async message => {
 // 🖱️ INTERACTION LOGIC
 // ==========================================
 client.on('interactionCreate', async interaction => {
+
+
+    // 🔥 SLASH COMMANDS HANDLER (/complete, /match, /unmatch)
+    if (interaction.isChatInputCommand()) {
+        
+        // Sirf Admins aur Palermo use kar sakte hain
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
+            return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
+        }
+
+        // 1. /COMPLETE COMMAND
+        if (interaction.commandName === 'complete') {
+            try {
+                const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+                if (!ticketDoc.exists) return interaction.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
+                
+                const targetCategoryName = ticketDoc.data().tradeType === 'Buy' ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
+                let targetCategory = interaction.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+                if (!targetCategory) targetCategory = await interaction.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
+
+                await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
+
+                const completeEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Ticket Shifted to Queue').setDescription(`Shifted to **${targetCategoryName}**.\nIt will be fully marked as Complete tonight at 10 PM.`);
+                
+                // Ephemeral true yani sirf Admin ko dikhega!
+                await interaction.reply({ embeds: [completeEmbed], ephemeral: true });
+            } catch (err) { console.error(err); await interaction.reply({ content: "❌ Error shifting ticket.", ephemeral: true }); }
+        }
+
+        // 2. /MATCH COMMAND
+        if (interaction.commandName === 'match') {
+            try {
+                const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+                if (!ticketDoc.exists) return interaction.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
+
+                const targetInput = interaction.options.getString('target');
+                
+                if (!targetInput) {
+                    const matchCategories = interaction.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory && c.name.startsWith('MATCH '));
+                    let maxNum = 0;
+                    matchCategories.forEach(cat => {
+                        const num = parseInt(cat.name.replace('MATCH ', ''));
+                        if (!isNaN(num) && num > maxNum) maxNum = num;
+                    });
+                    
+                    const newCatName = `MATCH ${String(maxNum + 1).padStart(2, '0')}`;
+                    const newCategory = await interaction.guild.channels.create({ name: newCatName, type: ChannelType.GuildCategory });
+                    
+                    await interaction.channel.setParent(newCategory.id, { lockPermissions: false });
+                    
+                    const matchEmbed = new EmbedBuilder().setColor('#9b59b6').setTitle('🔗 Ticket Matched & Shifted').setDescription(`New category **${newCatName}** created.\nTicket shifted successfully!`);
+                    await interaction.reply({ embeds: [matchEmbed], ephemeral: true });
+                } else {
+                    const targetCatName = targetInput.toUpperCase();
+                    const targetCategory = interaction.guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === targetCatName);
+                    
+                    if (!targetCategory) return interaction.reply({ content: `❌ Category **${targetCatName}** not found.`, ephemeral: true });
+                    if (targetCategory.children.cache.size >= 2) return interaction.reply({ content: `❌ **${targetCatName}** already contains 2 tickets.`, ephemeral: true });
+
+                    await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
+                    
+                    const matchEmbed = new EmbedBuilder().setColor('#9b59b6').setTitle('🔗 Ticket Shifted').setDescription(`This ticket has been successfully joined into **${targetCatName}**!`);
+                    await interaction.reply({ embeds: [matchEmbed], ephemeral: true });
+                }
+            } catch (err) { console.error(err); await interaction.reply({ content: "❌ Error matching ticket.", ephemeral: true }); }
+        }
+
+        // 3. /UNMATCH COMMAND
+        if (interaction.commandName === 'unmatch') {
+            try {
+                const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+                if (!ticketDoc.exists) return interaction.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
+
+                const parentCat = interaction.channel.parent;
+                if (!parentCat || !parentCat.name.startsWith('MATCH ')) return interaction.reply({ content: "❌ This ticket is not inside a MATCH category.", ephemeral: true });
+
+                const targetCategoryName = ticketDoc.data().tradeType === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
+                let targetCategory = interaction.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+                if (!targetCategory) targetCategory = await interaction.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
+
+                await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
+                
+                const unmatchEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('💔 Ticket Unmatched').setDescription(`Ticket moved back to **${targetCategoryName}**.`);
+                await interaction.reply({ embeds: [unmatchEmbed], ephemeral: true });
+
+                if (parentCat.children.cache.size === 0) await parentCat.delete().catch(()=>{});
+            } catch (err) { console.error(err); await interaction.reply({ content: "❌ Error unmatching ticket.", ephemeral: true }); }
+        }
+    }
+
+
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         await interaction.deferUpdate(); 
