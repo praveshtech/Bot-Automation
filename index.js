@@ -149,6 +149,54 @@ client.on('messageCreate', async message => {
         }
     }
 
+    // 🔥 COMMAND: SHIFT TICKET TO COMPLETED CATEGORY (.complete)
+    if (command === '.complete') {
+        // Sirf Admins aur Palermo use kar sakte hain
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        try {
+            // Firebase se ticket ka data nikalna taaki pata chale Buy hai ya Sell
+            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
+            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.complete` inside a valid P2P ticket channel.", ephemeral: true });
+            
+            const ticketData = ticketDoc.data();
+            const isBuy = ticketData.tradeType === 'Buy';
+
+            // Nayi Category ka naam decide karna
+            const targetCategoryName = isBuy ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
+
+            // Check karna ki kya yeh category pehle se bani hui hai server mein
+            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+            
+            // Agar category nahi bani hai, toh nayi banayega
+            if (!targetCategory) {
+                targetCategory = await message.guild.channels.create({ 
+                    name: targetCategoryName, 
+                    type: ChannelType.GuildCategory 
+                });
+            }
+
+            // Ticket ko nayi category mein shift karna (bina permissions lock kiye)
+            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
+
+            // Confirmation Message
+            const completeEmbed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('✅ Ticket Shifted to Queue')
+                .setDescription(`This ticket has been successfully moved to the **${targetCategoryName}** category.\n> **Note:** The channel remains open for any post-trade discussions or feedback.`)
+                .setFooter({ text: 'Professor Network - Night Queue System', iconURL: client.user.displayAvatarURL() });
+
+            await message.reply({ embeds: [completeEmbed] });
+            
+            // Trigger command ko delete kar dena clean dikhne ke liye
+            await message.delete().catch(() => {});
+
+        } catch (err) {
+            console.error("Error in .complete command:", err);
+            await message.channel.send("❌ Server error while shifting ticket category. Please check bot permissions.");
+        }
+    }
+
     // ADMIN COMMAND: .fb
     if (command === '.fb') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
