@@ -197,6 +197,118 @@ client.on('messageCreate', async message => {
         }
     }
 
+    // 🔥 COMMAND: MATCH TICKETS (.match OR .match match 01)
+    if (command.startsWith('.match')) {
+        // Sirf Admins aur Palermo use kar sakte hain
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        try {
+            // Firebase se ticket verify karna
+            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
+            if (!ticketDoc.exists) return message.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
+
+            // Check if user provided a category name (e.g., ".match match 01")
+            const args = message.content.split(' ').slice(1);
+            
+            if (args.length === 0) {
+                // ACTION 1: CREATE NEW MATCH CATEGORY
+                // Find highest existing MATCH number
+                const matchCategories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory && c.name.startsWith('MATCH '));
+                let maxNum = 0;
+                matchCategories.forEach(cat => {
+                    const num = parseInt(cat.name.replace('MATCH ', ''));
+                    if (!isNaN(num) && num > maxNum) maxNum = num;
+                });
+                
+                const newCatName = `MATCH ${String(maxNum + 1).padStart(2, '0')}`; // Format: MATCH 01, MATCH 02
+                const newCategory = await message.guild.channels.create({
+                    name: newCatName,
+                    type: ChannelType.GuildCategory
+                });
+
+                await message.channel.setParent(newCategory.id, { lockPermissions: false });
+                
+                const matchEmbed = new EmbedBuilder()
+                    .setColor('#9b59b6')
+                    .setTitle('🔗 Ticket Matched & Shifted')
+                    .setDescription(`New category **${newCatName}** created.\nThis ticket has been successfully shifted here!`)
+                    .setFooter({ text: 'Professor Network - Escrow Matching' });
+                
+                await message.reply({ embeds: [matchEmbed] });
+
+            } else {
+                // ACTION 2: MOVE TO EXISTING MATCH CATEGORY
+                const targetCatName = args.join(' ').toUpperCase(); // E.g., "MATCH 01"
+                const targetCategory = message.guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === targetCatName);
+                
+                if (!targetCategory) return message.reply(`❌ Category **${targetCatName}** not found.`);
+                
+                // Max 2 tickets limit check
+                if (targetCategory.children.cache.size >= 2) {
+                    return message.reply(`❌ **${targetCatName}** already contains 2 tickets. Please run \`.match\` to create a new category.`);
+                }
+
+                await message.channel.setParent(targetCategory.id, { lockPermissions: false });
+                
+                const matchEmbed = new EmbedBuilder()
+                    .setColor('#9b59b6')
+                    .setTitle('🔗 Ticket Shifted')
+                    .setDescription(`This ticket has been successfully joined into **${targetCatName}**!`)
+                    .setFooter({ text: 'Professor Network - Escrow Matching' });
+
+                await message.reply({ embeds: [matchEmbed] });
+            }
+        } catch (err) {
+            console.error("Match Error:", err);
+            await message.reply("❌ Error shifting ticket. Please check bot permissions.");
+        }
+    }
+
+    // 🔥 COMMAND: UNMATCH TICKET (.unmatch)
+    if (command === '.unmatch') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        try {
+            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
+            if (!ticketDoc.exists) return message.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
+
+            const ticketData = ticketDoc.data();
+            const parentCat = message.channel.parent;
+
+            if (!parentCat || !parentCat.name.startsWith('MATCH ')) {
+                return message.reply("❌ This ticket is not inside a MATCH category.");
+            }
+
+            // Figure out original category based on Buy/Sell
+            const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
+            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+            
+            if (!targetCategory) {
+                targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
+            }
+
+            // Move back
+            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
+            
+            const unmatchEmbed = new EmbedBuilder()
+                .setColor('#e74c3c')
+                .setTitle('💔 Ticket Unmatched')
+                .setDescription(`Ticket has been moved back to its original location: **${targetCategoryName}**.`)
+                .setFooter({ text: 'Professor Network - Escrow Matching' });
+
+            await message.reply({ embeds: [unmatchEmbed] });
+
+            // Optional cleanup: Delete MATCH category if it's completely empty now
+            if (parentCat.children.cache.size === 0) {
+                await parentCat.delete().catch(()=>{});
+            }
+
+        } catch (err) {
+            console.error("Unmatch Error:", err);
+            await message.reply("❌ Error unmatching ticket.");
+        }
+    }
+
     // ADMIN COMMAND: .fb
     if (command === '.fb') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
