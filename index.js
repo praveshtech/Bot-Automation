@@ -41,10 +41,37 @@ async function uploadImageToFirebase(imageUrl, userId, type) {
 const client = new Client({ intents: [ GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildPresences ] });
 const userSelections = new Map();
 
-client.once('ready', () => {
+client.once('ready', async () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
     
+    // 🔥 SLASH COMMANDS REGISTRATION
+    try {
+        await client.application.commands.set([
+            { 
+                name: 'complete', 
+                description: 'Shift ticket to completed category for night settlement' 
+            },
+            {
+                name: 'match',
+                description: 'Match this ticket with another (Escrow)',
+                options: [{ 
+                    name: 'target', 
+                    type: 3, // STRING
+                    description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', 
+                    required: false 
+                }]
+            },
+            { 
+                name: 'unmatch', 
+                description: 'Unmatch this ticket and return to original category' 
+            }
+        ]);
+        console.log(`✅ Slash Commands Registered Successfully!`);
+    } catch (err) {
+        console.error("Slash Command Registration Error:", err);
+    }
+
     // Existing Leaderboard Interval
     setInterval(() => {
         client.guilds.cache.forEach(guild => { 
@@ -53,13 +80,12 @@ client.once('ready', () => {
         });
     }, 60 * 60 * 1000);
 
-    // 🔥 NAYA: Inactive KYC/UPI Ticket Auto-Delete System
+    // Inactive KYC/UPI Ticket Auto-Delete System
     setInterval(() => {
-        const TWELVE_HOURS = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+        const TWELVE_HOURS = 12 * 60 * 60 * 1000;
         const now = Date.now();
 
         client.guilds.cache.forEach(async guild => {
-            // Sirf KYC aur UPI channels ko filter karega
             const kycChannels = guild.channels.cache.filter(c => 
                 (c.name.startsWith('kyc-') && c.name !== 'kyc-requests') || 
                 c.name.startsWith('upi-')
@@ -67,14 +93,10 @@ client.once('ready', () => {
 
             for (const [id, channel] of kycChannels) {
                 try {
-                    // Channel ka aakhri message fetch karenge
                     const messages = await channel.messages.fetch({ limit: 1 });
                     const lastMessage = messages.first();
-                    
-                    // Agar message hai toh uska time lenge, nahi toh channel banne ka time
                     const lastActivityTime = lastMessage ? lastMessage.createdTimestamp : channel.createdTimestamp;
 
-                    // Agar aakhri activity 12 ghante se purani hai, toh delete!
                     if (now - lastActivityTime > TWELVE_HOURS) {
                         console.log(`🗑️ Auto-Deleting inactive KYC channel: ${channel.name}`);
                         await channel.delete('Inactive for 12 hours');
@@ -84,11 +106,11 @@ client.once('ready', () => {
                 }
             }
         });
-    }, 60 * 60 * 1000); // Yeh system har 1 ghante mein background mein check karega
+    }, 60 * 60 * 1000); 
 });
 
 // ==========================================
-// 🛠️ DISCORD COMMANDS
+// 🛠️ DISCORD MESSAGE COMMANDS (TEXT)
 // ==========================================
 let p2pMessageCount = 0;
 
@@ -146,169 +168,6 @@ client.on('messageCreate', async message => {
             }
         } catch (error) {
             console.error("Review reaction error:", error);
-        }
-    }
-
-    // 🔥 COMMAND: SHIFT TICKET TO COMPLETED CATEGORY (.complete)
-    if (command === '.complete') {
-        // Sirf Admins aur Palermo use kar sakte hain
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
-        try {
-            // Firebase se ticket ka data nikalna taaki pata chale Buy hai ya Sell
-            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.complete` inside a valid P2P ticket channel.", ephemeral: true });
-            
-            const ticketData = ticketDoc.data();
-            const isBuy = ticketData.tradeType === 'Buy';
-
-            // Nayi Category ka naam decide karna
-            const targetCategoryName = isBuy ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
-
-            // Check karna ki kya yeh category pehle se bani hui hai server mein
-            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
-            
-            // Agar category nahi bani hai, toh nayi banayega
-            if (!targetCategory) {
-                targetCategory = await message.guild.channels.create({ 
-                    name: targetCategoryName, 
-                    type: ChannelType.GuildCategory 
-                });
-            }
-
-            // Ticket ko nayi category mein shift karna (bina permissions lock kiye)
-            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
-
-            // Confirmation Message
-            const completeEmbed = new EmbedBuilder()
-                .setColor('#2ecc71')
-                .setTitle('✅ Ticket Shifted to Queue')
-                .setDescription(`This ticket has been successfully moved to the **${targetCategoryName}** category.\n> **Note:** The channel remains open for any post-trade discussions or feedback.`)
-                .setFooter({ text: 'Professor Network - Night Queue System', iconURL: client.user.displayAvatarURL() });
-
-            await message.reply({ embeds: [completeEmbed] });
-            
-            // Trigger command ko delete kar dena clean dikhne ke liye
-            await message.delete().catch(() => {});
-
-        } catch (err) {
-            console.error("Error in .complete command:", err);
-            await message.channel.send("❌ Server error while shifting ticket category. Please check bot permissions.");
-        }
-    }
-
-    // 🔥 COMMAND: MATCH TICKETS (.match OR .match match 01)
-    if (command.startsWith('.match')) {
-        // Sirf Admins aur Palermo use kar sakte hain
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
-        try {
-            // Firebase se ticket verify karna
-            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
-
-            // Check if user provided a category name (e.g., ".match match 01")
-            const args = message.content.split(' ').slice(1);
-            
-            if (args.length === 0) {
-                // ACTION 1: CREATE NEW MATCH CATEGORY
-                // Find highest existing MATCH number
-                const matchCategories = message.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory && c.name.startsWith('MATCH '));
-                let maxNum = 0;
-                matchCategories.forEach(cat => {
-                    const num = parseInt(cat.name.replace('MATCH ', ''));
-                    if (!isNaN(num) && num > maxNum) maxNum = num;
-                });
-                
-                const newCatName = `MATCH ${String(maxNum + 1).padStart(2, '0')}`; // Format: MATCH 01, MATCH 02
-                const newCategory = await message.guild.channels.create({
-                    name: newCatName,
-                    type: ChannelType.GuildCategory
-                });
-
-                await message.channel.setParent(newCategory.id, { lockPermissions: false });
-                
-                const matchEmbed = new EmbedBuilder()
-                    .setColor('#9b59b6')
-                    .setTitle('🔗 Ticket Matched & Shifted')
-                    .setDescription(`New category **${newCatName}** created.\nThis ticket has been successfully shifted here!`)
-                    .setFooter({ text: 'Professor Network - Escrow Matching' });
-                
-                await message.reply({ embeds: [matchEmbed] });
-                await message.delete().catch(() => {});
-
-            } else {
-                // ACTION 2: MOVE TO EXISTING MATCH CATEGORY
-                const targetCatName = args.join(' ').toUpperCase(); // E.g., "MATCH 01"
-                const targetCategory = message.guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === targetCatName);
-                
-                if (!targetCategory) return message.reply(`❌ Category **${targetCatName}** not found.`);
-                
-                // Max 2 tickets limit check
-                if (targetCategory.children.cache.size >= 2) {
-                    return message.reply(`❌ **${targetCatName}** already contains 2 tickets. Please run \`.match\` to create a new category.`);
-                }
-
-                await message.channel.setParent(targetCategory.id, { lockPermissions: false });
-                
-                const matchEmbed = new EmbedBuilder()
-                    .setColor('#9b59b6')
-                    .setTitle('🔗 Ticket Shifted')
-                    .setDescription(`This ticket has been successfully joined into **${targetCatName}**!`)
-                    .setFooter({ text: 'Professor Network - Escrow Matching' });
-
-                await message.reply({ embeds: [matchEmbed] });
-                await message.delete().catch(() => {});
-            }
-        } catch (err) {
-            console.error("Match Error:", err);
-            await message.reply("❌ Error shifting ticket. Please check bot permissions.");
-        }
-    }
-
-    // 🔥 COMMAND: UNMATCH TICKET (.unmatch)
-    if (command === '.unmatch') {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
-        try {
-            const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ This is not a valid P2P ticket.", ephemeral: true });
-
-            const ticketData = ticketDoc.data();
-            const parentCat = message.channel.parent;
-
-            if (!parentCat || !parentCat.name.startsWith('MATCH ')) {
-                return message.reply("❌ This ticket is not inside a MATCH category.");
-            }
-
-            // Figure out original category based on Buy/Sell
-            const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
-            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
-            
-            if (!targetCategory) {
-                targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
-            }
-
-            // Move back
-            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
-            
-            const unmatchEmbed = new EmbedBuilder()
-                .setColor('#e74c3c')
-                .setTitle('💔 Ticket Unmatched')
-                .setDescription(`Ticket has been moved back to its original location: **${targetCategoryName}**.`)
-                .setFooter({ text: 'Professor Network - Escrow Matching' });
-
-            await message.reply({ embeds: [unmatchEmbed] });
-            await message.delete().catch(() => {});
-
-            // Optional cleanup: Delete MATCH category if it's completely empty now
-            if (parentCat.children.cache.size === 0) {
-                await parentCat.delete().catch(()=>{});
-            }
-
-        } catch (err) {
-            console.error("Unmatch Error:", err);
-            await message.reply("❌ Error unmatching ticket.");
         }
     }
 
@@ -422,10 +281,8 @@ client.on('messageCreate', async message => {
         } catch (err) { console.error("❌ Error in !verify:", err); }
     }
 
-   // 🔥 COMMAND: GRANT UPI KYC ACCESS (UPDATE)
     if (command.startsWith('!grantupi')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
         const targetUser = message.mentions.members.first();
         if (!targetUser) return message.reply({ content: '❌ Please mention a user. Example: `!grantupi @username`', ephemeral: true });
 
@@ -434,27 +291,18 @@ client.on('messageCreate', async message => {
             if (!upiRole) {
                 upiRole = await message.guild.roles.create({ name: 'UPI Eligible', color: '#3498db', reason: 'Role for Exclusive UPI P2P Access' });
             }
-
             await targetUser.roles.add(upiRole);
-            
-            const successEmbed = new EmbedBuilder()
-                .setColor('#2ecc71')
-                .setTitle('🎥 UPI Access Granted')
-                .setDescription(`Successfully granted **UPI KYC Access** to ${targetUser.toString()}.\nThey can now see the exclusive UPI channel.`);
-                
+            const successEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Access Granted').setDescription(`Successfully granted **UPI KYC Access** to ${targetUser.toString()}.\nThey can now see the exclusive UPI channel.`);
             await message.reply({ embeds: [successEmbed] });
-            // 🔥 Yahan add kiya:
             await message.delete().catch(() => {}); 
         } catch (err) {
             console.error("Grant UPI Error:", err);
-            await message.reply("❌ Error granting access. Please check bot permissions.");
+            await message.reply("❌ Error granting access.");
         }
     }
 
-    // 🔥 COMMAND: REVOKE UPI KYC ACCESS (UPDATE)
     if (command.startsWith('!revokeupi')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
         const targetUser = message.mentions.members.first();
         if (!targetUser) return message.reply({ content: '❌ Please mention a user. Example: `!revokeupi @username`', ephemeral: true });
 
@@ -462,14 +310,8 @@ client.on('messageCreate', async message => {
             const upiRole = message.guild.roles.cache.find(r => r.name === 'UPI Eligible');
             if (upiRole && targetUser.roles.cache.has(upiRole.id)) {
                 await targetUser.roles.remove(upiRole);
-                
-                const revokeEmbed = new EmbedBuilder()
-                    .setColor('#e74c3c')
-                    .setTitle('🔒 UPI Access Revoked')
-                    .setDescription(`Successfully removed **UPI KYC Access** from ${targetUser.toString()}.`);
-                    
+                const revokeEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🔒 UPI Access Revoked').setDescription(`Successfully removed **UPI KYC Access** from ${targetUser.toString()}.`);
                 await message.reply({ embeds: [revokeEmbed] });
-                // 🔥 Yahan add kiya:
                 await message.delete().catch(() => {});
             } else {
                 await message.reply({ content: `⚠️ ${targetUser.user.username} doesn't have the UPI Eligible role.`, ephemeral: true });
@@ -480,29 +322,14 @@ client.on('messageCreate', async message => {
         }
     }
 
-    // 3. COMMAND: SETUP UPI KYC DESK (Fixed interaction crash bug)
     if (command === '!setupupidesk') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
-        
         try {
-            const upiEmbed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setTitle('🎥 Exclusive UPI Video KYC')
-                .setDescription(`Welcome to the Exclusive UPI Verification Desk!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Click the button below to create your private secure room. Upload the video and images directly in that chat. Our Admin will review them and save them securely to the Firebase Cloud Vault.*`);
-            
-            const upiBtn = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('start_upi_video_kyc')
-                    .setLabel('Start UPI Video KYC')
-                    .setStyle(ButtonStyle.Primary)
-                    .setEmoji('🎥')
-            );
-
+            const upiEmbed = new EmbedBuilder().setColor('#3498db').setTitle('🎥 Exclusive UPI Video KYC').setDescription(`Welcome to the Exclusive UPI Verification Desk!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Click the button below to create your private secure room.*`);
+            const upiBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_upi_video_kyc').setLabel('Start UPI Video KYC').setStyle(ButtonStyle.Primary).setEmoji('🎥'));
             await message.channel.send({ embeds: [upiEmbed], components: [upiBtn] });
             await message.delete().catch(()=>{});
-        } catch (err) {
-            console.error("Error setting up UPI desk:", err);
-        }
+        } catch (err) { console.error("Error setting up UPI desk:", err); }
     }
 
     if (command === '!setupdashboard') {
@@ -544,55 +371,124 @@ client.on('messageCreate', async message => {
         } catch (err) { console.error("❌ Error setting up heist leaderboard:", err); }
     }
 
-    // 🌙 NIGHT MODE: CHAT LOCK COMMAND
     if (command === '!lockchat') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-        
         try {
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
             if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false });
-
-            const lockEmbed = new EmbedBuilder()
-                .setColor('#e74c3c')
-                .setTitle('🌙 THE VAULT IS NOW RESTING')
-                .setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket here <#1503666259244482642> to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!')
-                .setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png')
-                .setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
-
+            const lockEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🌙 THE VAULT IS NOW RESTING').setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket here <#1503666259244482642> to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!').setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png').setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone 🔔 **Notice for all Verified Members**', embeds: [lockEmbed] });
-        } catch (err) {
-            console.error("Error locking chat:", err);
-            await message.reply("❌ Chat lock karne mein error aaya. Bot ka role check karein.");
-        }
+        } catch (err) { console.error("Error locking chat:", err); await message.reply("❌ Chat lock karne mein error aaya. Bot ka role check karein."); }
     }
 
-    // ☀️ DAY MODE: CHAT UNLOCK COMMAND
     if (command === '!openchat') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-        
         try {
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
             if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null });
-
-            const unlockEmbed = new EmbedBuilder()
-                .setColor('#2ecc71')
-                .setTitle('☀️ THE VAULT IS OPEN')
-                .setDescription('Good morning, Syndicate! General chat is now **OPEN**.\n\nTrade safely, verify admins before trading, and remember: **NO DM DEALS EVER!**')
-                .setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
-
+            const unlockEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('☀️ THE VAULT IS OPEN').setDescription('Good morning, Syndicate! General chat is now **OPEN**.\n\nTrade safely, verify admins before trading, and remember: **NO DM DEALS EVER!**').setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone', embeds: [unlockEmbed] });
-        } catch (err) {
-            console.error("Error unlocking chat:", err);
-        }
+        } catch (err) { console.error("Error unlocking chat:", err); }
     }
 });
 
 // ==========================================
-// 🖱️ INTERACTION LOGIC
+// 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
 // ==========================================
 client.on('interactionCreate', async interaction => {
+
+    // 🔥 SLASH COMMANDS HANDLER (/complete, /match, /unmatch)
+    if (interaction.isChatInputCommand()) {
+        
+        // Sirf Admins aur Palermo use kar sakte hain
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
+            return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
+        }
+
+        // 1. /COMPLETE COMMAND
+        if (interaction.commandName === 'complete') {
+            await interaction.deferReply({ ephemeral: true });
+            try {
+                const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+                if (!ticketDoc.exists) return interaction.editReply({ content: "❌ This is not a valid P2P ticket." });
+                
+                const targetCategoryName = ticketDoc.data().tradeType === 'Buy' ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
+                let targetCategory = interaction.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+                if (!targetCategory) targetCategory = await interaction.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
+
+                await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
+
+                const completeEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Ticket Shifted to Queue').setDescription(`Shifted to **${targetCategoryName}**.\nIt will be fully marked as Complete tonight at 10 PM.`);
+                
+                await interaction.editReply({ embeds: [completeEmbed] });
+            } catch (err) { console.error(err); await interaction.editReply({ content: "❌ Error shifting ticket." }); }
+        }
+
+        // 2. /MATCH COMMAND
+        if (interaction.commandName === 'match') {
+            await interaction.deferReply({ ephemeral: true });
+            try {
+                const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+                if (!ticketDoc.exists) return interaction.editReply({ content: "❌ This is not a valid P2P ticket." });
+
+                const targetInput = interaction.options.getString('target');
+                
+                if (!targetInput) {
+                    const matchCategories = interaction.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory && c.name.startsWith('MATCH '));
+                    let maxNum = 0;
+                    matchCategories.forEach(cat => {
+                        const num = parseInt(cat.name.replace('MATCH ', ''));
+                        if (!isNaN(num) && num > maxNum) maxNum = num;
+                    });
+                    
+                    const newCatName = `MATCH ${String(maxNum + 1).padStart(2, '0')}`;
+                    const newCategory = await interaction.guild.channels.create({ name: newCatName, type: ChannelType.GuildCategory });
+                    
+                    await interaction.channel.setParent(newCategory.id, { lockPermissions: false });
+                    
+                    const matchEmbed = new EmbedBuilder().setColor('#9b59b6').setTitle('🔗 Ticket Matched & Shifted').setDescription(`New category **${newCatName}** created.\nTicket shifted successfully!`);
+                    await interaction.editReply({ embeds: [matchEmbed] });
+                } else {
+                    const targetCatName = targetInput.toUpperCase();
+                    const targetCategory = interaction.guild.channels.cache.find(c => c.type === ChannelType.GuildCategory && c.name === targetCatName);
+                    
+                    if (!targetCategory) return interaction.editReply({ content: `❌ Category **${targetCatName}** not found.` });
+                    if (targetCategory.children.cache.size >= 2) return interaction.editReply({ content: `❌ **${targetCatName}** already contains 2 tickets.` });
+
+                    await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
+                    
+                    const matchEmbed = new EmbedBuilder().setColor('#9b59b6').setTitle('🔗 Ticket Shifted').setDescription(`This ticket has been successfully joined into **${targetCatName}**!`);
+                    await interaction.editReply({ embeds: [matchEmbed] });
+                }
+            } catch (err) { console.error(err); await interaction.editReply({ content: "❌ Error matching ticket." }); }
+        }
+
+        // 3. /UNMATCH COMMAND
+        if (interaction.commandName === 'unmatch') {
+            await interaction.deferReply({ ephemeral: true });
+            try {
+                const ticketDoc = await db.collection('p2p_tickets').doc(interaction.channel.id).get();
+                if (!ticketDoc.exists) return interaction.editReply({ content: "❌ This is not a valid P2P ticket." });
+
+                const parentCat = interaction.channel.parent;
+                if (!parentCat || !parentCat.name.startsWith('MATCH ')) return interaction.editReply({ content: "❌ This ticket is not inside a MATCH category." });
+
+                const targetCategoryName = ticketDoc.data().tradeType === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
+                let targetCategory = interaction.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+                if (!targetCategory) targetCategory = await interaction.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
+
+                await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
+                
+                const unmatchEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('💔 Ticket Unmatched').setDescription(`Ticket moved back to **${targetCategoryName}**.`);
+                await interaction.editReply({ embeds: [unmatchEmbed] });
+
+                if (parentCat.children.cache.size === 0) await parentCat.delete().catch(()=>{});
+            } catch (err) { console.error(err); await interaction.editReply({ content: "❌ Error unmatching ticket." }); }
+        }
+        return; // Important to stop here for slash commands
+    }
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         await interaction.deferUpdate(); 
@@ -797,9 +693,6 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         await interaction.update({ content: '', embeds: [step1Embed], components: [new ActionRowBuilder().addComponents(typeDropdown)] });
     }
 
-    // ==========================================
-    // 🔥 STEP 2: UPI VIDEO KYC ROOM CREATION 
-    // ==========================================
     if (interaction.isButton() && interaction.customId === 'start_upi_video_kyc') {
         try {
             const existingChannel = interaction.guild.channels.cache.find(c => c.name.startsWith('upi-') && c.topic === interaction.user.id);
@@ -811,15 +704,12 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         await interaction.reply({ content: '⏳ Creating your secure UPI Video KYC room...', ephemeral: true });
 
         try {
-            // 🔥 NAYA: Specific Category ID use kar rahe hain
             let kycCategory = interaction.guild.channels.cache.get('1520318957863829565');
             
-            // Agar kisi wajah se woh category nahi mili (jaise delete ho gayi ho), toh fallback mein purani category dhoondhega
             if (!kycCategory) {
                 kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
             }
 
-            // Permissions setup (Sirf User, Bot aur Palermo dekh payenge)
             const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
             const channelPermissions = [
                 { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, 
@@ -829,15 +719,13 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
 
             const randomKycId = Math.random().toString(36).substring(2, 8);
             
-            // Agar category mil gayi toh usme banayega, nahi toh root channel mein
             const upiKycChannel = await interaction.guild.channels.create({ 
                 name: `upi-${randomKycId}`, 
                 type: ChannelType.GuildText, 
-                parent: kycCategory ? kycCategory.id : null, // Yahan parent ID set ho rahi hai
+                parent: kycCategory ? kycCategory.id : null, 
                 permissionOverwrites: channelPermissions,
                 topic: interaction.user.id 
             });
-            // ... baaki ka code waisa hi rahega
 
             const upiEmbed = new EmbedBuilder()
                 .setColor('#3498db')
@@ -858,9 +746,6 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         }
     }
 
-    // ==========================================
-    // 🔥 STEP 3: APPROVE / REJECT & SAVE TO FIREBASE STORAGE
-    // ==========================================
     if (interaction.isButton() && interaction.customId.startsWith('approve_upikyc_')) {
         const userId = interaction.customId.replace('approve_upikyc_', '');
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
@@ -957,9 +842,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         }
 
         try {
-            // 🔥 NAYA LOGIC: Ab username ki jagah User ID (Topic) se check karega
             const existingChannel = interaction.guild.channels.cache.find(c => c.name.startsWith('kyc-') && c.topic === interaction.user.id);
-            
             if (existingChannel) {
                 return interaction.reply({ content: `❌ **Action Denied:** Your KYC verification is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
             }
@@ -984,7 +867,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
                 type: ChannelType.GuildText, 
                 parent: kycCategory.id, 
                 permissionOverwrites: channelPermissions,
-                topic: interaction.user.id // 🔥 NAYA: Topic mein ID save karna zaroori hai tabhi upar wala check kaam karega
+                topic: interaction.user.id 
             });
 
             const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            
@@ -1072,6 +955,12 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
 ]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
+            let estTimes = { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' };
+            try {
+                const setDoc = await db.collection('settings').doc('app_data').get();
+                if (setDoc.exists && setDoc.data().estTimes) estTimes = setDoc.data().estTimes;
+            } catch(e){}
+
             if (userState.type === 'Sell') {
                 step2Dropdown.addOptions([
                     { label: 'USDT Trc20', value: 'TRC20', emoji: '🔗', default: userState.step2 === 'TRC20' }, 
@@ -1096,8 +985,8 @@ const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                        { label: 'IMPS (Bank Transfer)', description: 'Estimated Time 1 Hour', value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
-                        { label: 'CDM (Cash Deposit)', description: 'Estimated Time 45 Minutes to 1 Hour', value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                        { label: 'IMPS (Bank Transfer)', description: `Estimated Time ${estTimes.imps}`, value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
+                        { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes.cdm}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
@@ -1195,9 +1084,6 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
 
         await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
-       // ==========================================
-        // 🔥 NAYA LOGIC: Buy aur Sell ke liye alag category
-        // ==========================================
         const categoryName = userState.type === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
         
         let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
@@ -1217,20 +1103,29 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
         const ticketChannel = await interaction.guild.channels.create({ 
             name: `ticket-${randomId}`, 
             type: ChannelType.GuildText, 
-            parent: targetCategory.id, // 🔥 Ticket ab apni sahi category me jayegi
+            parent: targetCategory.id,
             permissionOverwrites: channelPermissions 
         });
-        // ==========================================
         
-        const walletData = {
-            'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' },
-            'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' },
-            'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' },
-            'ARBITRUM': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg?ex=6a30fe6e&is=6a2facee&hm=d1a171cd44b807dbdd00cb08c4561be0ebdf6c3d31ed4972c7e7c405c297de33&=&format=webp&width=664&height=879' },
-            'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' },
-            'USDC_ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg?ex=6a30ff07&is=6a2fad87&hm=b00ebb1a931cc1f260a38e55436172a92fc723ad3eb613cb53b4f523013fba5b&=&format=webp&width=679&height=880' },
-            'USDC_BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg?ex=6a31001d&is=6a2fae9d&hm=7c287ec6bfbe44b422c9cade0954846396b9dcc7f8c4b4ec3ba15728833d85e0&=&format=webp&width=674&height=879' },
-        };
+        let walletData = {};
+        try {
+            const setDoc = await db.collection('settings').doc('app_data').get();
+            if (setDoc.exists && setDoc.data().wallets) {
+                walletData = setDoc.data().wallets;
+            }
+        } catch (e) { console.log('Error fetching wallets'); }
+
+        if(!walletData['TRC20']) {
+            walletData = {
+                'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' },
+                'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' },
+                'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' },
+                'ARBITRUM': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg?ex=6a30fe6e&is=6a2facee&hm=d1a171cd44b807dbdd00cb08c4561be0ebdf6c3d31ed4972c7e7c405c297de33&=&format=webp&width=664&height=879' },
+                'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' },
+                'USDC_ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg?ex=6a30ff07&is=6a2fad87&hm=b00ebb1a931cc1f260a38e55436172a92fc723ad3eb613cb53b4f523013fba5b&=&format=webp&width=679&height=880' },
+                'USDC_BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg?ex=6a31001d&is=6a2fae9d&hm=7c287ec6bfbe44b422c9cade0954846396b9dcc7f8c4b4ec3ba15728833d85e0&=&format=webp&width=674&height=879' },
+            };
+        }
 
         let easyCopyText = ""; 
         let qrImageUrl = null;
@@ -1295,7 +1190,6 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
             await ticketChannel.send({ embeds: [qrEmbed] });
         }
 
-        // 🔥 NAYA FIX: Sell ticket me sabse last me Berlin ko chat ping karna
         if (userState.type === 'Sell') {
             await ticketChannel.send({ content: `<@1336703883711479896>` });
         }
@@ -1303,7 +1197,6 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
 
-        
         setTimeout(() => { interaction.deleteReply().catch(() => {}); }, 10000);
     }
 
@@ -1723,11 +1616,11 @@ app.get('/', requireLogin, async (req, res) => {
         
         const allKycSnap = await db.collection('users_kyc').get();
         const allKycUsers = [];
-        const upiKycUsers = []; // 🔥 NAYI LINE: UPI Users array
+        const upiKycUsers = []; 
         allKycSnap.forEach(doc => {
             const data = doc.data();
             if (data.kycType === 'Advanced (Vault Verified)') allKycUsers.push({ id: doc.id, ...data });
-            if (data.upiVerified === true) upiKycUsers.push({ id: doc.id, ...data }); // 🔥 NAYI LINE: UPI Data fetch
+            if (data.upiVerified === true) upiKycUsers.push({ id: doc.id, ...data }); 
         });
 
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
@@ -1776,7 +1669,7 @@ app.get('/', requireLogin, async (req, res) => {
         res.render('dashboard', { 
             liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders, pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
             pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), allLogs: allCompleted, monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers, upiKycUsers
-        }); // 🔥 upiKycUsers add kiya end mein
+        }); 
     } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
 
@@ -1791,12 +1684,10 @@ adminApp.set('view engine', 'ejs');
 adminApp.use(express.urlencoded({ extended: true }));
 adminApp.use(express.json());
 adminApp.use(cors());
-// Admin portal ke liye alag session
 adminApp.use(session({ secret: 'master-admin-secret-2026', resave: true, saveUninitialized: true, cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 } }));
 
 const requireAdminLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
 
-// Admin Login Page (You can use the same login.ejs)
 adminApp.get('/login', (req, res) => { if (req.session.loggedIn) return res.redirect('/'); res.render('login', { error: null }); });
 
 adminApp.post('/login', async (req, res) => {
@@ -1812,34 +1703,19 @@ adminApp.post('/login', async (req, res) => {
 
 adminApp.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
-// 🔥 ADMIN DASHBOARD ROUTE (Loads administrator.ejs)
 adminApp.get('/', requireAdminLogin, async (req, res) => {
-    // 💡 Agar Firebase khali hai, toh yeh default addresses aur QR Links UI mein dikhayega
     let appSettings = { 
         wallets: {
-            'TRC20': { 
-                address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', 
-                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' 
-            },
-            'ERC20': { 
-                address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', 
-                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' 
-            },
-            'BEP20': { 
-                address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', 
-                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' 
-            },
-            'POLYGON': { 
-                address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', 
-                qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' 
-            }
+            'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' },
+            'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' },
+            'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' },
+            'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' }
         }, 
         estTimes: { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' } 
     };
 
     try {
         const settingsDoc = await db.collection('settings').doc('app_data').get();
-        // Agar aapne Dashboard se kuch save kiya hai, toh wo in defaults ko overwrite kar dega
         if (settingsDoc.exists) {
             const savedData = settingsDoc.data();
             if (savedData.wallets) appSettings.wallets = { ...appSettings.wallets, ...savedData.wallets };
@@ -1850,8 +1726,7 @@ adminApp.get('/', requireAdminLogin, async (req, res) => {
     res.render('administrator', { appSettings });
 });
 
-// 🔥 SAVE SETTINGS ROUTE
-app.post('/update-app-settings', requireAdminLogin, async (req, res) => {
+adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
     try {
         const newData = {
             wallets: {
@@ -1870,11 +1745,15 @@ app.post('/update-app-settings', requireAdminLogin, async (req, res) => {
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
         await db.collection('settings').doc('app_data').set(newData, { merge: true });
-        // ... success response ...
+        
+        res.send(`
+            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
+            <body><script>Swal.fire({title: 'Updated!', text: 'Settings Saved Successfully!', icon: 'success', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '#22c55e'}).then(() => { window.location.href = "/"; });</script></body>
+        `);
     } catch (error) { res.send(`Error: ${error.message}`); }
 });
 
-// START ADMIN SERVER ON PORT 4000
 const ADMIN_PORT = 4000;
 adminApp.listen(ADMIN_PORT, () => { 
     console.log(`🔐 Master Administrator Panel is LIVE on Port ${ADMIN_PORT}`); 
@@ -1884,7 +1763,6 @@ adminApp.listen(ADMIN_PORT, () => {
 // 🔥 ADVANCED SERVER STATS (THE VAULT STYLE) 🔥
 // ==========================================
 const WELCOME_CHANNEL_ID = '1509523189389332480'; 
-
 const STATS_DATE_ID = '1509533726902849586';      
 const STATS_TOTAL_ID = '1509533817986089062';     
 const STATS_ONLINE_ID = '1509533898949005373';    
@@ -1932,6 +1810,19 @@ client.on('guildMemberAdd', async (member) => {
     if (welcomeChannel) {
         welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`);
     }
+});
+
+// ==========================================
+// 🛡️ ANTI-CRASH SYSTEM
+// ==========================================
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('❌ [ANTI-CRASH] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err, origin) => {
+    console.log('❌ [ANTI-CRASH] Uncaught Exception:', err, 'Origin:', origin);
+});
+process.on('uncaughtExceptionMonitor', (err, origin) => {
+    console.log('❌ [ANTI-CRASH] Uncaught Exception Monitor:', err, 'Origin:', origin);
 });
 
 client.login(process.env.DISCORD_TOKEN);
