@@ -1098,54 +1098,32 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
-        // 🔥 NAYA FIX 2: Live Rate fetch karna aur INR calculate karna
-        let liveRate = 0;
-        let calculatedInr = 0;
-        try {
-            const rateDoc = await db.collection('settings').doc('market_rates').get();
-            if (rateDoc.exists) {
-                liveRate = userState.type === 'Buy' ? Number(rateDoc.data().buyPrice) : Number(rateDoc.data().sellPrice);
-                calculatedInr = Number(tradeAmount) * liveRate;
-            }
-        } catch (e) {
-            console.error("Error fetching live rates:", e);
-        }
-
-        let inrDisplay = calculatedInr > 0 ? `₹${calculatedInr.toLocaleString('en-IN')}` : 'TBD by Admin';
-        let paymentLabel = userState.type === 'Sell' ? 'Wallet Address' : 'Payment Details';
         let paymentInstructions = "";
-
         if (userState.type === 'Sell') {
-            paymentInstructions = `Please send exactly **$${Number(tradeAmount) + fee} USDT** to this address and upload the payment screenshot here.\n\n*(You will receive approx. **${inrDisplay}** in your selected payment method)*`;
+            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${Number(tradeAmount) + fee} USDT** to this address and upload the payment screenshot here.`;
         } else {
-            let totalInrToPay = calculatedInr > 0 ? `₹${((Number(tradeAmount) + fee) * liveRate).toLocaleString('en-IN')}` : 'the equivalent INR';
-            paymentInstructions = `Please pay exactly **${totalInrToPay}** to the admin's account.\n\nOnce paid, please upload the payment screenshot here.`;
+            paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
         }
 
-        let rateString = liveRate > 0 ? `\n\n**📈 Live Rate:** ₹${liveRate} / USDT\n**💵 Total INR Value:** ${inrDisplay}` : "";
+        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. How much amount ($)?**\n> $${tradeAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n**Please pay exactly: $${Number(tradeAmount) + fee}**`;
 
-        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting **Professor Network**.\n\n**Trade Details:**\n• Action: ${userState.type} USDT\n• Amount: $${tradeAmount}\n• Method: ${userState.step2}\n\n**Fee:** $${fee}${rateString}\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n${paymentInstructions}`;
+        const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
+        const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
+        const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
 
-        const ticketEmbed = new EmbedBuilder()
-            .setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22')
-            .setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() })
-            .setDescription(cinematicDescription)
-            .addFields({ name: `💳 ${paymentLabel}`, value: `**\`${easyCopyText}\`**` })
-            .setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
+        await ticketChannel.send({ content: palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`, embeds: [ticketEmbed], components: [actionButtonRow] });
+        await ticketChannel.send({ embeds: [paymentEmbed] });
 
-        const actionButtonRow = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), 
-            new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger)
-        );
+        if (userState.type === 'Sell' && !easyCopyText.includes("Ask Admin") && !easyCopyText.includes("Waiting")) {
+             await ticketChannel.send(`\`${easyCopyText}\``);
+        } else {
+             await ticketChannel.send(`${easyCopyText}`);
+        }
+        await ticketChannel.send('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬');
 
-       let pingText = palermoRole ? `🔔 <@&${palermoRole.id}> | Ping: ${interaction.user.toString()}` : `Ping: ${interaction.user.toString()}`;
-
-        await ticketChannel.send({ content: pingText, embeds: [ticketEmbed], components: [actionButtonRow] });
-
-        // 🔥 CRITICAL FIX: Admin Button wapas add kiya taaki wo user ki bank details dekh sake
-        const revealButtonsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only Admin)').setStyle(ButtonStyle.Secondary));
-        await ticketChannel.send({ content: `🔒 **Admin Access:** Click below to view user's bank/receiving details.`, components: [revealButtonsRow] });
-
+        const revealButtonsRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('reveal_user_details').setLabel('👨‍💼 View User Details (Only For Admin)').setStyle(ButtonStyle.Secondary));
+        await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
+        
         if (userState.type === 'Sell' && qrImageUrl) {
             const qrEmbed = new EmbedBuilder()
                 .setColor('#f1c40f')
@@ -1161,6 +1139,7 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
 
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
+
         
         setTimeout(() => { interaction.deleteReply().catch(() => {}); }, 10000);
     }
@@ -1558,13 +1537,6 @@ app.post('/update-price', requireLogin, async (req, res) => {
     };
 
     try {
-        // 🔥 NAYA FIX 1: Rates ko database me save karna taaki ticket me use ho sake
-        await db.collection('settings').doc('market_rates').set({
-            buyPrice: Number(buyPrice),
-            sellPrice: Number(sellPrice),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
-
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) return sendModernAlert("❌ Error", "Discord server not found.", "error");
         let priceChannel = guild.channels.cache.get('1503666351594799205'); 
@@ -1573,7 +1545,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
         const priceEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 USDT Market Price Update').setDescription('**Professor Network** has updated the real-time P2P exchange rates.').addFields({ name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
         await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });       
-        sendModernAlert("✅ Success!", "Market Price Broadcasted & Saved Successfully!", "success");
+        sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
     } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
