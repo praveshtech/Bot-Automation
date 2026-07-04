@@ -957,7 +957,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
 ]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
-            let estTimes = { imps: '2 Hour', cdm: '45 Minutes to 1 Hour' };
+            let estTimes = { 'imps/UPI' : '2 Hour', 'cdm': '45 Minutes to 1 Hour' };
             try {
                 const setDoc = await db.collection('settings').doc('app_data').get();
                 if (setDoc.exists && setDoc.data().estTimes) estTimes = setDoc.data().estTimes;
@@ -987,8 +987,8 @@ const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                        { label: 'IMPS (Bank Transfer)', description: `Estimated Time ${estTimes.imps}`, value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
-                        { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes.cdm}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                        { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
+                        { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
@@ -1053,7 +1053,7 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
         const p2pModal = new ModalBuilder().setCustomId('final_p2p_modal').setTitle(`🏦 Details: ${userState.type} USDT`);
         
         if (userState.type === 'Sell') {
-            if (userState.step3 === 'IMPS') {
+            if (userState.step3 === 'IMPS/UPI') {
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setStyle(TextInputStyle.Short).setRequired(true)));
             } else if (userState.step3 === 'CDM') {
                 p2pModal.addComponents(
@@ -1077,7 +1077,7 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
         let userDetails = "";
 
         if (userState.type === 'Sell') {
-            if (userState.step3 === 'IMPS') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('account_name')}\nAccount No: ${interaction.fields.getTextInputValue('account_number')}\nIFSC Code: ${interaction.fields.getTextInputValue('ifsc_code')}`;
+            if (userState.step3 === 'IMPS/UPI') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('account_name')}\nAccount No: ${interaction.fields.getTextInputValue('account_number')}\nIFSC Code: ${interaction.fields.getTextInputValue('ifsc_code')}`;
             else if (userState.step3 === 'CDM') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('cdm_bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
             else if (userState.step3 === 'CCW') userDetails = `Phone No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
         } else {
@@ -1790,7 +1790,7 @@ adminApp.get('/', requireAdminLogin, async (req, res) => {
             'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' },
             'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' }
         }, 
-        estTimes: { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' } 
+        estTimes: { 'imps/UPI': '2 Hour', 'cdm': '45 Minutes to 1 Hour' } 
     };
 
     try {
@@ -1818,8 +1818,8 @@ adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
                 'USDC_BEP20': { address: req.body.usdc_bep20_address, qrImage: req.body.usdc_bep20_qr }
             },
             estTimes: {
-                imps: req.body.imps_time || '1 Hour',
-                cdm: req.body.cdm_time || '45 Minutes to 1 Hour'
+                'imps/UPI': req.body.imps_time || '2 Hour',
+                'cdm': req.body.cdm_time || '45 Minutes to 1 Hour'
             },
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
