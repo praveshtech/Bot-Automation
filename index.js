@@ -967,7 +967,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
                     { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, 
                     { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, 
                     { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵', default: userState.step2 === 'ARBITRUM' },
-                    { label: 'USDT Polygon', value: 'POLYGON', emoji: '🟣', default: userState.step2 === 'POLYGON' },
+                    
                     { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙', default: userState.step2 === 'USDC_ERC20' },
                     { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙', default: userState.step2 === 'USDC_BEP20' }
                 ]);           
@@ -1032,7 +1032,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
                 { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, 
                 { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, 
                 { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵' },
-                { label: 'USDT Polygon', value: 'POLYGON', emoji: '🟣' },
+                
                 { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙' },
                 { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙' }
             ]);     
