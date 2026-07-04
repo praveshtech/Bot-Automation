@@ -987,7 +987,7 @@ const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                        { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS', emoji: '🏦', default: userState.step3 === 'IMPS' }, 
+                        { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS/UPI', emoji: '🏦', default: userState.step3 === 'IMPS/UPI' }, 
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
