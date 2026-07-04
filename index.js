@@ -8,6 +8,7 @@ const admin = require('firebase-admin');
 const serviceAccount = require('./serviceAccountKey.json');
 const excelJS = require('exceljs'); 
 const faqData = require('./faqs.json');
+const bcrypt = require('bcrypt');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -1445,12 +1446,37 @@ app.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
-        let validUser = 'professor', validPass = 'heist2026';
-        if (authDoc.exists) { validUser = authDoc.data().username; validPass = authDoc.data().password; } 
-        else { await db.collection('settings').doc('admin_auth').set({ username: validUser, password: validPass }); }
+        let validUser = 'professor';
+        let validPassHash = '';
 
-        if (username === validUser && password === validPass) { req.session.loggedIn = true; res.redirect('/'); } 
-        else { res.render('login', { error: 'Access Denied. Incorrect Credentials.' }); }
+        if (authDoc.exists) { 
+            validUser = authDoc.data().username; 
+            validPassHash = authDoc.data().password; 
+            
+            // Agar password purana text format mein hai, toh use check karke encrypt karo
+            if (!validPassHash.startsWith('$2b$')) {
+                if (username === validUser && password === validPassHash) {
+                    const newHash = await bcrypt.hash(password, 10);
+                    await db.collection('settings').doc('admin_auth').update({ password: newHash });
+                    req.session.loggedIn = true; 
+                    return res.redirect('/');
+                }
+            }
+        } else { 
+            // Naya database hai toh default ko encrypt karke save karo
+            validPassHash = await bcrypt.hash('heist2026', 10);
+            await db.collection('settings').doc('admin_auth').set({ username: validUser, password: validPassHash }); 
+        }
+
+        // Encrypted password se check karna
+        if (username === validUser) {
+            const isMatch = await bcrypt.compare(password, validPassHash);
+            if (isMatch) {
+                req.session.loggedIn = true; 
+                return res.redirect('/');
+            }
+        }
+        res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
     } catch (error) { res.render('login', { error: 'Database Connection Error. Please verify network.' }); }
 });
 
@@ -1459,7 +1485,9 @@ app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login')
 app.post('/update-credentials', requireLogin, async (req, res) => {
     const { new_username, new_password } = req.body;
     if (new_username && new_password) {
-        await db.collection('settings').doc('admin_auth').set({ username: new_username, password: new_password });
+        // Naya password hamesha encrypt ho kar save hoga
+        const hashedPass = await bcrypt.hash(new_password, 10);
+        await db.collection('settings').doc('admin_auth').set({ username: new_username, password: hashedPass });
         req.session.destroy();
         res.redirect('/login');
     } else { res.redirect('/'); }
@@ -1694,10 +1722,19 @@ adminApp.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
-        let validUser = 'professor', validPass = 'heist2026';
-        if (authDoc.exists) { validUser = authDoc.data().username; validPass = authDoc.data().password; } 
-        if (username === validUser && password === validPass) { req.session.loggedIn = true; res.redirect('/'); } 
-        else { res.render('login', { error: 'Access Denied. Incorrect Credentials.' }); }
+        if (!authDoc.exists) return res.render('login', { error: 'Admin setup incomplete. Login to Main Dashboard first.' });
+        
+        const validUser = authDoc.data().username;
+        const validPassHash = authDoc.data().password;
+
+        if (username === validUser) {
+            const isMatch = await bcrypt.compare(password, validPassHash);
+            if (isMatch) {
+                req.session.loggedIn = true; 
+                return res.redirect('/');
+            }
+        }
+        res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
     } catch (error) { res.render('login', { error: 'Database Connection Error.' }); }
 });
 
