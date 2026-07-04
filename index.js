@@ -9,6 +9,7 @@ const serviceAccount = require('./serviceAccountKey.json');
 const excelJS = require('exceljs'); 
 const faqData = require('./faqs.json');
 const bcrypt = require('bcrypt');
+const rateLimit = require('express-rate-limit');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -1432,17 +1433,47 @@ async function approveUserKYC(userId, guild) {
 // 🌐 WEB DASHBOARD (EXPRESS SERVER)
 // ==========================================
 const app = express();
+// ==========================================
+// 🛡️ SECURITY: RATE LIMITING (BRUTE-FORCE PROTECTION)
+// ==========================================
+const loginLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000, // 5 minute ka timer
+    max: 5, // Ek IP se max 5 login attempts
+    message: 'Too many login attempts from this IP, please try again after 5 minutes.'
+});
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors());
-app.use(session({ secret: 'professor-vault-secret-key-2026', resave: true, saveUninitialized: true, cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 } }));
+// 🔥 SECURE CORS CONFIGURATION
+const corsOptions = {
+    origin: [
+        'http://localhost:3000', 
+        'http://localhost:4000',
+        'http://147.93.103.102:3000', // <-- Aapka Main Dashboard
+        'http://147.93.103.102:4000'  // <-- Aapka Master Admin Panel
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true // Session cookies ko allow karne ke liye
+};
+app.use(cors(corsOptions));
+// 🔥 SECURE SESSION FOR MAIN DASHBOARD
+app.use(session({ 
+    secret: process.env.SESSION_SECRET_MAIN || 'fallback-secret-key-1', 
+    resave: false, 
+    saveUninitialized: false, 
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', // Sirf HTTPS par chalega agar production hai
+        httpOnly: true, // XSS attacks se bachata hai (JavaScript cookie read nahi kar sakti)
+        sameSite: 'strict', // CSRF attacks ko rokta hai
+        maxAge: 7 * 24 * 60 * 60 * 1000 
+    } 
+}));
 
 const requireLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
 
 app.get('/login', (req, res) => { if (req.session.loggedIn) return res.redirect('/'); res.render('login', { error: null }); });
 
-app.post('/login', async (req, res) => {
+app.post('/login', loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
@@ -1711,14 +1742,25 @@ const adminApp = express();
 adminApp.set('view engine', 'ejs');
 adminApp.use(express.urlencoded({ extended: true }));
 adminApp.use(express.json());
-adminApp.use(cors());
-adminApp.use(session({ secret: 'master-admin-secret-2026', resave: true, saveUninitialized: true, cookie: { secure: false, maxAge: 7 * 24 * 60 * 60 * 1000 } }));
+adminApp.use(cors(corsOptions));
+// 🔥 SECURE SESSION FOR MASTER ADMIN
+adminApp.use(session({ 
+    secret: process.env.SESSION_SECRET_ADMIN || 'fallback-secret-key-2', 
+    resave: false, 
+    saveUninitialized: false, 
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', 
+        httpOnly: true, 
+        sameSite: 'strict', 
+        maxAge: 7 * 24 * 60 * 60 * 1000 
+    } 
+}));
 
 const requireAdminLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
 
 adminApp.get('/login', (req, res) => { if (req.session.loggedIn) return res.redirect('/'); res.render('login', { error: null }); });
 
-adminApp.post('/login', async (req, res) => {
+adminApp.post('/login', loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
