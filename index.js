@@ -955,7 +955,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
 ]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
-            let estTimes = { imps: '1 Hour', cdm: '45 Minutes to 1 Hour' };
+            let estTimes = { imps: '2 Hour', cdm: '45 Minutes to 1 Hour' };
             try {
                 const setDoc = await db.collection('settings').doc('app_data').get();
                 if (setDoc.exists && setDoc.data().estTimes) estTimes = setDoc.data().estTimes;
