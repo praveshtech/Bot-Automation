@@ -50,24 +50,9 @@ client.once('ready', async () => {
     // 🔥 SLASH COMMANDS REGISTRATION
     try {
         await client.application.commands.set([
-            { 
-                name: 'complete', 
-                description: 'Shift ticket to completed category for night settlement' 
-            },
-            {
-                name: 'match',
-                description: 'Match this ticket with another (Escrow)',
-                options: [{ 
-                    name: 'target', 
-                    type: 3, // STRING
-                    description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', 
-                    required: false 
-                }]
-            },
-            { 
-                name: 'unmatch', 
-                description: 'Unmatch this ticket and return to original category' 
-            }
+            { name: 'complete', description: 'Shift ticket to completed category for night settlement' },
+            { name: 'match', description: 'Match this ticket with another (Escrow)', options: [{ name: 'target', type: 3, description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', required: false }] },
+            { name: 'unmatch', description: 'Unmatch this ticket and return to original category' }
         ]);
         console.log(`✅ Slash Commands Registered Successfully!`);
     } catch (err) {
@@ -135,24 +120,17 @@ client.on('messageCreate', async message => {
 
     const command = message.content.trim().toLowerCase();
 
-    // 💡 FAQ QUICK REPLY SYSTEM
     if (faqData[command]) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
 
-        const faqEmbed = new EmbedBuilder()
-            .setColor(faqData[command].color)
-            .setTitle(faqData[command].title)
-            .setDescription(faqData[command].desc)
-            .setFooter({ text: 'Professor Network Support', iconURL: client.user.displayAvatarURL() });
+        const faqEmbed = new EmbedBuilder().setColor(faqData[command].color).setTitle(faqData[command].title).setDescription(faqData[command].desc).setFooter({ text: 'Professor Network Support', iconURL: client.user.displayAvatarURL() });
 
         if (message.reference) {
             try {
                 const repliedMsg = await message.channel.messages.fetch(message.reference.messageId);
                 await repliedMsg.reply({ content: `Hey ${repliedMsg.author.toString()}, here is the information you requested:`, embeds: [faqEmbed] });
                 await message.delete().catch(()=>{}); 
-            } catch (e) {
-                await message.channel.send({ embeds: [faqEmbed] });
-            }
+            } catch (e) { await message.channel.send({ embeds: [faqEmbed] }); }
         } else {
             await message.channel.send({ embeds: [faqEmbed] });
             await message.delete().catch(()=>{});
@@ -160,7 +138,6 @@ client.on('messageCreate', async message => {
         return; 
     }
 
-    // ROLE-BASED REVIEW SYSTEM
     if (message.channel.id === '1495117550709903591') {
         try {
             const feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
@@ -168,15 +145,11 @@ client.on('messageCreate', async message => {
                 await message.react('⭐');
                 await message.react('✅');
             }
-        } catch (error) {
-            console.error("Review reaction error:", error);
-        }
+        } catch (error) { console.error("Review reaction error:", error); }
     }
 
-    // ADMIN COMMAND: .fb
     if (command === '.fb') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-        
         try {
             const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
             if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel.", ephemeral: true });
@@ -186,29 +159,15 @@ client.on('messageCreate', async message => {
             
             if (targetMember) {
                 let feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
-                if (!feedRole) {
-                    feedRole = await message.guild.roles.create({
-                        name: 'transaction done',
-                        color: '#f1c40f',
-                        reason: 'Temporary role for leaving a transaction review'
-                    });
-                }
-                
+                if (!feedRole) { feedRole = await message.guild.roles.create({ name: 'transaction done', color: '#f1c40f', reason: 'Temporary role for leaving a transaction review' }); }
                 await targetMember.roles.add(feedRole);
 
-                const feedbackPromptEmbed = new EmbedBuilder()
-                    .setColor('#f1c40f')
-                    .setTitle('⭐ Rate Your Experience!')
-                    .setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nYour trust means everything to us. Could you take a quick moment to share your experience with **Professor Network**? \n\nYour honest review helps our community grow and helps others trade safely. 🤝\n\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing us! ⚡`)
-                    .setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
+                const feedbackPromptEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('⭐ Rate Your Experience!').setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nYour trust means everything to us. Could you take a quick moment to share your experience with **Professor Network**? \n\nYour honest review helps our community grow and helps others trade safely. 🤝\n\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing us! ⚡`).setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
 
                 await message.delete().catch(() => {});
                 await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
             }
-        } catch (err) {
-            console.error("Error in .fb command:", err);
-            await message.channel.send("❌ Server error while granting feedback access.");
-        }
+        } catch (err) { console.error("Error in .fb command:", err); await message.channel.send("❌ Server error while granting feedback access."); }
     }
 
     if (command === '!p2p') {
@@ -218,7 +177,7 @@ client.on('messageCreate', async message => {
             const buttons = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary));
             await message.channel.send({ embeds: [setupEmbed], components: [buttons] });
             await message.delete().catch(() => {});
-        } catch (err) { console.error("❌ Error in !p2p:", err); }
+        } catch (err) {}
     }
 
     if (message.content === '!flash') {
@@ -233,44 +192,19 @@ client.on('messageCreate', async message => {
     if (command === '!poll') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         await message.delete().catch(() => {});
-        
-        const setupEmbed = new EmbedBuilder()
-            .setTitle('📊 Server Poll Setup')
-            .setDescription('Click the button below to create a new community poll.')
-            .setColor('#3498db')
-            .setFooter({ text: 'Professor Network - Poll System' });
-            
-        const pollBtn = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('open_poll_modal')
-                .setLabel('Create Poll')
-                .setStyle(ButtonStyle.Primary)
-                .setEmoji('📊')
-        );
-        
+        const setupEmbed = new EmbedBuilder().setTitle('📊 Server Poll Setup').setDescription('Click the button below to create a new community poll.').setColor('#3498db').setFooter({ text: 'Professor Network - Poll System' });
+        const pollBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('open_poll_modal').setLabel('Create Poll').setStyle(ButtonStyle.Primary).setEmoji('📊'));
         await message.channel.send({ embeds: [setupEmbed], components: [pollBtn] });
     }
      
     if (command === '!setupadvkyc') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
-            const advKycEmbed = new EmbedBuilder()
-                .setColor('#2ecc71')
-                .setTitle('🛡️ Advanced KYC (Vault Verified)')
-                .setDescription('> **Unlock $0 Fee Trades by verifying your identity.**\n\nClick the button below to open a private, secure verification room where you can upload your Aadhaar and PAN Card.\n\n`Your data is securely encrypted and reviewed strictly by Admins.`')
-                .setFooter({ text: 'Professor Network - Secure KYC Terminal', iconURL: client.user.displayAvatarURL() });
-                
-            const advKycBtn = new ActionRowBuilder().addComponents(
-                new ButtonBuilder()
-                    .setCustomId('start_advanced_kyc')
-                    .setLabel('Start Advanced KYC')
-                    .setStyle(ButtonStyle.Success)
-                    .setEmoji('🛡️')
-            );
-            
+            const advKycEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🛡️ Advanced KYC (Vault Verified)').setDescription('> **Unlock $0 Fee Trades by verifying your identity.**\n\nClick the button below to open a private, secure verification room where you can upload your Aadhaar and PAN Card.\n\n`Your data is securely encrypted and reviewed strictly by Admins.`').setFooter({ text: 'Professor Network - Secure KYC Terminal', iconURL: client.user.displayAvatarURL() });
+            const advKycBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_advanced_kyc').setLabel('Start Advanced KYC').setStyle(ButtonStyle.Success).setEmoji('🛡️'));
             await message.channel.send({ embeds: [advKycEmbed], components: [advKycBtn] });
             await message.delete().catch(()=>{});
-        } catch (err) { console.error("❌ Error in !setupadvkyc:", err); }
+        } catch (err) {}
     }
 
     if (command === '!verify') {
@@ -280,7 +214,7 @@ client.on('messageCreate', async message => {
             const kycButton = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_kyc_form').setLabel('Verify').setStyle(ButtonStyle.Primary).setEmoji('📝'));
             await message.channel.send({ embeds: [kycEmbed], components: [kycButton] });
             await message.delete().catch(()=>{});
-        } catch (err) { console.error("❌ Error in !verify:", err); }
+        } catch (err) {}
     }
 
     if (command.startsWith('!grantupi')) {
@@ -290,17 +224,12 @@ client.on('messageCreate', async message => {
 
         try {
             let upiRole = message.guild.roles.cache.find(r => r.name === 'UPI Eligible');
-            if (!upiRole) {
-                upiRole = await message.guild.roles.create({ name: 'UPI Eligible', color: '#3498db', reason: 'Role for Exclusive UPI P2P Access' });
-            }
+            if (!upiRole) { upiRole = await message.guild.roles.create({ name: 'UPI Eligible', color: '#3498db', reason: 'Role for Exclusive UPI P2P Access' }); }
             await targetUser.roles.add(upiRole);
             const successEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Access Granted').setDescription(`Successfully granted **UPI KYC Access** to ${targetUser.toString()}.\nThey can now see the exclusive UPI channel.`);
             await message.reply({ embeds: [successEmbed] });
             await message.delete().catch(() => {}); 
-        } catch (err) {
-            console.error("Grant UPI Error:", err);
-            await message.reply("❌ Error granting access.");
-        }
+        } catch (err) {}
     }
 
     if (command.startsWith('!revokeupi')) {
@@ -318,10 +247,7 @@ client.on('messageCreate', async message => {
             } else {
                 await message.reply({ content: `⚠️ ${targetUser.user.username} doesn't have the UPI Eligible role.`, ephemeral: true });
             }
-        } catch (err) {
-            console.error("Revoke UPI Error:", err);
-            await message.reply("❌ Error revoking access.");
-        }
+        } catch (err) {}
     }
 
     if (command === '!setupupidesk') {
@@ -331,7 +257,7 @@ client.on('messageCreate', async message => {
             const upiBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_upi_video_kyc').setLabel('Start UPI Video KYC').setStyle(ButtonStyle.Primary).setEmoji('🎥'));
             await message.channel.send({ embeds: [upiEmbed], components: [upiBtn] });
             await message.delete().catch(()=>{});
-        } catch (err) { console.error("Error setting up UPI desk:", err); }
+        } catch (err) {}
     }
 
     if (command === '!setupdashboard') {
@@ -341,7 +267,7 @@ client.on('messageCreate', async message => {
             const refreshBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('refresh_dashboard').setLabel('🔄 Sync Network Data').setStyle(ButtonStyle.Primary));
             await message.channel.send({ embeds: [dashEmbed], components: [refreshBtn] });
             await message.delete().catch(()=>{});
-        } catch (err) { console.error("❌ Error in dashboard command:", err); }
+        } catch (err) {}
     }
 
     if (command === '!setupleaderboard') {
@@ -350,27 +276,23 @@ client.on('messageCreate', async message => {
             let leaderboardChannel = message.guild.channels.cache.get('1506661433335746560');
             if (!leaderboardChannel) {
                 leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-recap' || c.name === 'weekly-recap');
-                if (!leaderboardChannel) {
-                    leaderboardChannel = await message.guild.channels.create({ name: '📈・weekly-recap', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] });
-                }
+                if (!leaderboardChannel) { leaderboardChannel = await message.guild.channels.create({ name: '📈・weekly-recap', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] }); }
             }
             await message.reply({ content: `✅ Weekly Recap setup in ${leaderboardChannel}.`, ephemeral: true });
             await message.delete().catch(()=>{});
             updateWeeklyLeaderboard(message.guild);
-        } catch (err) { console.error("❌ Error setting up leaderboard:", err); }
+        } catch (err) {}
     }
 
     if (command === '!setupheistboard') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
             let heistChannel = message.guild.channels.cache.find(c => c.name === '✨・heist-points' || c.name === 'heist-leaderboard');
-            if (!heistChannel) {
-                heistChannel = await message.guild.channels.create({ name: '✨・heist-points', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] });
-            }
+            if (!heistChannel) { heistChannel = await message.guild.channels.create({ name: '✨・heist-points', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] }); }
             await message.reply({ content: `✅ Heist Points Leaderboard setup in ${heistChannel}.`, ephemeral: true });
             await message.delete().catch(()=>{});
             updateHeistLeaderboard(message.guild);
-        } catch (err) { console.error("❌ Error setting up heist leaderboard:", err); }
+        } catch (err) {}
     }
 
     if (command === '!lockchat') {
@@ -381,7 +303,7 @@ client.on('messageCreate', async message => {
             const lockEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🌙 THE VAULT IS NOW RESTING').setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket here <#1503666259244482642> to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!').setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png').setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone 🔔 **Notice for all Verified Members**', embeds: [lockEmbed] });
-        } catch (err) { console.error("Error locking chat:", err); await message.reply("❌ Chat lock karne mein error aaya. Bot ka role check karein."); }
+        } catch (err) {}
     }
 
     if (command === '!openchat') {
@@ -392,7 +314,7 @@ client.on('messageCreate', async message => {
             const unlockEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('☀️ THE VAULT IS OPEN').setDescription('Good morning, Syndicate! General chat is now **OPEN**.\n\nTrade safely, verify admins before trading, and remember: **NO DM DEALS EVER!**').setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone', embeds: [unlockEmbed] });
-        } catch (err) { console.error("Error unlocking chat:", err); }
+        } catch (err) {}
     }
 });
 
@@ -401,15 +323,11 @@ client.on('messageCreate', async message => {
 // ==========================================
 client.on('interactionCreate', async interaction => {
 
-    // 🔥 SLASH COMMANDS HANDLER (/complete, /match, /unmatch)
     if (interaction.isChatInputCommand()) {
-        
-        // Sirf Admins aur Palermo use kar sakte hain
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
             return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
         }
 
-        // 1. /COMPLETE COMMAND
         if (interaction.commandName === 'complete') {
             await interaction.deferReply({ ephemeral: true });
             try {
@@ -423,12 +341,10 @@ client.on('interactionCreate', async interaction => {
                 await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
 
                 const completeEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Ticket Shifted to Queue').setDescription(`Shifted to **${targetCategoryName}**.\nIt will be fully marked as Complete tonight at 10 PM.`);
-                
                 await interaction.editReply({ embeds: [completeEmbed] });
-            } catch (err) { console.error(err); await interaction.editReply({ content: "❌ Error shifting ticket." }); }
+            } catch (err) { interaction.editReply({ content: "❌ Error shifting ticket." }); }
         }
 
-        // 2. /MATCH COMMAND
         if (interaction.commandName === 'match') {
             await interaction.deferReply({ ephemeral: true });
             try {
@@ -436,7 +352,6 @@ client.on('interactionCreate', async interaction => {
                 if (!ticketDoc.exists) return interaction.editReply({ content: "❌ This is not a valid P2P ticket." });
 
                 const targetInput = interaction.options.getString('target');
-                
                 if (!targetInput) {
                     const matchCategories = interaction.guild.channels.cache.filter(c => c.type === ChannelType.GuildCategory && c.name.startsWith('MATCH '));
                     let maxNum = 0;
@@ -449,7 +364,6 @@ client.on('interactionCreate', async interaction => {
                     const newCategory = await interaction.guild.channels.create({ name: newCatName, type: ChannelType.GuildCategory });
                     
                     await interaction.channel.setParent(newCategory.id, { lockPermissions: false });
-                    
                     const matchEmbed = new EmbedBuilder().setColor('#9b59b6').setTitle('🔗 Ticket Matched & Shifted').setDescription(`New category **${newCatName}** created.\nTicket shifted successfully!`);
                     await interaction.editReply({ embeds: [matchEmbed] });
                 } else {
@@ -460,14 +374,12 @@ client.on('interactionCreate', async interaction => {
                     if (targetCategory.children.cache.size >= 2) return interaction.editReply({ content: `❌ **${targetCatName}** already contains 2 tickets.` });
 
                     await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
-                    
                     const matchEmbed = new EmbedBuilder().setColor('#9b59b6').setTitle('🔗 Ticket Shifted').setDescription(`This ticket has been successfully joined into **${targetCatName}**!`);
                     await interaction.editReply({ embeds: [matchEmbed] });
                 }
-            } catch (err) { console.error(err); await interaction.editReply({ content: "❌ Error matching ticket." }); }
+            } catch (err) { interaction.editReply({ content: "❌ Error matching ticket." }); }
         }
 
-        // 3. /UNMATCH COMMAND
         if (interaction.commandName === 'unmatch') {
             await interaction.deferReply({ ephemeral: true });
             try {
@@ -487,9 +399,9 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply({ embeds: [unmatchEmbed] });
 
                 if (parentCat.children.cache.size === 0) await parentCat.delete().catch(()=>{});
-            } catch (err) { console.error(err); await interaction.editReply({ content: "❌ Error unmatching ticket." }); }
+            } catch (err) { interaction.editReply({ content: "❌ Error unmatching ticket." }); }
         }
-        return; // Important to stop here for slash commands
+        return; 
     }
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
@@ -520,7 +432,7 @@ client.on('interactionCreate', async interaction => {
 
             const updatedDashEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD').setDescription('**[ 🟢 SYSTEM STATUS: ONLINE ]**\nReal-time network analytics securely fetched from the central database.').addFields({ name: '👥 Network Strength', value: `\`\`\`yaml\nTotal Live Members : ${liveMembers}\n\`\`\``, inline: false }, { name: '📈 Transaction Analytics', value: `\`\`\`yaml\nDaily (24h)   : $${dailyVol}\nWeekly (7d)   : $${weeklyVol}\nMonthly (30d) : $${monthlyVol}\n\`\`\``, inline: false }, { name: '🏆 Top 5 Network Whales', value: whalesText, inline: false }).setTimestamp().setFooter({ text: 'Professor Network - Secure Terminal', iconURL: client.user.displayAvatarURL() });
             await interaction.editReply({ embeds: [updatedDashEmbed] });
-        } catch (error) { console.error("Dashboard Sync Error:", error); await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true }); }
+        } catch (error) { await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true }); }
     }
 
     if (interaction.isButton() && interaction.customId === 'open_flash_modal') {
@@ -574,12 +486,7 @@ client.on('interactionCreate', async interaction => {
             description += `${emojis[index]} **${opt}**\n\n`;
         });
 
-        const pollEmbed = new EmbedBuilder()
-            .setColor('#3498db')
-            .setAuthor({ name: '📊 Professor Network Community Poll', iconURL: client.user.displayAvatarURL() })
-            .setDescription(description)
-            .setFooter({ text: 'Cast your vote by reacting below! 👇' })
-            .setTimestamp();
+        const pollEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '📊 Professor Network Community Poll', iconURL: client.user.displayAvatarURL() }).setDescription(description).setFooter({ text: 'Cast your vote by reacting below! 👇' }).setTimestamp();
 
         let pollChannel = interaction.guild.channels.cache.find(c => c.name === '💬・p2p-chat');
 
@@ -590,9 +497,7 @@ client.on('interactionCreate', async interaction => {
         await interaction.reply({ content: `✅ Poll successfully sent to ${pollChannel}!`, ephemeral: true });
         const pollMessage = await pollChannel.send({ content: '@everyone', embeds: [pollEmbed] });
         
-        for (let i = 0; i < options.length; i++) {
-            await pollMessage.react(emojis[i]);
-        }
+        for (let i = 0; i < options.length; i++) { await pollMessage.react(emojis[i]); }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
@@ -664,10 +569,7 @@ client.on('interactionCreate', async interaction => {
             await interaction.member.roles.add(basicRole).catch(console.error);
             globalLastUpdate = Date.now(); 
             await interaction.editReply({ content: '✅ **Registration Successful!** You have received the **Verified** role.\n*(Note: To get the **Vault Verified** tag, Select "P2P With KYC" at the Exchange Desk).*' });
-        } catch (error) { 
-            console.error("KYC Error:", error); 
-            await interaction.editReply({ content: '❌ Error saving data.' }); 
-        }
+        } catch (error) { await interaction.editReply({ content: '❌ Error saving data.' }); }
     }
 
     if (interaction.isButton() && interaction.customId === 'start_p2p_trade') {
@@ -687,10 +589,10 @@ client.on('interactionCreate', async interaction => {
             });
         }
         userSelections.set(interaction.user.id, { type: null, step2: null, step3: null, amount: null, isVerifiedTrade: isVerifiedRoute });
-const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
-    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' } }, 
-    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' } }
-]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').setPlaceholder('Select Action: Buy or Sell').addOptions([
+            { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' } }, 
+            { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' } }
+        ]);
         const step1Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 1', iconURL: client.user.displayAvatarURL() }).setDescription(`**Mode:** ${isVerifiedRoute ? '✅ KYC ($0 Fee)' : '⚠️ Non-KYC (Up to $3 Fee)'}\n\nPlease select whether you want to **Buy** or **Sell** Crypto from the dropdown below.`);
         await interaction.update({ content: '', embeds: [step1Embed], components: [new ActionRowBuilder().addComponents(typeDropdown)] });
     }
@@ -698,19 +600,14 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
     if (interaction.isButton() && interaction.customId === 'start_upi_video_kyc') {
         try {
             const existingChannel = interaction.guild.channels.cache.find(c => c.name.startsWith('upi-') && c.topic === interaction.user.id);
-            if (existingChannel) {
-                return interaction.reply({ content: `❌ **Action Denied:** Your UPI Video KYC is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
-            }
-        } catch (err) { console.error("Spam Check Error:", err); }
+            if (existingChannel) { return interaction.reply({ content: `❌ **Action Denied:** Your UPI Video KYC is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true }); }
+        } catch (err) {}
 
         await interaction.reply({ content: '⏳ Creating your secure UPI Video KYC room...', ephemeral: true });
 
         try {
             let kycCategory = interaction.guild.channels.cache.get('1520318957863829565');
-            
-            if (!kycCategory) {
-                kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory);
-            }
+            if (!kycCategory) { kycCategory = interaction.guild.channels.cache.find(c => (c.name === '📢 KYC REQUESTS' || c.name === 'KYC REQUESTS') && c.type === ChannelType.GuildCategory); }
 
             const palermoRole = interaction.guild.roles.cache.find(role => role.name === 'Palermo');
             const channelPermissions = [
@@ -722,18 +619,10 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             const randomKycId = Math.random().toString(36).substring(2, 8);
             
             const upiKycChannel = await interaction.guild.channels.create({ 
-                name: `upi-${randomKycId}`, 
-                type: ChannelType.GuildText, 
-                parent: kycCategory ? kycCategory.id : null, 
-                permissionOverwrites: channelPermissions,
-                topic: interaction.user.id 
+                name: `upi-${randomKycId}`, type: ChannelType.GuildText, parent: kycCategory ? kycCategory.id : null, permissionOverwrites: channelPermissions, topic: interaction.user.id 
             });
 
-            const upiEmbed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setAuthor({ name: '🎥 VIP UPI Video Verification', iconURL: client.user.displayAvatarURL() })
-                .setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Upload the video and images directly in this chat. Our Admin will review them and save them securely to the Firebase Cloud Vault.*`)
-                .setFooter({ text: 'Professor Network - Secure UPI Terminal' });            
+            const upiEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🎥 VIP UPI Video Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Upload the video and images directly in this chat. Our Admin will review them and save them securely to the Firebase Cloud Vault.*`).setFooter({ text: 'Professor Network - Secure UPI Terminal' });            
 
             const upiAdminButtons = new ActionRowBuilder().addComponents(
                 new ButtonBuilder().setCustomId(`approve_upikyc_${interaction.user.id}`).setLabel('✅ Approve UPI KYC').setStyle(ButtonStyle.Success), 
@@ -742,10 +631,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
 
             await upiKycChannel.send({ content: `🔔 Admin Notification: VIP UPI Video KYC Pending for ${interaction.user.toString()}`, embeds: [upiEmbed], components: [upiAdminButtons] });
             await interaction.editReply({ content: `✅ VIP Room created! Please head over to ${upiKycChannel} to submit your video and documents.` });
-        } catch (error) { 
-            console.error("UPI KYC Room Creation Error:", error); 
-            await interaction.editReply({ content: '❌ Room create karne mein error aaya. Permissions check karein.' }); 
-        }
+        } catch (error) { await interaction.editReply({ content: '❌ Room create karne mein error aaya. Permissions check karein.' }); }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_upikyc_')) {
@@ -761,68 +647,45 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         try {
             const messages = await interaction.channel.messages.fetch({ limit: 50 });
             let attachments = [];
-            messages.forEach(msg => { 
-                msg.attachments.forEach(att => attachments.push(att)); 
-            });
+            messages.forEach(msg => { msg.attachments.forEach(att => attachments.push(att)); });
 
-            if (attachments.length === 0) {
-                return interaction.followUp({ content: '⚠️ Error: No video or photo found from the user! Please ask them to upload before approving.', ephemeral: true });
-            }
+            if (attachments.length === 0) return interaction.followUp({ content: '⚠️ Error: No video or photo found from the user! Please ask them to upload before approving.', ephemeral: true });
 
             let uploadedUrls = [];
-
             for (const att of attachments) {
                 const response = await axios.get(att.url, { responseType: 'arraybuffer' });
                 const buffer = Buffer.from(response.data);
-                
                 const filePath = `upi_video_kyc/${userId}/${Date.now()}_${att.name}`;
                 const file = bucket.file(filePath); 
                 
-                await file.save(buffer, {
-                    contentType: att.contentType,
-                    metadata: { cacheControl: 'public, max-age=31536000' }
-                });
-                
-                const [downloadUrl] = await file.getSignedUrl({
-                    action: 'read',
-                    expires: '01-01-2099' 
-                });
-                
+                await file.save(buffer, { contentType: att.contentType, metadata: { cacheControl: 'public, max-age=31536000' } });
+                const [downloadUrl] = await file.getSignedUrl({ action: 'read', expires: '01-01-2099' });
                 uploadedUrls.push(downloadUrl);
             }
 
             await db.collection('users_kyc').doc(userId).set({ 
-                upiVerified: true,
-                upiMediaUrls: uploadedUrls, 
-                upiApprovedBy: interaction.user.username,
-                upiUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+                upiVerified: true, upiMediaUrls: uploadedUrls, upiApprovedBy: interaction.user.username, upiUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
 
             const targetMember = await interaction.guild.members.fetch(userId).catch(()=>null);
             if(targetMember) {
                  let verifiedRole = interaction.guild.roles.cache.find(r => r.name === 'UPI Verified');
                  if (!verifiedRole) verifiedRole = await interaction.guild.roles.create({ name: 'UPI Verified', color: '#9b59b6' }); 
-                 
                  await targetMember.roles.add(verifiedRole);
                  await targetMember.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Verification Successful').setDescription('Your UPI Video KYC has been approved!\n\nYou can now use UPI payment methods for trading in Professor Network.')] }).catch(()=>{});
             }
 
             await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ UPI KYC Approved')], components: [] });
             await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! Files saved to Firebase securely. Room closing in 5 seconds...`, ephemeral: true });
-            
             setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
 
-        } catch (error) {
-            console.error("Firebase Upload Error:", error);
-            await interaction.followUp({ content: '❌ Error: Failed to upload files to Firebase. Please check the bot console.', ephemeral: true });
-        }
+        } catch (error) { await interaction.followUp({ content: '❌ Error: Failed to upload files to Firebase. Please check the bot console.', ephemeral: true }); }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('reject_upikyc_')) {
         const userId = interaction.customId.replace('reject_upikyc_', '');
         const isPalermo = interaction.member.roles.cache.some(role => role.name === 'Palermo');
         const isProfessor = interaction.member.permissions.has(PermissionsBitField.Flags.Administrator);
-        
         if (!isProfessor && !isPalermo) return interaction.reply({ content: '❌ **Access Denied.**', ephemeral: true });
 
         await interaction.deferUpdate();
@@ -833,22 +696,17 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         if(targetMember) {
              await targetMember.send({ embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('❌ UPI Verification Failed').setDescription('Your UPI Video KYC has been rejected by Admin.\n\nPlease ensure your video and IDs are clear and try again.')] }).catch(()=>{});
         }
-
         setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
     }
       
     if (interaction.isButton() && interaction.customId === 'start_advanced_kyc') {
         const hasRole = interaction.member.roles.cache.some(role => role.name === 'Vault Verified');
-        if (hasRole) {
-            return interaction.reply({ content: '✅ **You are already Vault Verified!** No need to do this again.', ephemeral: true });
-        }
+        if (hasRole) return interaction.reply({ content: '✅ **You are already Vault Verified!** No need to do this again.', ephemeral: true });
 
         try {
             const existingChannel = interaction.guild.channels.cache.find(c => c.name.startsWith('kyc-') && c.topic === interaction.user.id);
-            if (existingChannel) {
-                return interaction.reply({ content: `❌ **Action Denied:** Your KYC verification is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
-            }
-        } catch (err) { console.error("Spam Check Error:", err); }
+            if (existingChannel) return interaction.reply({ content: `❌ **Action Denied:** Your KYC verification is already in progress.\n\n👉 **Head over to your open room here:** ${existingChannel}`, ephemeral: true });
+        } catch (err) {}
 
         await interaction.reply({ content: '⏳ Creating your secure KYC verification room...', ephemeral: true });
 
@@ -863,13 +721,9 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             ];
             if (palermoRole) channelPermissions.push({ id: palermoRole.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] });
 
-           const randomKycId = Math.random().toString(36).substring(2, 8);
+            const randomKycId = Math.random().toString(36).substring(2, 8);
             const kycChannel = await interaction.guild.channels.create({ 
-                name: `kyc-${randomKycId}`, 
-                type: ChannelType.GuildText, 
-                parent: kycCategory.id, 
-                permissionOverwrites: channelPermissions,
-                topic: interaction.user.id 
+                name: `kyc-${randomKycId}`, type: ChannelType.GuildText, parent: kycCategory.id, permissionOverwrites: channelPermissions, topic: interaction.user.id 
             });
 
             const kycEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🛡️ Advanced KYC Verification', iconURL: client.user.displayAvatarURL() }).setDescription(`Welcome ${interaction.user.toString()}!\n\nTo unlock **$0 Fee Trades (P2P With KYC)**, we need to verify your real identity.\n\nPlease upload:\n# 📸 A clear photo of your Aadhaar(Front & Back) And PAN Card(Front)\n\nSend the image directly in this chat. Our Admin will review it shortly.`).setFooter({ text: 'Professor Network - Secure KYC' });            
@@ -880,10 +734,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
 
             await kycChannel.send({ content: `🔔 Admin Notification: New Advanced KYC Pending for ${interaction.user.toString()}`, embeds: [kycEmbed], components: [kycAdminButtons] });
             await interaction.editReply({ content: `✅ KYC Room created! Please head over to ${kycChannel} to submit your documents.` });
-        } catch (error) { 
-            console.error("KYC Room Creation Error:", error); 
-            await interaction.editReply({ content: '❌ Room create karne mein error aaya.' }); 
-        }
+        } catch (error) { await interaction.editReply({ content: '❌ Room create karne mein error aaya.' }); }
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('approve_kyc_')) {
@@ -911,7 +762,7 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
-        const exchangeChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
+        const exchangeChannel = interaction.guild.channels.cache.get('1503666259244482642');        
         if (exchangeChannel) {
             try {
                 const fetchedMessages = await exchangeChannel.messages.fetch({ limit: 10 });
@@ -951,10 +802,10 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             else { userState.step3 = interaction.values[0]; }
             userSelections.set(interaction.user.id, userState);
             
-const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
-    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' }, default: userState.type === 'Buy' }, 
-    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' }, default: userState.type === 'Sell' }
-]);
+            const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
+                { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' }, default: userState.type === 'Buy' }, 
+                { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' }, default: userState.type === 'Sell' }
+            ]);
             const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
             
             let estTimes = { 'imps/UPI' : '2 Hour', 'cdm': '45 Minutes to 1 Hour' };
@@ -969,7 +820,6 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
                     { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step2 === 'ERC20' }, 
                     { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step2 === 'BEP20' }, 
                     { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵', default: userState.step2 === 'ARBITRUM' },
-                    
                     { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙', default: userState.step2 === 'USDC_ERC20' },
                     { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙', default: userState.step2 === 'USDC_BEP20' }
                 ]);           
@@ -981,7 +831,8 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             }
             
             const components = [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)];
-const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '<:buy_sign:1521708980647231648> Buy USDT' : '<:sell_sign:1521709256947269803> Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true }, { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true });
+            const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '<:buy_sign:1521708980647231648> Buy USDT' : '<:sell_sign:1521709256947269803> Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true }, { name: '🌐 Network/Method', value: `${userState.step2 || 'Pending'}`, inline: true });
+            
             if (userState.type === 'Sell') {
                 const step3Dropdown = new StringSelectMenuBuilder()
                     .setCustomId('dropdown_step3')
@@ -1003,10 +854,30 @@ const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄
                         .setDescription('Please select how you want to receive your INR from the dropdown below.');
                 }
             } else {
-                components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Wallet Details)').setStyle(ButtonStyle.Success)));
-                stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
-                    .setColor('#2ecc71')
-                    .setDescription('Click the **Next** button below to securely enter your wallet details.');
+                // 🔥 NAYA BUY NETWORK DROPDOWN 🔥
+                const step3Dropdown = new StringSelectMenuBuilder()
+                    .setCustomId('dropdown_step3')
+                    .setPlaceholder('Select Crypto Network')
+                    .addOptions([
+                        { label: 'USDT Trc20', value: 'TRC20', emoji: '🔗', default: userState.step3 === 'TRC20' }, 
+                        { label: 'USDT Erc20', value: 'ERC20', emoji: '💎', default: userState.step3 === 'ERC20' }, 
+                        { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡', default: userState.step3 === 'BEP20' }, 
+                        { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵', default: userState.step3 === 'ARBITRUM' },
+                        { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙', default: userState.step3 === 'USDC_ERC20' },
+                        { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙', default: userState.step3 === 'USDC_BEP20' }
+                    ]);
+                components.push(new ActionRowBuilder().addComponents(step3Dropdown));
+
+                if (userState.step3) {
+                    components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('proceed_to_details').setLabel(`Next (Enter ${userState.step3} Wallet)`).setStyle(ButtonStyle.Success)));
+                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
+                        .setColor('#2ecc71')
+                        .setDescription('Click the **Next** button below to securely enter your wallet details.')
+                        .addFields({ name: '🔗 Receiving Network', value: userState.step3, inline: true });
+                } else {
+                    stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3', iconURL: client.user.displayAvatarURL() })
+                        .setDescription('Please select the crypto network on which you want to receive your USDT.');
+                }
             }
             await interaction.update({ content: '', embeds: [stepEmbed], components });
         }
@@ -1022,10 +893,10 @@ const stepEmbed = new EmbedBuilder().setColor('#3498db').addFields({ name: '🔄
         userState.amount = interaction.fields.getTextInputValue('trade_amount_input');
         userSelections.set(interaction.user.id, userState);
 
-const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
-    { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' }, default: userState.type === 'Buy' }, 
-    { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' }, default: userState.type === 'Sell' }
-]);
+        const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
+            { label: 'Buy USDT (Pay INR)', value: 'Buy', emoji: { id: '1521708980647231648' }, default: userState.type === 'Buy' }, 
+            { label: 'Sell USDT (Get INR)', value: 'Sell', emoji: { id: '1521709256947269803' }, default: userState.type === 'Sell' }
+        ]);
         const step2Dropdown = new StringSelectMenuBuilder().setCustomId('dropdown_step2');
         
         if (userState.type === 'Sell') {
@@ -1034,7 +905,6 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
                 { label: 'USDT Erc20', value: 'ERC20', emoji: '💎' }, 
                 { label: 'USDT Bep20', value: 'BEP20', emoji: '🟡' }, 
                 { label: 'USDT Arbitrum', value: 'ARBITRUM', emoji: '🔵' },
-                
                 { label: 'USDC Erc20', value: 'USDC_ERC20', emoji: '🪙' },
                 { label: 'USDC Bep20', value: 'USDC_BEP20', emoji: '🪙' }
             ]);     
@@ -1045,7 +915,8 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
             ]);
         }
 
-const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() }).setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`).addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '<:buy_sign:1521708980647231648> Buy USDT' : '<:sell_sign:1521709256947269803> Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true });        await interaction.update({ content: '', embeds: [step2Embed], components: [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)] });
+        const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '🏦 P2P Trade Setup | Step 2', iconURL: client.user.displayAvatarURL() }).setDescription(`Please select your **${userState.type === 'Sell' ? 'Crypto Network' : 'Payment Method'}** from the dropdown below.`).addFields({ name: '🔄 Action', value: `${userState.type === 'Buy' ? '<:buy_sign:1521708980647231648> Buy USDT' : '<:sell_sign:1521709256947269803> Sell USDT'}`, inline: true }, { name: '💰 Amount', value: `$${userState.amount}`, inline: true });        
+        await interaction.update({ content: '', embeds: [step2Embed], components: [new ActionRowBuilder().addComponents(typeDropdown), new ActionRowBuilder().addComponents(step2Dropdown)] });
     }
 
     if (interaction.isButton() && interaction.customId === 'proceed_to_details') {
@@ -1066,7 +937,7 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Phone Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)));
             }
         } else {
-            p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_receiving_details').setLabel('Your Crypto Wallet Address').setStyle(TextInputStyle.Short).setRequired(true)));
+            p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_receiving_details').setLabel(`Your ${userState.step3} Wallet Address`).setStyle(TextInputStyle.Short).setRequired(true)));
         }
         await interaction.showModal(p2pModal);
     }
@@ -1150,10 +1021,11 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
 
         const fee = userState.isVerifiedTrade ? 0 : 3;
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
+        const buyNetworkDisplay = userState.step3 || 'Unknown';
 
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
-                discordUserId: interaction.user.id, username: interaction.user.username, tradeType: userState.type, networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : userState.step2, amountUsd: Number(tradeAmount), fee: fee, isVerifiedTrade: userState.isVerifiedTrade, userReceivingDetails: userDetails, adminTransferDetails: easyCopyText, status: 'Open', createdAt: admin.firestore.FieldValue.serverTimestamp() 
+                discordUserId: interaction.user.id, username: interaction.user.username, tradeType: userState.type, networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : `${userState.step2} / ${buyNetworkDisplay}`, amountUsd: Number(tradeAmount), fee: fee, isVerifiedTrade: userState.isVerifiedTrade, userReceivingDetails: userDetails, adminTransferDetails: easyCopyText, status: 'Open', createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
@@ -1165,7 +1037,7 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
             paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
         }
 
-        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. How much amount ($)?**\n> $${tradeAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n**Please pay exactly: $${Number(tradeAmount) + fee}**`;
+        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. How much amount ($)?**\n> $${tradeAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n**Please pay exactly: $${Number(tradeAmount) + fee}**`;
 
         const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
         const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
@@ -1317,7 +1189,7 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
 
             if (isSuccess) { updateWeeklyLeaderboard(interaction.guild); await updateUserHeistPoints(ticketData.discordUserId, interaction.guild, ticketData.username); }
 
-            const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
+            const mainTicketChannel = interaction.guild.channels.cache.get('1503666259244482642'); 
             if (mainTicketChannel) {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 50 });
                 fetchedMessages.filter(m => m.author.id === client.user.id).forEach(msg => msg.delete().catch(console.error));
@@ -1437,8 +1309,8 @@ const app = express();
 // 🛡️ SECURITY: RATE LIMITING (BRUTE-FORCE PROTECTION)
 // ==========================================
 const loginLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minute ka timer
-    max: 5, // Ek IP se max 5 login attempts
+    windowMs: 5 * 60 * 1000, 
+    max: 5, 
     message: 'Too many login attempts from this IP, please try again after 5 minutes.'
 });
 app.set('view engine', 'ejs');
@@ -1449,11 +1321,11 @@ const corsOptions = {
     origin: [
         'http://localhost:3000', 
         'http://localhost:4000',
-        'http://147.93.103.102:3000', // <-- Aapka Main Dashboard
-        'http://147.93.103.102:4000'  // <-- Aapka Master Admin Panel
+        'http://147.93.103.102:3000', 
+        'http://147.93.103.102:4000'  
     ],
     methods: ['GET', 'POST'],
-    credentials: true // Session cookies ko allow karne ke liye
+    credentials: true 
 };
 app.use(cors(corsOptions));
 // 🔥 SECURE SESSION FOR MAIN DASHBOARD
@@ -1462,9 +1334,9 @@ app.use(session({
     resave: false, 
     saveUninitialized: false, 
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // Sirf HTTPS par chalega agar production hai
-        httpOnly: true, // XSS attacks se bachata hai (JavaScript cookie read nahi kar sakti)
-        sameSite: 'strict', // CSRF attacks ko rokta hai
+        secure: process.env.NODE_ENV === 'production', 
+        httpOnly: true, 
+        sameSite: 'strict', 
         maxAge: 7 * 24 * 60 * 60 * 1000 
     } 
 }));
@@ -1483,8 +1355,6 @@ app.post('/login', loginLimiter, async (req, res) => {
         if (authDoc.exists) { 
             validUser = authDoc.data().username; 
             validPassHash = authDoc.data().password; 
-            
-            // Agar password purana text format mein hai, toh use check karke encrypt karo
             if (!validPassHash.startsWith('$2b$')) {
                 if (username === validUser && password === validPassHash) {
                     const newHash = await bcrypt.hash(password, 10);
@@ -1494,12 +1364,10 @@ app.post('/login', loginLimiter, async (req, res) => {
                 }
             }
         } else { 
-            // Naya database hai toh default ko encrypt karke save karo
             validPassHash = await bcrypt.hash('heist2026', 10);
             await db.collection('settings').doc('admin_auth').set({ username: validUser, password: validPassHash }); 
         }
 
-        // Encrypted password se check karna
         if (username === validUser) {
             const isMatch = await bcrypt.compare(password, validPassHash);
             if (isMatch) {
@@ -1516,7 +1384,6 @@ app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login')
 app.post('/update-credentials', requireLogin, async (req, res) => {
     const { new_username, new_password } = req.body;
     if (new_username && new_password) {
-        // Naya password hamesha encrypt ho kar save hoga
         const hashedPass = await bcrypt.hash(new_password, 10);
         await db.collection('settings').doc('admin_auth').set({ username: new_username, password: hashedPass });
         req.session.destroy();
@@ -1558,15 +1425,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 
             const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non Verified';
 
-            const row = worksheet.addRow({
-                date: dateStr,
-                trade: tradeType,
-                name: discordName,
-                amount: amountStr,
-                method: methodStr,
-                details: detailsStr,
-                kyc: kycStatus
-            });
+            const row = worksheet.addRow({ date: dateStr, trade: tradeType, name: discordName, amount: amountStr, method: methodStr, details: detailsStr, kyc: kycStatus });
             row.alignment = { vertical: 'middle' };
         });
 
@@ -1575,10 +1434,7 @@ app.get('/export-ledger', requireLogin, async (req, res) => {
 
         await workbook.xlsx.write(res);
         res.end();
-    } catch(e) { 
-        console.error("Excel Export Error:", e);
-        res.send("Export Error: " + e.message); 
-    }
+    } catch(e) { res.send("Export Error: " + e.message); }
 });
 
 const GUILD_ID = '1450915791338737757';
@@ -1608,10 +1464,7 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
         try {
             const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` });
             await Promise.all(files.map(file => file.delete()));
-            console.log(`✅ Deleted photos from Storage for user: ${userId}`);
-        } catch (storageErr) {
-            console.error("Storage delete error:", storageErr);
-        }
+        } catch (storageErr) {}
 
         try {
             const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
@@ -1621,19 +1474,12 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
                     const verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
                     if (verifiedRole && member.roles.cache.has(verifiedRole.id)) {
                         await member.roles.remove(verifiedRole);
-                        const revokeEmbed = new EmbedBuilder()
-                            .setColor('#e74c3c')
-                            .setTitle('⚠️ KYC Status Revoked')
-                            .setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.')
-                            .setFooter({ text: 'Professor Network Security' });
-                            
+                        const revokeEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('⚠️ KYC Status Revoked').setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.').setFooter({ text: 'Professor Network Security' });
                         await member.send({ embeds: [revokeEmbed] }).catch(() => {});
                     }
                 }
             }
-        } catch (discordErr) {
-            console.error("Discord Role Remove Error:", discordErr);
-        }
+        } catch (discordErr) {}
 
         await db.collection('users_kyc').doc(userId).delete();
         globalLastUpdate = Date.now(); 
@@ -1788,7 +1634,10 @@ adminApp.get('/', requireAdminLogin, async (req, res) => {
             'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg?ex=6a3a8ada&is=6a39395a&hm=84a4e15aaa779c3a9f929db2d0da9a9a92de6af9d50371e4efcccd5d6442c938&=&format=webp&width=550&height=880' },
             'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg?ex=6a30fb94&is=6a2faa14&hm=c15075479260ba5eb9dd34e447bd62c645ae52b8d692428c70c53a6ab32f56b7&=&format=webp&width=668&height=880' },
             'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg?ex=6a30fb18&is=6a2fa998&hm=e7b578ba45fd57461f8b136f8c5f16e018fa8037e297c64c9c3a2d69bdac6c8f&=&format=webp&width=669&height=880' },
-            'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' }
+            'ARBITRUM': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg?ex=6a30fe6e&is=6a2facee&hm=d1a171cd44b807dbdd00cb08c4561be0ebdf6c3d31ed4972c7e7c405c297de33&=&format=webp&width=664&height=879' },
+            'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg?ex=6a30ffb0&is=6a2fae30&hm=4730140f626a657a3a0950b9f46614c0c5208690d94b1c84dab5c65026518147&=&format=webp&width=678&height=880' },
+            'USDC_ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg?ex=6a30ff07&is=6a2fad87&hm=b00ebb1a931cc1f260a38e55436172a92fc723ad3eb613cb53b4f523013fba5b&=&format=webp&width=679&height=880' },
+            'USDC_BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg?ex=6a31001d&is=6a2fae9d&hm=7c287ec6bfbe44b422c9cade0954846396b9dcc7f8c4b4ec3ba15728833d85e0&=&format=webp&width=674&height=879' }
         }, 
         estTimes: { 'imps/UPI': '2 Hour', 'cdm': '45 Minutes to 1 Hour' } 
     };
