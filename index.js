@@ -55,9 +55,7 @@ client.once('ready', async () => {
             { name: 'unmatch', description: 'Unmatch this ticket and return to original category' }
         ]);
         console.log(`✅ Slash Commands Registered Successfully!`);
-    } catch (err) {
-        console.error("Slash Command Registration Error:", err);
-    }
+    } catch (err) { console.error("Slash Command Registration Error:", err); }
 
     // Existing Leaderboard Interval
     setInterval(() => {
@@ -74,8 +72,7 @@ client.once('ready', async () => {
 
         client.guilds.cache.forEach(async guild => {
             const kycChannels = guild.channels.cache.filter(c => 
-                (c.name.startsWith('kyc-') && c.name !== 'kyc-requests') || 
-                c.name.startsWith('upi-')
+                (c.name.startsWith('kyc-') && c.name !== 'kyc-requests') || c.name.startsWith('upi-')
             );
 
             for (const [id, channel] of kycChannels) {
@@ -88,9 +85,7 @@ client.once('ready', async () => {
                         console.log(`🗑️ Auto-Deleting inactive KYC channel: ${channel.name}`);
                         await channel.delete('Inactive for 12 hours');
                     }
-                } catch (err) {
-                    console.error(`Error checking/deleting channel ${channel.name}:`, err);
-                }
+                } catch (err) { console.error(`Error checking/deleting channel ${channel.name}:`, err); }
             }
         });
     }, 60 * 60 * 1000); 
@@ -122,7 +117,6 @@ client.on('messageCreate', async message => {
 
     if (faqData[command]) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
         const faqEmbed = new EmbedBuilder().setColor(faqData[command].color).setTitle(faqData[command].title).setDescription(faqData[command].desc).setFooter({ text: 'Professor Network Support', iconURL: client.user.displayAvatarURL() });
 
         if (message.reference) {
@@ -145,7 +139,7 @@ client.on('messageCreate', async message => {
                 await message.react('⭐');
                 await message.react('✅');
             }
-        } catch (error) { console.error("Review reaction error:", error); }
+        } catch (error) {}
     }
 
     if (command === '.fb') {
@@ -167,7 +161,7 @@ client.on('messageCreate', async message => {
                 await message.delete().catch(() => {});
                 await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
             }
-        } catch (err) { console.error("Error in .fb command:", err); await message.channel.send("❌ Server error while granting feedback access."); }
+        } catch (err) { await message.channel.send("❌ Server error while granting feedback access."); }
     }
 
     if (command === '!p2p') {
@@ -339,7 +333,6 @@ client.on('interactionCreate', async interaction => {
                 if (!targetCategory) targetCategory = await interaction.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
 
                 await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
-
                 const completeEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Ticket Shifted to Queue').setDescription(`Shifted to **${targetCategoryName}**.\nIt will be fully marked as Complete tonight at 10 PM.`);
                 await interaction.editReply({ embeds: [completeEmbed] });
             } catch (err) { interaction.editReply({ content: "❌ Error shifting ticket." }); }
@@ -394,7 +387,6 @@ client.on('interactionCreate', async interaction => {
                 if (!targetCategory) targetCategory = await interaction.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
 
                 await interaction.channel.setParent(targetCategory.id, { lockPermissions: false });
-                
                 const unmatchEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('💔 Ticket Unmatched').setDescription(`Ticket moved back to **${targetCategoryName}**.`);
                 await interaction.editReply({ embeds: [unmatchEmbed] });
 
@@ -453,10 +445,7 @@ client.on('interactionCreate', async interaction => {
     }
 
     if (interaction.isButton() && interaction.customId === 'open_poll_modal') {
-        const modal = new ModalBuilder()
-            .setCustomId('submit_poll_modal')
-            .setTitle('Create Community Poll');
-
+        const modal = new ModalBuilder().setCustomId('submit_poll_modal').setTitle('Create Community Poll');
         modal.addComponents(
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_q').setLabel("Poll Question").setStyle(TextInputStyle.Paragraph).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o1').setLabel("Option 1").setStyle(TextInputStyle.Short).setRequired(true)),
@@ -464,7 +453,6 @@ client.on('interactionCreate', async interaction => {
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o3').setLabel("Option 3 (Optional)").setStyle(TextInputStyle.Short).setRequired(false)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('poll_o4').setLabel("Option 4 (Optional)").setStyle(TextInputStyle.Short).setRequired(false))
         );
-
         await interaction.showModal(modal);
         await interaction.message.delete().catch(() => {});
     }
@@ -482,21 +470,14 @@ client.on('interactionCreate', async interaction => {
         if (opt3) options.push(opt3);
         if (opt4) options.push(opt4);
 
-        options.forEach((opt, index) => {
-            description += `${emojis[index]} **${opt}**\n\n`;
-        });
-
+        options.forEach((opt, index) => { description += `${emojis[index]} **${opt}**\n\n`; });
         const pollEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '📊 Professor Network Community Poll', iconURL: client.user.displayAvatarURL() }).setDescription(description).setFooter({ text: 'Cast your vote by reacting below! 👇' }).setTimestamp();
-
         let pollChannel = interaction.guild.channels.cache.find(c => c.name === '💬・p2p-chat');
 
-        if (!pollChannel) {
-            return interaction.reply({ content: '❌ Error: `💬・p2p-chat` naam ka channel nahi mila!', ephemeral: true });
-        }
-
+        if (!pollChannel) return interaction.reply({ content: '❌ Error: `💬・p2p-chat` naam ka channel nahi mila!', ephemeral: true });
+        
         await interaction.reply({ content: `✅ Poll successfully sent to ${pollChannel}!`, ephemeral: true });
         const pollMessage = await pollChannel.send({ content: '@everyone', embeds: [pollEmbed] });
-        
         for (let i = 0; i < options.length; i++) { await pollMessage.react(emojis[i]); }
     }
 
@@ -854,7 +835,6 @@ client.on('interactionCreate', async interaction => {
                         .setDescription('Please select how you want to receive your INR from the dropdown below.');
                 }
             } else {
-                // 🔥 NAYA BUY NETWORK DROPDOWN 🔥
                 const step3Dropdown = new StringSelectMenuBuilder()
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Crypto Network')
@@ -981,12 +961,18 @@ client.on('interactionCreate', async interaction => {
         });
         
         let walletData = {};
+        let liveBuyPrice = 88;
+        let liveSellPrice = 88;
+
         try {
             const setDoc = await db.collection('settings').doc('app_data').get();
-            if (setDoc.exists && setDoc.data().wallets) {
-                walletData = setDoc.data().wallets;
+            if (setDoc.exists) {
+                const data = setDoc.data();
+                if (data.wallets) walletData = data.wallets;
+                if (data.liveBuyPrice) liveBuyPrice = Number(data.liveBuyPrice);
+                if (data.liveSellPrice) liveSellPrice = Number(data.liveSellPrice);
             }
-        } catch (e) { console.log('Error fetching wallets'); }
+        } catch (e) { console.log('Error fetching app_data'); }
 
         if(!walletData['TRC20']) {
             walletData = {
@@ -1023,21 +1009,42 @@ client.on('interactionCreate', async interaction => {
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
         const buyNetworkDisplay = userState.step3 || 'Unknown';
 
+        const baseAmount = Number(tradeAmount);
+        const totalUsdtForCalc = baseAmount + fee;
+        let totalInr = 0;
+        let rateUsed = 0;
+        let paymentInstructions = "";
+
+        if (userState.type === 'Sell') {
+            rateUsed = liveSellPrice;
+            totalInr = baseAmount * rateUsed;
+            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${totalUsdtForCalc} USDT** to this address and upload the payment screenshot here.`;
+        } else {
+            rateUsed = liveBuyPrice;
+            totalInr = totalUsdtForCalc * rateUsed;
+            paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **₹${totalInr}** (INR) to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
+        }
+
         try {
             await db.collection('p2p_tickets').doc(ticketChannel.id).set({ 
-                discordUserId: interaction.user.id, username: interaction.user.username, tradeType: userState.type, networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : `${userState.step2} / ${buyNetworkDisplay}`, amountUsd: Number(tradeAmount), fee: fee, isVerifiedTrade: userState.isVerifiedTrade, userReceivingDetails: userDetails, adminTransferDetails: easyCopyText, status: 'Open', createdAt: admin.firestore.FieldValue.serverTimestamp() 
+                discordUserId: interaction.user.id, 
+                username: interaction.user.username, 
+                tradeType: userState.type, 
+                networkOrMethod: userState.type === 'Sell' ? `${userState.step2} / ${finalStep3Display}` : `${userState.step2} / ${buyNetworkDisplay}`, 
+                amountUsd: baseAmount, 
+                fee: fee, 
+                totalInr: totalInr, 
+                rateUsed: rateUsed, 
+                isVerifiedTrade: userState.isVerifiedTrade, 
+                userReceivingDetails: userDetails, 
+                adminTransferDetails: easyCopyText, 
+                status: 'Open', 
+                createdAt: admin.firestore.FieldValue.serverTimestamp() 
             });
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
-        let paymentInstructions = "";
-        if (userState.type === 'Sell') {
-            paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${Number(tradeAmount) + fee} USDT** to this address and upload the payment screenshot here.`;
-        } else {
-            paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **$${Number(tradeAmount) + fee}** worth of INR to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
-        }
-
-        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. How much amount ($)?**\n> $${tradeAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**Fee Structure:** $${fee} (Non-KYC Charge)\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n**Please pay exactly: $${Number(tradeAmount) + fee}**`;
+        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. Core Amount**\n> $${baseAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**📊 Exchange Rate & Fees:**\n> Live Rate: ₹${rateUsed}/USDT\n> Non-KYC Fee: $${fee}\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n${userState.type === 'Sell' ? `**You Need To Send: $${totalUsdtForCalc} USDT**\n**You Will Receive: ₹${totalInr} INR**` : `**You Need To Pay: ₹${totalInr} INR**\n**You Will Receive: $${baseAmount} USDT**`}`;
 
         const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
         const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
@@ -1498,6 +1505,12 @@ app.post('/update-price', requireLogin, async (req, res) => {
     };
 
     try {
+        // 🔥 NAYA: Database mein Live Prices Save karein 🔥
+        await db.collection('settings').doc('app_data').set({ 
+            liveBuyPrice: Number(buyPrice), 
+            liveSellPrice: Number(sellPrice) 
+        }, { merge: true });
+
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) return sendModernAlert("❌ Error", "Discord server not found.", "error");
         let priceChannel = guild.channels.cache.get('1503666351594799205'); 
