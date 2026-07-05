@@ -911,7 +911,8 @@ const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').
         await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ KYC Approved')], components: [] });
         await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! They received the Vault Verified role. This room will close in 5 seconds.`, ephemeral: true });
         
-        const exchangeChannel = interaction.guild.channels.cache.get('1503666259244482642');        if (exchangeChannel) {
+        const exchangeChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
+        if (exchangeChannel) {
             try {
                 const fetchedMessages = await exchangeChannel.messages.fetch({ limit: 10 });
                 fetchedMessages.filter(m => m.author.id === client.user.id).forEach(msg => msg.delete().catch(()=>{}));
@@ -1316,7 +1317,8 @@ const step2Embed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: '�
 
             if (isSuccess) { updateWeeklyLeaderboard(interaction.guild); await updateUserHeistPoints(ticketData.discordUserId, interaction.guild, ticketData.username); }
 
-            const mainTicketChannel = interaction.guild.channels.cache.get('1503666259244482642'); // Apni Channel ID yahan daalein            if (mainTicketChannel) {
+            const mainTicketChannel = interaction.guild.channels.cache.find(c => c.name.includes('buy-sell') || c.name.includes('exchange'));
+            if (mainTicketChannel) {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 50 });
                 fetchedMessages.filter(m => m.author.id === client.user.id).forEach(msg => msg.delete().catch(console.error));
                 await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
