@@ -1323,6 +1323,27 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
                 fetchedMessages.filter(m => m.author.id === client.user.id).forEach(msg => msg.delete().catch(console.error));
                 await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
             }
+            
+            // ==========================================
+            // 🗑️ AUTO-DELETE BANK DETAILS LOG ON CLOSE
+            // ==========================================
+            try {
+                const bankDetailsChannel = interaction.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
+                if (bankDetailsChannel) {
+                    const fetchedLogs = await bankDetailsChannel.messages.fetch({ limit: 100 });
+                    // Us message ko dhoondo jisme is ticket ka ID hai
+                    const logToDelete = fetchedLogs.find(m => 
+                        m.embeds.length > 0 && 
+                        m.embeds[0].fields && 
+                        m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(interaction.channel.id))
+                    );
+                    
+                    if (logToDelete) {
+                        await logToDelete.delete();
+                    }
+                }
+            } catch (err) { console.error("Bank detail log delete error:", err); }
+            // ==========================================  
 
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
         } catch (error) { console.error("Error Closing Ticket: ", error); }
