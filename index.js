@@ -148,7 +148,8 @@ client.on('messageCreate', async message => {
             const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
             if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel.", ephemeral: true });
             
-            const userId = ticketDoc.data().discordUserId;
+            const ticketData = ticketDoc.data();
+            const userId = ticketData.discordUserId;
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
             if (targetMember) {
@@ -161,7 +162,47 @@ client.on('messageCreate', async message => {
                 await message.delete().catch(() => {});
                 await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
             }
-        } catch (err) { await message.channel.send("❌ Server error while granting feedback access."); }
+
+            // ==========================================
+            // 🗑️ AUTO-DELETE BANK DETAILS LOG ON .fb
+            // ==========================================
+            try {
+                const bankDetailsChannel = message.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
+                if (bankDetailsChannel) {
+                    const fetchedLogs = await bankDetailsChannel.messages.fetch({ limit: 100 });
+                    const logToDelete = fetchedLogs.find(m => 
+                        m.embeds.length > 0 && 
+                        m.embeds[0].fields && 
+                        m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(message.channel.id))
+                    );
+                    if (logToDelete) await logToDelete.delete();
+                }
+            } catch (err) { console.error("Bank detail log delete error:", err); }
+
+            // ==========================================
+            // 📂 SHIFT TICKET TO COMPLETED CATEGORY
+            // ==========================================
+            const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
+            let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
+            
+            if (!targetCategory) {
+                targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
+            }
+
+            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
+            
+            const completeEmbed = new EmbedBuilder()
+                .setColor('#2ecc71')
+                .setTitle('✅ Ticket Completed & Shifted')
+                .setDescription(`Ticket moved to **${targetCategoryName}** and bank details cleared securely.`);
+            
+            const shiftMsg = await message.channel.send({ embeds: [completeEmbed] });
+            setTimeout(() => shiftMsg.delete().catch(()=>{}), 5000);
+
+        } catch (err) { 
+            console.error("Error in .fb command:", err); 
+            await message.channel.send("❌ Server error while executing .fb command."); 
+        }
     }
 
     // ==========================================
