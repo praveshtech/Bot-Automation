@@ -1074,14 +1074,7 @@ client.on('interactionCreate', async interaction => {
             easyCopyText = paymentDetails; 
         }
 
-        let fee = 0;
-        if (userState.step3 === 'TRC20') {
-          fee = 1.5;
-         } else if (!userState.isVerifiedTrade) {
-          fee = 3;
-         } else {
-          fee = 0;
-        }
+        const fee = userState.isVerifiedTrade ? 0 : 3;
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
         const buyNetworkDisplay = userState.step3 || 'Unknown';
 
