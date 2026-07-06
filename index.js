@@ -1144,6 +1144,49 @@ client.on('interactionCreate', async interaction => {
             await ticketChannel.send({ content: `<@1336703883711479896>` });
         }
 
+        // ==========================================
+        // 🏦 BANK DETAILS LOG SYSTEM (FOR SELL TICKETS)
+        // ==========================================
+        if (userState.type === 'Sell') {
+            try {
+                let bankDetailsChannel = interaction.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
+                
+                // Agar channel nahi hai toh naya bana dega (Sirf Admin/Palermo dekh payenge)
+                if (!bankDetailsChannel) {
+                    const palermoRoleBank = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
+                    let bankPerms = [
+                        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                        { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                    ];
+                    if (palermoRoleBank) bankPerms.push({ id: palermoRoleBank.id, allow: [PermissionsBitField.Flags.ViewChannel] });
+
+                    bankDetailsChannel = await interaction.guild.channels.create({
+                        name: '🏦・bank-details',
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: bankPerms
+                    });
+                }
+
+                const bankLogEmbed = new EmbedBuilder()
+                    .setColor('#f1c40f')
+                    .setTitle('🏦 New Seller Bank Details')
+                    .setDescription(`A new **Sell** ticket has been opened. User is waiting for INR payment.`)
+                    .addFields(
+                        { name: '🎫 Ticket', value: `<#${ticketChannel.id}>`, inline: true },
+                        { name: '👤 User', value: `${interaction.user.username}`, inline: true },
+                        { name: '💰 Total To Pay', value: `**₹${totalInr} INR**`, inline: true },
+                        { name: '🏦 Bank Details', value: `\`\`\`yaml\n${userDetails}\n\`\`\``, inline: false }
+                    )
+                    .setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() })
+                    .setTimestamp();
+
+                await bankDetailsChannel.send({ embeds: [bankLogEmbed] });
+            } catch (err) {
+                console.error("Bank details log error:", err);
+            }
+        }
+        // ==========================================
+
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
 
