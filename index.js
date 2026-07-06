@@ -1074,7 +1074,15 @@ client.on('interactionCreate', async interaction => {
             easyCopyText = paymentDetails; 
         }
 
-        const fee = userState.isVerifiedTrade ? 0 : 3;
+        // 🔥 PERFECT EXTRA FEE LOGIC 🔥
+        // Base Fee: KYC = $0, Non-KYC = $3
+        let fee = userState.isVerifiedTrade ? 0 : 3;
+        
+        // Agar action 'Buy' hai aur network 'TRC20' hai -> Extra $1.5 add kar do
+        if (userState.type === 'Buy' && userState.step3 === 'TRC20') {
+            fee += 1.5; 
+        }
+
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
         const buyNetworkDisplay = userState.step3 || 'Unknown';
 
