@@ -170,14 +170,6 @@ client.on('messageCreate', async message => {
     if (command.startsWith('.am')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
-        // Match numbers like .am3000, .am 3000, .am-3000, .am - 3000
-        const amountMatch = message.content.match(/\.am\s*-?\s*(\d+(\.\d+)?)/i);
-        if (!amountMatch) {
-            return message.reply({ content: '❌ Galat format! Use karein: `.am 3000` ya `.am-3000`', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
-        }
-        
-        const paidAmount = parseFloat(amountMatch[1]);
-        
         try {
             const ticketRef = db.collection('p2p_tickets').doc(message.channel.id);
             const ticketDoc = await ticketRef.get();
@@ -186,13 +178,35 @@ client.on('messageCreate', async message => {
             
             const ticketData = ticketDoc.data();
             
-            // Agar pehli baar command chala rahe hain toh totalInr se balance uthayega
+            // Total INR ya bacha hua INR database se nikal rahe hain
             let currentRemaining = ticketData.remainingInr !== undefined ? ticketData.remainingInr : ticketData.totalInr;
             
             if (currentRemaining === undefined || currentRemaining === null) {
                 return message.channel.send("❌ Is ticket mein Total INR calculate nahi hua hai.");
             }
+
+            // 🔍 FEATURE 1: Agar sirf ".am" likha hai, toh sirf balance show karega
+            if (command === '.am') {
+                const infoEmbed = new EmbedBuilder()
+                    .setColor('#f1c40f') // Yellow color for info
+                    .setTitle('🧮 Payment Tracker Info')
+                    .setDescription(`Current payment status for **${ticketData.username || 'User'}**`)
+                    .addFields(
+                        { name: '🧾 Remaining Balance', value: `**₹${currentRemaining.toFixed(2)}**`, inline: false }
+                    )
+                    .setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
+                
+                await message.delete().catch(() => {});
+                return message.channel.send({ embeds: [infoEmbed] });
+            }
+
+            // 📉 FEATURE 2: Agar amount daala hai (jaise .am 3000), toh minus karega
+            const amountMatch = message.content.match(/\.am\s*-?\s*(\d+(\.\d+)?)/i);
+            if (!amountMatch) {
+                return message.reply({ content: '❌ Galat format! Use karein: `.am` (check karne ke liye) ya `.am 3000` (minus karne ke liye)', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+            }
             
+            const paidAmount = parseFloat(amountMatch[1]);
             let newRemaining = currentRemaining - paidAmount;
             if (newRemaining < 0) newRemaining = 0; // Minus mein na jaye
             
@@ -200,7 +214,7 @@ client.on('messageCreate', async message => {
             await ticketRef.update({ remainingInr: newRemaining });
             
             const amEmbed = new EmbedBuilder()
-                .setColor('#3498db')
+                .setColor('#3498db') // Blue color for calculation
                 .setTitle('🧮 Partial Payment Tracker')
                 .setDescription(`Payment calculation updated for **${ticketData.username || 'User'}**`)
                 .addFields(
