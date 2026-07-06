@@ -164,6 +164,61 @@ client.on('messageCreate', async message => {
         } catch (err) { await message.channel.send("❌ Server error while granting feedback access."); }
     }
 
+    // ==========================================
+    // 🧮 ADMIN COMMAND: .am (Payment Tracker)
+    // ==========================================
+    if (command.startsWith('.am')) {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        
+        // Match numbers like .am3000, .am 3000, .am-3000, .am - 3000
+        const amountMatch = message.content.match(/\.am\s*-?\s*(\d+(\.\d+)?)/i);
+        if (!amountMatch) {
+            return message.reply({ content: '❌ Galat format! Use karein: `.am 3000` ya `.am-3000`', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+        }
+        
+        const paidAmount = parseFloat(amountMatch[1]);
+        
+        try {
+            const ticketRef = db.collection('p2p_tickets').doc(message.channel.id);
+            const ticketDoc = await ticketRef.get();
+            
+            if (!ticketDoc.exists) return message.reply({ content: "❌ Yeh command sirf valid P2P ticket channel mein chalega.", ephemeral: true });
+            
+            const ticketData = ticketDoc.data();
+            
+            // Agar pehli baar command chala rahe hain toh totalInr se balance uthayega
+            let currentRemaining = ticketData.remainingInr !== undefined ? ticketData.remainingInr : ticketData.totalInr;
+            
+            if (currentRemaining === undefined || currentRemaining === null) {
+                return message.channel.send("❌ Is ticket mein Total INR calculate nahi hua hai.");
+            }
+            
+            let newRemaining = currentRemaining - paidAmount;
+            if (newRemaining < 0) newRemaining = 0; // Minus mein na jaye
+            
+            // Database mein naya bacha hua balance save karein
+            await ticketRef.update({ remainingInr: newRemaining });
+            
+            const amEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('🧮 Partial Payment Tracker')
+                .setDescription(`Payment calculation updated for **${ticketData.username || 'User'}**`)
+                .addFields(
+                    { name: '💰 Previous Balance', value: `₹${currentRemaining.toFixed(2)}`, inline: true },
+                    { name: '➖ Amount Paid Now', value: `₹${paidAmount.toFixed(2)}`, inline: true },
+                    { name: '🧾 Remaining Balance', value: `**₹${newRemaining.toFixed(2)}**`, inline: false }
+                )
+                .setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
+                
+            await message.delete().catch(() => {}); // Admin ka text delete karega taaki chat clean rahe
+            await message.channel.send({ embeds: [amEmbed] });
+            
+        } catch (err) {
+            console.error("Error in .am command:", err);
+            await message.channel.send("❌ Database update mein error aaya.");
+        }
+    }
+
     if (command === '!p2p') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return message.reply({ content: "❌ Action Denied.", ephemeral: true });
         try {
