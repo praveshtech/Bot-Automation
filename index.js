@@ -1074,13 +1074,15 @@ client.on('interactionCreate', async interaction => {
             easyCopyText = paymentDetails; 
         }
 
-        // 🔥 PERFECT EXTRA FEE LOGIC 🔥
+        // 🔥 PERFECT EXTRA FEE LOGIC & LABEL 🔥
         // Base Fee: KYC = $0, Non-KYC = $3
         let fee = userState.isVerifiedTrade ? 0 : 3;
+        let feeLabel = userState.isVerifiedTrade ? "KYC Fee: $0" : "Non-KYC Fee: $3";
         
         // Agar action 'Buy' hai aur network 'TRC20' hai -> Extra $1.5 add kar do
         if (userState.type === 'Buy' && userState.step3 === 'TRC20') {
             fee += 1.5; 
+            feeLabel += " + TRC20 Network Fee: $1.5"; // Text mein extra detail jod di
         }
 
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
@@ -1121,8 +1123,7 @@ client.on('interactionCreate', async interaction => {
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
-        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. Core Amount**\n> $${baseAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**📊 Exchange Rate & Fees:**\n> Live Rate: ₹${rateUsed}/USDT\n> Non-KYC Fee: $${fee}\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n${userState.type === 'Sell' ? `**You Need To Send: $${totalUsdtForCalc} USDT**\n**You Will Receive: ₹${totalInr} INR**` : `**You Need To Pay: ₹${totalInr} INR**\n**You Will Receive: $${baseAmount} USDT**`}`;
-
+const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. Core Amount**\n> $${baseAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**📊 Exchange Rate & Fees:**\n> Live Rate: ₹${rateUsed}/USDT\n> ${feeLabel}\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n${userState.type === 'Sell' ? `**You Need To Send: $${totalUsdtForCalc} USDT**\n**You Will Receive: ₹${totalInr} INR**` : `**You Need To Pay: ₹${totalInr} INR**\n**You Will Receive: $${baseAmount} USDT**`}`;
         const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
         const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
         const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
