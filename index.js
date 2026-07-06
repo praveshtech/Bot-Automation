@@ -1074,7 +1074,19 @@ client.on('interactionCreate', async interaction => {
             easyCopyText = paymentDetails; 
         }
 
-        const fee = userState.isVerifiedTrade ? 0 : 3;
+        let fee = 0;
+        let feeName = "Non-KYC Fee"; // Default label
+
+        if (userState.step3 === 'TRC20') {
+            fee = 1.5;
+            feeName = "TRC20 Network Fee";
+        } else if (!userState.isVerifiedTrade) {
+            fee = 3;
+            feeName = "Non-KYC Fee";
+        } else {
+            fee = 0;
+            feeName = "KYC Fee";
+        }
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
         const buyNetworkDisplay = userState.step3 || 'Unknown';
 
