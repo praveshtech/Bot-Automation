@@ -1192,6 +1192,7 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
 
         if (userState.type === 'Sell') {
             await ticketChannel.send({ content: `<@1336703883711479896>` });
+            await ticketChannel.send({ content: `<@1001128047128358923>` });
         }
 
         // ==========================================
