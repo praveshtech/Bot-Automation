@@ -155,19 +155,31 @@ client.on('messageCreate', async message => {
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
             // ==========================================
-            // 📜 1. TRANSCRIPT GENERATION SYSTEM
+            // 📜 1. TRANSCRIPT GENERATION SYSTEM (100% CRASH-PROOF TXT)
             // ==========================================
             const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
             
             try {
-                // 🔥 MASTER FIX: saveImages ko 'false' kiya gaya hai taaki images direct link se load ho aur crash na ho
-                const attachment = await discordTranscripts.createTranscript(message.channel, {
-                    limit: -1, 
-                    returnType: 'attachment', 
-                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`, 
-                    saveImages: false,  // 🔴 YAHI SABSE BADI PROBLEM THI
-                    poweredBy: true
+                // Messages fetch karna
+                const fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
+                const reversedMessages = Array.from(fetchedMessages.values()).reverse(); // Sahi order mein set karna
+                
+                let transcriptText = `--- Secure Chat Transcript: ${message.channel.name} ---\n\n`;
+                
+                // Har message ko text mein convert karna
+                reversedMessages.forEach(m => {
+                    const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                    const content = m.cleanContent || '[Embed/Button Message]';
+                    transcriptText += `[${time}] ${m.author.username}: ${content}\n`;
+                    
+                    // Agar chat mein image (payment screenshot) hai, toh uska link save karna
+                    if (m.attachments.size > 0) {
+                        transcriptText += `[📎 Attachment Links: ${m.attachments.map(a => a.url).join(', ')}]\n`;
+                    }
                 });
+
+                // TXT file banana (Buffer use karke - no extra package needed)
+                const attachment = new AttachmentBuilder(Buffer.from(transcriptText, 'utf-8'), { name: `transcript-${ticketData.username || 'user'}-${message.channel.name}.txt` });
 
                 // History channel dhoondhna ya naya banana
                 let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
