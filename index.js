@@ -155,26 +155,84 @@ client.on('messageCreate', async message => {
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
             // ==========================================
-            // 📜 1. TRANSCRIPT GENERATION SYSTEM (SMART HTML)
+            // 📜 1. TRANSCRIPT GENERATION SYSTEM (CUSTOM HTML - CRASH PROOF)
             // ==========================================
             const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
             
             try {
-                // 1. Chat ke saare messages fetch karna
+                // 1. Messages fetch karna aur sahi order (purane se naya) mein set karna
                 const fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
+                const reversedMessages = Array.from(fetchedMessages.values()).reverse();
                 
-                // 2. 🔥 SMART FILTER: Un messages ko ignore karna jisme Buttons/Dropdowns (components) hain, kyu ki wahi package ko crash karwa rahe the.
-                const safeMessages = fetchedMessages.filter(m => m.components.length === 0);
+                // 2. Custom HTML ka Structure (Dark Mode Discord Theme) banana
+                let htmlContent = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Transcript: ${message.channel.name}</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #313338; color: #dbdee1; padding: 20px; }
+                        h2 { color: #ffffff; text-align: center; }
+                        .message { display: flex; margin-bottom: 20px; }
+                        .avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; }
+                        .header { margin-bottom: 5px; }
+                        .username { font-weight: bold; color: #f2f3f5; margin-right: 10px; font-size: 1.1em; }
+                        .timestamp { font-size: 0.8em; color: #949ba4; }
+                        .content { line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
+                        .attachment { max-width: 400px; max-height: 400px; margin-top: 10px; border-radius: 5px; display: block; }
+                    </style>
+                </head>
+                <body>
+                    <h2>🏦 Professor Network - Secure Vault Transcript</h2>
+                    <p style="text-align: center;"><strong>Ticket:</strong> ${message.channel.name} | <strong>User:</strong> ${ticketData.username || 'Unknown'}</p>
+                    <hr style="border-color: #4f545c; margin-bottom: 30px;">
+                `;
 
-                // 3. Wapas HTML package ka use karna aur safe messages bhejna
-                const attachment = await discordTranscripts.generateFromMessages(safeMessages, message.channel, {
-                    returnType: 'attachment',
-                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`,
-                    saveImages: true, // 🔥 Ab images HTML ke andar hi save hongi!
-                    poweredBy: true
+                // 3. Har message ko HTML mein convert karna
+                reversedMessages.forEach(m => {
+                    const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                    const avatarUrl = m.author.displayAvatarURL({ extension: 'png', size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    const safeContent = m.content ? m.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<i>[System/Button Message]</i>';
+                    
+                    htmlContent += `
+                    <div class="message">
+                        <img src="${avatarUrl}" class="avatar" alt="Avatar">
+                        <div>
+                            <div class="header">
+                                <span class="username">${m.author.username}</span>
+                                <span class="timestamp">${time}</span>
+                            </div>
+                            <div class="content">${safeContent}</div>
+                    `;
+
+                    // 🔥 Images aur attachments ko HTML <img src> mein daalna taaki photo dikhe
+                    if (m.attachments.size > 0) {
+                        m.attachments.forEach(att => {
+                            if (att.contentType && att.contentType.startsWith('image/')) {
+                                htmlContent += `<img src="${att.url}" class="attachment" alt="Image">`;
+                            } else {
+                                htmlContent += `<br><a href="${att.url}" style="color: #00a8fc;" target="_blank">📎 Download File: ${att.name}</a>`;
+                            }
+                        });
+                    }
+
+                    htmlContent += `
+                        </div>
+                    </div>
+                    `;
                 });
 
-                // History channel dhoondhna ya naya banana
+                htmlContent += `
+                </body>
+                </html>
+                `;
+
+                // 4. Custom HTML ko Buffer karke File banana (Bina kisi extra package ke)
+                const attachment = new AttachmentBuilder(Buffer.from(htmlContent, 'utf-8'), { name: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html` });
+
+                // History channel logic
                 let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
                 if (!historyChannel) {
                     historyChannel = await message.guild.channels.create({
@@ -189,7 +247,7 @@ client.on('messageCreate', async message => {
                     if (palermoRole) await historyChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
                 }
 
-                // History channel mein Embed aur transcript file bhejna
+                // History channel mein Embed aur Transcript bhejna
                 const histEmbed = new EmbedBuilder()
                     .setColor('#3498db')
                     .setTitle(`📜 Chat Transcript: ${message.channel.name}`)
