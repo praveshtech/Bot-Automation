@@ -160,18 +160,13 @@ client.on('messageCreate', async message => {
             const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
             
             try {
-                // 🔥 MASTER FIX: Manually messages fetch karke kachra filter karna
-                let fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
-
-                // Sirf Normal Messages (0) aur Replies (19) ko allow karna (System messages hata dena taaki crash na ho)
-                fetchedMessages = fetchedMessages.filter(m => m.type === 0 || m.type === 19);
-
-                // Filter kiye hue 100% safe messages se HTML banana
-                const attachment = await discordTranscripts.generateFromMessages(fetchedMessages, message.channel, {
-                    returnType: 'attachment',
-                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`,
-                    saveImages: true,
-                    poweredBy: false
+                // 🔥 MASTER FIX: saveImages ko 'false' kiya gaya hai taaki images direct link se load ho aur crash na ho
+                const attachment = await discordTranscripts.createTranscript(message.channel, {
+                    limit: -1, 
+                    returnType: 'attachment', 
+                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`, 
+                    saveImages: false,  // 🔴 YAHI SABSE BADI PROBLEM THI
+                    poweredBy: true
                 });
 
                 // History channel dhoondhna ya naya banana
