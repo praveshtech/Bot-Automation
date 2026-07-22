@@ -10,6 +10,7 @@ const excelJS = require('exceljs');
 const faqData = require('./faqs.json');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
+const discordTranscripts = require('discord-html-transcripts');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -142,6 +143,7 @@ client.on('messageCreate', async message => {
         } catch (error) {}
     }
 
+    // ADMIN COMMAND: .fb (WITH TRANSCRIPT SAVING)
     if (command === '.fb') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
@@ -152,6 +154,60 @@ client.on('messageCreate', async message => {
             const userId = ticketData.discordUserId;
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
+            // ==========================================
+            // 📜 1. TRANSCRIPT GENERATION SYSTEM
+            // ==========================================
+            const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
+            
+            try {
+                // Poore channel ki HTML file generate karna (Images ke sath)
+                const attachment = await discordTranscripts.createTranscript(message.channel, {
+                    limit: -1, 
+                    returnType: 'attachment', 
+                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`, 
+                    saveImages: true, 
+                    poweredBy: false
+                });
+
+                // History channel dhoondhna ya naya banana
+                let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
+                if (!historyChannel) {
+                    historyChannel = await message.guild.channels.create({
+                        name: 'transaction-history',
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: [
+                            { id: message.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                            { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                        ]
+                    });
+                    // Palermo ko bhi history dekhne ka access dena
+                    const palermoRole = message.guild.roles.cache.find(r => r.name === 'Palermo');
+                    if (palermoRole) await historyChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
+                }
+
+                // History channel mein Embed aur transcript file bhejna
+                const histEmbed = new EmbedBuilder()
+                    .setColor('#3498db')
+                    .setTitle(`📜 Chat Transcript: ${message.channel.name}`)
+                    .addFields(
+                        { name: 'User', value: `<@${userId}> (${ticketData.username || 'Unknown'})`, inline: true },
+                        { name: 'Trade Details', value: `${ticketData.tradeType} - $${ticketData.amountUsd || 0}`, inline: true },
+                        { name: 'Method', value: `${ticketData.networkOrMethod || 'Unknown'}`, inline: true }
+                    )
+                    .setTimestamp()
+                    .setFooter({ text: 'Professor Network - Vault Records', iconURL: client.user.displayAvatarURL() });
+
+                await historyChannel.send({ embeds: [histEmbed], files: [attachment] });
+                await loadingMsg.delete().catch(()=>{});
+            } catch (transcriptErr) {
+                console.error("Transcript Error:", transcriptErr);
+                await loadingMsg.delete().catch(()=>{});
+                await message.channel.send("⚠️ *Warning: Transcript generation failed, but continuing with feedback process.*");
+            }
+
+            // ==========================================
+            // ⭐ 2. ROLE ASSIGNMENT & FEEDBACK PROMPT
+            // ==========================================
             if (targetMember) {
                 let feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
                 if (!feedRole) { feedRole = await message.guild.roles.create({ name: 'transaction done', color: '#f1c40f', reason: 'Temporary role for leaving a transaction review' }); }
@@ -164,7 +220,7 @@ client.on('messageCreate', async message => {
             }
 
             // ==========================================
-            // 🗑️ AUTO-DELETE BANK DETAILS LOG ON .fb
+            // 🗑️ 3. AUTO-DELETE BANK DETAILS LOG ON .fb
             // ==========================================
             try {
                 const bankDetailsChannel = message.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
@@ -180,7 +236,7 @@ client.on('messageCreate', async message => {
             } catch (err) { console.error("Bank detail log delete error:", err); }
 
             // ==========================================
-            // 📂 SHIFT TICKET TO COMPLETED CATEGORY
+            // 📂 4. SHIFT TICKET TO COMPLETED CATEGORY
             // ==========================================
             const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
             let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
@@ -188,9 +244,10 @@ client.on('messageCreate', async message => {
             if (!targetCategory) {
                 targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
             }
-
-            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
             
+            // Parent change kar rahe hain ticket shift karne ke liye
+            await message.channel.setParent(targetCategory.id, { lockPermissions: false });
+
             const completeEmbed = new EmbedBuilder()
                 .setColor('#2ecc71')
                 .setTitle('✅ Ticket Completed & Shifted')
@@ -199,9 +256,9 @@ client.on('messageCreate', async message => {
             const shiftMsg = await message.channel.send({ embeds: [completeEmbed] });
             setTimeout(() => shiftMsg.delete().catch(()=>{}), 5000);
 
-        } catch (err) { 
-            console.error("Error in .fb command:", err); 
-            await message.channel.send("❌ Server error while executing .fb command."); 
+        } catch (error) {
+            console.error("Critical error in .fb command:", error);
+            await message.channel.send("❌ Internal Server Error during the .fb process.");
         }
     }
 
@@ -1047,7 +1104,18 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
-        const categoryName = userState.type === 'Buy' ? '🟢 BUY TICKETS' : '🔴 SELL TICKETS';
+        // ==========================================
+        // 🔥 SMART ROUTING: Dynamic Categories based on Payment Method
+        // ==========================================
+        let categoryName = '🎫 TICKETS';
+        
+        if (userState.type === 'Buy') {
+            if (userState.step2 === 'CDM') categoryName = '🟢 CDM FOR BUY';
+            else categoryName = '🟢 CCW FOR BUY'; // Agar CCW hai
+        } else if (userState.type === 'Sell') {
+            if (userState.step3 === 'CDM') categoryName = '🔴 CDM FOR SELL';
+            else categoryName = '🔴 IMPS-UPI FOR SELL'; // Agar IMPS, CCW, UPI hai
+        }
         
         let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
         
@@ -1192,7 +1260,7 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
 
         if (userState.type === 'Sell') {
             await ticketChannel.send({ content: `<@1336703883711479896>` });
-            await ticketChannel.send({ content: `<@1001128047128358923>` });
+            
         }
 
         // ==========================================
