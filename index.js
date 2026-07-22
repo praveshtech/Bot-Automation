@@ -160,13 +160,18 @@ client.on('messageCreate', async message => {
             const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
             
             try {
-                // Poore channel ki HTML file generate karna (Images ke sath)
-                const attachment = await discordTranscripts.createTranscript(message.channel, {
-                    limit: -1, 
-                    returnType: 'attachment', 
-                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`, 
-                    saveImages: true, 
-                    poweredBy: true // 🔥 BAS ISKO TRUE KARNA HAI
+                // 🔥 MASTER FIX: Manually messages fetch karke kachra filter karna
+                let fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
+
+                // Sirf Normal Messages (0) aur Replies (19) ko allow karna (System messages hata dena taaki crash na ho)
+                fetchedMessages = fetchedMessages.filter(m => m.type === 0 || m.type === 19);
+
+                // Filter kiye hue 100% safe messages se HTML banana
+                const attachment = await discordTranscripts.generateFromMessages(fetchedMessages, message.channel, {
+                    returnType: 'attachment',
+                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`,
+                    saveImages: true,
+                    poweredBy: false
                 });
 
                 // History channel dhoondhna ya naya banana
@@ -180,7 +185,6 @@ client.on('messageCreate', async message => {
                             { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
                         ]
                     });
-                    // Palermo ko bhi history dekhne ka access dena
                     const palermoRole = message.guild.roles.cache.find(r => r.name === 'Palermo');
                     if (palermoRole) await historyChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
                 }
