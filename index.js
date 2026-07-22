@@ -155,31 +155,24 @@ client.on('messageCreate', async message => {
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
             // ==========================================
-            // 📜 1. TRANSCRIPT GENERATION SYSTEM (100% CRASH-PROOF TXT)
+            // 📜 1. TRANSCRIPT GENERATION SYSTEM (SMART HTML)
             // ==========================================
             const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
             
             try {
-                // Messages fetch karna
+                // 1. Chat ke saare messages fetch karna
                 const fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
-                const reversedMessages = Array.from(fetchedMessages.values()).reverse(); // Sahi order mein set karna
                 
-                let transcriptText = `--- Secure Chat Transcript: ${message.channel.name} ---\n\n`;
-                
-                // Har message ko text mein convert karna
-                reversedMessages.forEach(m => {
-                    const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-                    const content = m.cleanContent || '[Embed/Button Message]';
-                    transcriptText += `[${time}] ${m.author.username}: ${content}\n`;
-                    
-                    // Agar chat mein image (payment screenshot) hai, toh uska link save karna
-                    if (m.attachments.size > 0) {
-                        transcriptText += `[📎 Attachment Links: ${m.attachments.map(a => a.url).join(', ')}]\n`;
-                    }
-                });
+                // 2. 🔥 SMART FILTER: Un messages ko ignore karna jisme Buttons/Dropdowns (components) hain, kyu ki wahi package ko crash karwa rahe the.
+                const safeMessages = fetchedMessages.filter(m => m.components.length === 0);
 
-                // TXT file banana (Buffer use karke - no extra package needed)
-                const attachment = new AttachmentBuilder(Buffer.from(transcriptText, 'utf-8'), { name: `transcript-${ticketData.username || 'user'}-${message.channel.name}.txt` });
+                // 3. Wapas HTML package ka use karna aur safe messages bhejna
+                const attachment = await discordTranscripts.generateFromMessages(safeMessages, message.channel, {
+                    returnType: 'attachment',
+                    filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`,
+                    saveImages: true, // 🔥 Ab images HTML ke andar hi save hongi!
+                    poweredBy: true
+                });
 
                 // History channel dhoondhna ya naya banana
                 let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
