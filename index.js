@@ -155,16 +155,16 @@ client.on('messageCreate', async message => {
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
             // ==========================================
-            // 📜 1. TRANSCRIPT GENERATION SYSTEM (CUSTOM HTML - CRASH PROOF)
+            // 📜 1. TRANSCRIPT GENERATION SYSTEM (DISCORD CLONE UI + MENTION FIX)
             // ==========================================
-            const loadingMsg = await message.channel.send("⏳ *Generating secure chat transcript...*");
+            const loadingMsg = await message.channel.send("⏳ *Generating premium chat transcript...*");
             
             try {
-                // 1. Messages fetch karna aur sahi order (purane se naya) mein set karna
+                // Messages fetch karna aur sahi order mein set karna
                 const fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
                 const reversedMessages = Array.from(fetchedMessages.values()).reverse();
                 
-                // 2. Custom HTML ka Structure (Dark Mode Discord Theme) banana
+                // 🔥 PREMIUM CSS STRUCTURE (Discord exact match)
                 let htmlContent = `
                 <!DOCTYPE html>
                 <html lang="en">
@@ -173,28 +173,58 @@ client.on('messageCreate', async message => {
                     <meta name="viewport" content="width=device-width, initial-scale=1.0">
                     <title>Transcript: ${message.channel.name}</title>
                     <style>
-                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #313338; color: #dbdee1; padding: 20px; }
-                        h2 { color: #ffffff; text-align: center; }
-                        .message { display: flex; margin-bottom: 20px; }
-                        .avatar { width: 45px; height: 45px; border-radius: 50%; margin-right: 15px; }
-                        .header { margin-bottom: 5px; }
-                        .username { font-weight: bold; color: #f2f3f5; margin-right: 10px; font-size: 1.1em; }
-                        .timestamp { font-size: 0.8em; color: #949ba4; }
-                        .content { line-height: 1.5; word-wrap: break-word; white-space: pre-wrap; }
-                        .attachment { max-width: 400px; max-height: 400px; margin-top: 10px; border-radius: 5px; display: block; }
+                        body { font-family: 'gg sans', 'Noto Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #313338; color: #dbdee1; margin: 0; padding: 20px; }
+                        h2 { color: #ffffff; text-align: center; margin-bottom: 5px; }
+                        .ticket-info { text-align: center; color: #949ba4; margin-bottom: 30px; font-size: 0.9em; }
+                        hr { border: none; border-top: 1px solid #4f545c; margin-bottom: 30px; }
+                        .message { display: flex; padding: 5px 20px; margin-top: 10px; border-radius: 5px; }
+                        .message:hover { background-color: #2b2d31; } /* Discord hover effect */
+                        .avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 16px; object-fit: cover; }
+                        .header { display: flex; align-items: baseline; margin-bottom: 4px; }
+                        .username { font-weight: 500; color: #f2f3f5; margin-right: 8px; font-size: 1rem; }
+                        .timestamp { font-size: 0.75rem; color: #949ba4; }
+                        .content { font-size: 1rem; line-height: 1.375rem; word-wrap: break-word; white-space: pre-wrap; }
+                        .mention { background-color: rgba(88, 101, 242, 0.3); color: #c9cdfb; border-radius: 3px; padding: 0 4px; font-weight: 500; cursor: pointer; }
+                        .mention:hover { background-color: rgba(88, 101, 242, 0.6); }
+                        .attachment-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
+                        .attachment { max-width: 350px; max-height: 350px; border-radius: 8px; object-fit: contain; background-color: #2b2d31; border: 1px solid #1e1f22; }
+                        .system-msg { color: #949ba4; font-style: italic; font-size: 0.9em; }
                     </style>
                 </head>
                 <body>
                     <h2>🏦 Professor Network - Secure Vault Transcript</h2>
-                    <p style="text-align: center;"><strong>Ticket:</strong> ${message.channel.name} | <strong>User:</strong> ${ticketData.username || 'Unknown'}</p>
-                    <hr style="border-color: #4f545c; margin-bottom: 30px;">
+                    <div class="ticket-info"><strong>Ticket:</strong> ${message.channel.name} | <strong>User:</strong> ${ticketData.username || 'Unknown'}</div>
+                    <hr>
                 `;
 
-                // 3. Har message ko HTML mein convert karna
+                // Har message ko convert karna
                 reversedMessages.forEach(m => {
-                    const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+                    const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     const avatarUrl = m.author.displayAvatarURL({ extension: 'png', size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png';
-                    const safeContent = m.content ? m.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '<i>[System/Button Message]</i>';
+                    
+                    // ----------------------------------------------------
+                    // 🔥 MAGIC LOGIC: IDs ko Username aur Role mein badalna
+                    // ----------------------------------------------------
+                    let contentText = m.content || '';
+                    
+                    // 1. Text ko safe banayein (taaki code break na ho)
+                    contentText = contentText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    
+                    // 2. User Mentions (<@1234...>) ko @Name mein badalna
+                    contentText = contentText.replace(/&lt;@!?(\d+)&gt;/g, (match, id) => {
+                        const user = message.guild.members.cache.get(id);
+                        return `<span class="mention">@${user ? user.user.username : 'User'}</span>`;
+                    });
+
+                    // 3. Role Mentions (<@&1234...>) ko @RoleName mein badalna
+                    contentText = contentText.replace(/&lt;@&amp;(\d+)&gt;/g, (match, id) => {
+                        const role = message.guild.roles.cache.get(id);
+                        return `<span class="mention">@${role ? role.name : 'Role'}</span>`;
+                    });
+                    // ----------------------------------------------------
+
+                    // Agar content empty hai (sirf button tha) toh System message dikhao
+                    const safeContent = contentText ? contentText : '<span class="system-msg">[System / Embed Message]</span>';
                     
                     htmlContent += `
                     <div class="message">
@@ -205,13 +235,14 @@ client.on('messageCreate', async message => {
                                 <span class="timestamp">${time}</span>
                             </div>
                             <div class="content">${safeContent}</div>
+                            <div class="attachment-container">
                     `;
 
-                    // 🔥 Images aur attachments ko HTML <img src> mein daalna taaki photo dikhe
+                    // 🔥 Images ko Discord Grid Style mein set karna
                     if (m.attachments.size > 0) {
                         m.attachments.forEach(att => {
                             if (att.contentType && att.contentType.startsWith('image/')) {
-                                htmlContent += `<img src="${att.url}" class="attachment" alt="Image">`;
+                                htmlContent += `<img src="${att.url}" class="attachment" alt="Screenshot">`;
                             } else {
                                 htmlContent += `<br><a href="${att.url}" style="color: #00a8fc;" target="_blank">📎 Download File: ${att.name}</a>`;
                             }
@@ -219,6 +250,7 @@ client.on('messageCreate', async message => {
                     }
 
                     htmlContent += `
+                            </div>
                         </div>
                     </div>
                     `;
@@ -229,10 +261,10 @@ client.on('messageCreate', async message => {
                 </html>
                 `;
 
-                // 4. Custom HTML ko Buffer karke File banana (Bina kisi extra package ke)
+                // File generate karna
                 const attachment = new AttachmentBuilder(Buffer.from(htmlContent, 'utf-8'), { name: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html` });
 
-                // History channel logic
+                // History channel logic (same as before)
                 let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
                 if (!historyChannel) {
                     historyChannel = await message.guild.channels.create({
