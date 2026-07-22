@@ -166,7 +166,7 @@ client.on('messageCreate', async message => {
                     returnType: 'attachment', 
                     filename: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html`, 
                     saveImages: true, 
-                    poweredBy: false
+                    poweredBy: true // 🔥 BAS ISKO TRUE KARNA HAI
                 });
 
                 // History channel dhoondhna ya naya banana
