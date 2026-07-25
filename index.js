@@ -1586,9 +1586,18 @@ async function updateWeeklyLeaderboard(guild) {
 
 async function updateUserHeistPoints(userId, guild, username) {
     try {
-        const snapshot = await db.collection('p2p_tickets').where('discordUserId', '==', userId).where('status', '==', 'Completed').get();
+        // 🔥 MASTER FIX: Firebase 'Composite Index' error se bachne ke liye filter JS mein lagaya
+        const snapshot = await db.collection('p2p_tickets').where('discordUserId', '==', userId).get();
+        
         let totalVolume = 0;
-        snapshot.forEach(doc => totalVolume += (doc.data().amountUsd || 0));
+        
+        // Data aane ke baad check karenge ki status Completed hai ya nahi
+        snapshot.forEach(doc => {
+            if (doc.data().status === 'Completed') {
+                totalVolume += (doc.data().amountUsd || 0);
+            }
+        });
+
         const points = Math.floor(totalVolume / 10);
         const LEVELS = [{ name: '👑 Level 5 — Syndicate', minPoints: 5000 }, { name: '💎 Level 4 — Elite', minPoints: 1500 }, { name: '🥇 Level 3 — Insider', minPoints: 500 }, { name: '🥈 Level 2 — Operator', minPoints: 100 }, { name: '🥉 Level 1 — Recruit', minPoints: 0 }];
         let targetLevel = LEVELS.find(l => points >= l.minPoints) || LEVELS[4];
@@ -1611,7 +1620,10 @@ async function updateUserHeistPoints(userId, guild, username) {
             }
         }
         updateHeistLeaderboard(guild);
-    } catch(e) {}
+    } catch(e) {
+        // Ab agar koi error aayegi toh terminal mein dikhegi
+        console.error("Heist Point Update Error:", e);
+    }
 }
 
 async function updateHeistLeaderboard(guild) {
