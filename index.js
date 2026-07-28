@@ -12,6 +12,10 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const discordTranscripts = require('discord-html-transcripts');
 
+// 🔥 GEMINI API SETUP (YAHA ADD KAREIN) 🔥
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 // ==========================================
 // 1. FIREBASE SETUP
 // ==========================================
@@ -96,6 +100,100 @@ client.once('ready', async () => {
 // 🛠️ DISCORD MESSAGE COMMANDS (TEXT)
 // ==========================================
 let p2pMessageCount = 0;
+
+
+
+client.on('messageCreate', async message => {
+    if (message.author.bot) return;
+
+    // ==========================================
+    // 🤖 TOKYO AI ENGINE (WEBHOOK + GEMINI)
+    // ==========================================
+    const msgLower = message.content.toLowerCase();
+    
+    // Agar chat 'p2p-chat' hai aur kisi ne 'tokyo' likha hai ya bot ko tag kiya hai
+    if (message.channel.name.includes('p2p-chat') && (message.mentions.has(client.user) || msgLower.includes('tokyo'))) {
+        
+        await message.channel.sendTyping(); // Real feel ke liye typing indicator
+
+        try {
+            // 🔥 1. CHAT HISTORY FETCH KARNA (TOKYO KI SHORT-TERM MEMORY)
+            // Pichle 6 messages fetch karenge (taaki context yaad rahe aur API fast rahe)
+            const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
+            let chatHistory = "";
+            
+            // Messages ko purane se naye ke order mein set karna
+            fetchedMessages.reverse().forEach(msg => {
+                if (msg.content) {
+                    // Agar message webhook ne bheja hai aur naam Tokyo hai, toh 'Tokyo' likho, warna user ka naam
+                    const sender = (msg.author.bot && msg.webhookId) ? 'Tokyo' : msg.author.username;
+                    chatHistory += `${sender}: ${msg.cleanContent}\n`;
+                }
+            });
+
+            // 🔥 2. FAQ KNOWLEDGE PREPARE KARNA
+            let faqKnowledge = "";
+            for (const key in faqData) {
+                faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
+            }
+
+            // 🔥 3. ADVANCED PROMPT (WITH MEMORY)
+            const systemContext = `
+            You are 'Tokyo' from Money Heist, a bold, sharp, and confident FEMALE enforcer and support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
+            Your job is to manage the public chat and answer user queries securely.
+            
+            SERVER KNOWLEDGE (Use this to answer questions accurately):
+            ${faqKnowledge}
+            
+            RECENT CHAT HISTORY (Use this to understand the context of the conversation):
+            ${chatHistory}
+            
+            CRITICAL RULES:
+            1. You are FEMALE. You MUST speak smoothly in a mix of Hindi and English (Hinglish) using strictly FEMALE grammatical tone (e.g., always use 'karungi', 'dekhungi', 'bataungi', 'rahi hoon').
+            2. Keep your tone confident and slightly fiery, just like Tokyo.
+            3. Answer naturally based on the RECENT CHAT HISTORY. If the user is continuing an old conversation, reply accordingly.
+            4. If someone asks for rates, tell them to check the mentioned rate channel.
+            5. If someone complains about ticket replies, tell them firmly to wait in their specific ticket and NOT create duplicates.
+            6. Strictly remind them NEVER to share wallet addresses, payment proofs, or CCW pins in the public chat.
+            7. Keep responses short and punchy (under 3-4 sentences).
+            8. Never say you are an AI.
+            
+            Now, reply as Tokyo to the last message in the CHAT HISTORY.
+            `;
+
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent(systemContext);
+            let aiReply = result.response.text();
+            
+            // User ko mention karke reply start karna
+            aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
+
+            // Channel se webhook fetch karna
+            const webhooks = await message.channel.fetchWebhooks();
+            let tokyoWebhook = webhooks.find(wh => wh.owner.id === client.user.id && wh.name === 'Tokyo Support');
+
+            // Agar nahi hai toh naya webhook bana lenge
+            if (!tokyoWebhook) {
+                tokyoWebhook = await message.channel.createWebhook({
+                    name: 'Tokyo Support',
+                    avatar: 'https://media.discordapp.net/attachments/1521698421331853372/1531697019306119442/A_badass_female_character_inspired_by_Tokyo_from_Money_Heist.jpg?ex=6a6a2782&is=6a68d602&hm=4566b0cfba24ef09542c1edcdd9ebaf3b19cf635348ec4f289a21de38d0ea943&=&format=webp&width=1308&height=872', // Tokyo Image
+                });
+            }
+
+            // Webhook se reply bhejenge
+            await tokyoWebhook.send({
+                content: aiReply,
+                username: 'Tokyo',
+                avatarURL: 'https://media.discordapp.net/attachments/1521698421331853372/1531697019306119442/A_badass_female_character_inspired_by_Tokyo_from_Money_Heist.jpg?ex=6a6a2782&is=6a68d602&hm=4566b0cfba24ef09542c1edcdd9ebaf3b19cf635348ec4f289a21de38d0ea943&=&format=webp&width=1308&height=872', 
+            });
+
+        } catch (error) {
+            console.error("Gemini/Webhook Error:", error);
+        }
+        return; // 👈 Tokyo ka reply aane ke baad code yahin ruk jayega
+    }
+    // ==========================================
+
 
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
