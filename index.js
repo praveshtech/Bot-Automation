@@ -111,84 +111,87 @@ client.on('messageCreate', async message => {
     // ==========================================
     const msgLower = message.content.toLowerCase();
     
-    // Agar chat 'p2p-chat' hai aur kisi ne 'tokyo' likha hai ya bot ko tag kiya hai
-    if (message.channel.name.includes('p2p-chat') && (message.mentions.has(client.user) || msgLower.includes('tokyo'))) {
+    // 🔍 Smart Trigger: Yeh check karega ki kya user trade se related koi common sawal pooch raha hai
+    const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
+    
+    // Agar tag kiya hai, tokyo likha hai, YA koi common sawal poocha hai, tabhi reply karegi
+    if (message.channel.name.includes('p2p-chat') && (message.mentions.has(client.user) || msgLower.includes('tokyo') || isAskingQuestion)) {
         
         await message.channel.sendTyping(); // Real feel ke liye typing indicator
 
         try {
-            // 🔥 1. CHAT HISTORY FETCH KARNA (TOKYO KI SHORT-TERM MEMORY)
-            // Pichle 6 messages fetch karenge (taaki context yaad rahe aur API fast rahe)
+            // 🔥 1. CHAT HISTORY FETCH 
             const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
             let chatHistory = "";
-            
-            // Messages ko purane se naye ke order mein set karna
             fetchedMessages.reverse().forEach(msg => {
                 if (msg.content) {
-                    // Agar message webhook ne bheja hai aur naam Tokyo hai, toh 'Tokyo' likho, warna user ka naam
                     const sender = (msg.author.bot && msg.webhookId) ? 'Tokyo' : msg.author.username;
                     chatHistory += `${sender}: ${msg.cleanContent}\n`;
                 }
             });
 
-            // 🔥 2. FAQ KNOWLEDGE PREPARE KARNA
+            // 🔥 2. FAQ KNOWLEDGE
             let faqKnowledge = "";
             for (const key in faqData) {
                 faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
             }
 
-            // 🔥 3. ADVANCED PROMPT (WITH MEMORY)
+            // 🔥 3. GEMINI AI PROMPT
             const systemContext = `
             You are 'Tokyo' from Money Heist, a bold, sharp, and confident FEMALE enforcer and support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             Your job is to manage the public chat and answer user queries securely.
             
-            SERVER KNOWLEDGE (Use this to answer questions accurately):
+            SERVER KNOWLEDGE:
             ${faqKnowledge}
             
-            RECENT CHAT HISTORY (Use this to understand the context of the conversation):
+            RECENT CHAT HISTORY:
             ${chatHistory}
             
             CRITICAL RULES:
-            1. You are FEMALE. You MUST speak smoothly in a mix of Hindi and English (Hinglish) using strictly FEMALE grammatical tone (e.g., always use 'karungi', 'dekhungi', 'bataungi', 'rahi hoon').
-            2. Keep your tone confident and slightly fiery, just like Tokyo.
-            3. Answer naturally based on the RECENT CHAT HISTORY. If the user is continuing an old conversation, reply accordingly.
-            4. If someone asks for rates, tell them to check the mentioned rate channel.
-            5. If someone complains about ticket replies, tell them firmly to wait in their specific ticket and NOT create duplicates.
-            6. Strictly remind them NEVER to share wallet addresses, payment proofs, or CCW pins in the public chat.
-            7. Keep responses short and punchy (under 3-4 sentences).
-            8. Never say you are an AI.
+            1. You are FEMALE. Use strictly FEMALE grammatical tone in Hinglish (e.g., 'karungi', 'dekhungi', 'bataungi').
+            2. Keep your tone confident and slightly fiery.
+            3. Answer naturally based on the CHAT HISTORY and SERVER KNOWLEDGE.
+            4. Keep responses short and punchy (under 3 sentences).
+            5. Never say you are an AI.
             
-            Now, reply as Tokyo to the last message in the CHAT HISTORY.
+            Reply to the last message.
             `;
 
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             const result = await model.generateContent(systemContext);
             let aiReply = result.response.text();
             
-            // User ko mention karke reply start karna
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
-            // Channel se webhook fetch karna
+            // 🔥 4. WEBHOOK SETUP (With Safe Image Link)
             const webhooks = await message.channel.fetchWebhooks();
             let tokyoWebhook = webhooks.find(wh => wh.owner.id === client.user.id && wh.name === 'Tokyo Support');
 
-            // Agar nahi hai toh naya webhook bana lenge
+            const safeTokyoImage = 'https://i.imgur.com/vHq4R5U.jpeg'; // Simple and short URL so Discord doesn't reject it
+
             if (!tokyoWebhook) {
                 tokyoWebhook = await message.channel.createWebhook({
                     name: 'Tokyo Support',
-                    avatar: 'https://media.discordapp.net/attachments/1521698421331853372/1531697019306119442/A_badass_female_character_inspired_by_Tokyo_from_Money_Heist.jpg?ex=6a6a2782&is=6a68d602&hm=4566b0cfba24ef09542c1edcdd9ebaf3b19cf635348ec4f289a21de38d0ea943&=&format=webp&width=1308&height=872', // Tokyo Image
+                    avatar: safeTokyoImage,
                 });
             }
 
-            // Webhook se reply bhejenge
+            // 🔥 5. SEND MESSAGE
             await tokyoWebhook.send({
                 content: aiReply,
                 username: 'Tokyo',
-                avatarURL: 'https://media.discordapp.net/attachments/1521698421331853372/1531697019306119442/A_badass_female_character_inspired_by_Tokyo_from_Money_Heist.jpg?ex=6a6a2782&is=6a68d602&hm=4566b0cfba24ef09542c1edcdd9ebaf3b19cf635348ec4f289a21de38d0ea943&=&format=webp&width=1308&height=872', 
+                avatarURL: safeTokyoImage, 
             });
 
         } catch (error) {
-            console.error("Gemini/Webhook Error:", error);
+            // 🚨 ERROR SCANNER: Agar koi error aayegi toh bot chup nahi rahega, terminal aur chat dono me batayega!
+            console.error("🚨 TOKYO SYSTEM CRASH ERROR:", error);
+            
+            try {
+                await message.channel.send(`⚠️ **System Alert:** Tokyo is currently offline due to a technical error.\n\`\`\`${error.message}\`\`\`\n*(Admin: Check terminal using 'pm2 logs' for full details)*`);
+            } catch (e) {
+                console.log("Could not even send the error message. Missing Send Message permissions?");
+            }
         }
         return; // 👈 Tokyo ka reply aane ke baad code yahin ruk jayega
     }
