@@ -106,21 +106,18 @@ let p2pMessageCount = 0;
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-    // ==========================================
-    // 🤖 TOKYO AI ENGINE (WEBHOOK + GEMINI)
+   // ==========================================
+    // 🤖 TOKYO AI ENGINE (DIRECT AXIOS + GEMINI)
     // ==========================================
     const msgLower = message.content.toLowerCase();
-    
-    // 🔍 Smart Trigger: Yeh check karega ki kya user trade se related koi common sawal pooch raha hai
     const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
     
-    // Agar tag kiya hai, tokyo likha hai, YA koi common sawal poocha hai, tabhi reply karegi
     if (message.channel.name.includes('p2p-chat') && (message.mentions.has(client.user) || msgLower.includes('tokyo') || isAskingQuestion)) {
         
-        await message.channel.sendTyping(); // Real feel ke liye typing indicator
+        await message.channel.sendTyping();
 
         try {
-            // 🔥 1. CHAT HISTORY FETCH 
+            // 🔥 1. CHAT HISTORY FETCH
             const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
             let chatHistory = "";
             fetchedMessages.reverse().forEach(msg => {
@@ -136,7 +133,7 @@ client.on('messageCreate', async message => {
                 faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
             }
 
-            // 🔥 3. GEMINI AI PROMPT
+            // 🔥 3. PROMPT
             const systemContext = `
             You are 'Tokyo' from Money Heist, a bold, sharp, and confident FEMALE enforcer and support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             Your job is to manage the public chat and answer user queries securely.
@@ -157,17 +154,27 @@ client.on('messageCreate', async message => {
             Reply to the last message.
             `;
 
-           const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const result = await model.generateContent(systemContext);
-            let aiReply = result.response.text();
-            
+            // 🔥 4. DIRECT GOOGLE API CALL (BYPASSING PACKAGE ERROR)
+            const apiKey = process.env.GEMINI_API_KEY;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+            const response = await axios.post(apiUrl, {
+                contents: [{
+                    parts: [{ text: systemContext }]
+                }]
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            let aiReply = response.data.candidates[0].content.parts[0].text;
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
-            // 🔥 4. WEBHOOK SETUP (With Safe Image Link)
+            // 🔥 5. WEBHOOK SETUP & SEND
             const webhooks = await message.channel.fetchWebhooks();
             let tokyoWebhook = webhooks.find(wh => wh.owner.id === client.user.id && wh.name === 'Tokyo Support');
-
-            const safeTokyoImage = 'https://i.imgur.com/vHq4R5U.jpeg'; // Simple and short URL so Discord doesn't reject it
+            const safeTokyoImage = 'https://i.imgur.com/vHq4R5U.jpeg';
 
             if (!tokyoWebhook) {
                 tokyoWebhook = await message.channel.createWebhook({
@@ -176,7 +183,6 @@ client.on('messageCreate', async message => {
                 });
             }
 
-            // 🔥 5. SEND MESSAGE
             await tokyoWebhook.send({
                 content: aiReply,
                 username: 'Tokyo',
@@ -184,16 +190,10 @@ client.on('messageCreate', async message => {
             });
 
         } catch (error) {
-            // 🚨 ERROR SCANNER: Agar koi error aayegi toh bot chup nahi rahega, terminal aur chat dono me batayega!
-            console.error("🚨 TOKYO SYSTEM CRASH ERROR:", error);
-            
-            try {
-                await message.channel.send(`⚠️ **System Alert:** Tokyo is currently offline due to a technical error.\n\`\`\`${error.message}\`\`\`\n*(Admin: Check terminal using 'pm2 logs' for full details)*`);
-            } catch (e) {
-                console.log("Could not even send the error message. Missing Send Message permissions?");
-            }
+            console.error("🚨 DIRECT API ERROR:", error.response ? error.response.data : error.message);
+            await message.channel.send(`⚠️ **System Alert:** Tokyo is currently offline due to a technical error.`);
         }
-        return; // 👈 Tokyo ka reply aane ke baad code yahin ruk jayega
+        return; 
     }
     // ==========================================
 
