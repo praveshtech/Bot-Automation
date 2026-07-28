@@ -194,10 +194,7 @@ client.on('messageCreate', async message => {
     }
     // ==========================================
 
-
-client.on('messageCreate', async message => {
-    if (message.author.bot) return;
-
+    // 👇 AAPKA PURANA P2P SCAM ALERT WALA CODE 👇
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
         p2pMessageCount++; 
         if (p2pMessageCount >= 10) {
