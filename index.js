@@ -106,8 +106,8 @@ let p2pMessageCount = 0;
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
-   // ==========================================
-    // 🤖 TOKYO AI ENGINE (DIRECT AXIOS + GEMINI)
+  // ==========================================
+    // 🤖 TOKYO AI ENGINE (OFFICIAL SDK + GEMINI)
     // ==========================================
     const msgLower = message.content.toLowerCase();
     const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
@@ -154,24 +154,13 @@ client.on('messageCreate', async message => {
             Reply to the last message.
             `;
 
-            // 🔥 4. DIRECT GOOGLE API CALL (WITH BEARER TOKEN AUTHENTICATION)
-            const apiKey = process.env.GEMINI_API_KEY;
-            // Version ko v1 kar diya hai aur query param hata diya hai
-            const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`;
-
-            const response = await axios.post(apiUrl, {
-                contents: [{
-                    parts: [{ text: systemContext }]
-                }]
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}` // 👈 Yeh sabse main change hai (OAuth token ke liye)
-                }
-            });
-
-            let aiReply = response.data.candidates[0].content.parts[0].text;
+            // 🔥 4. OFFICIAL SDK CALL (Using gemini-1.5-flash which is standard)
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const result = await model.generateContent(systemContext);
+            let aiReply = result.response.text();
+            
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
+
             // 🔥 5. WEBHOOK SETUP & SEND
             const webhooks = await message.channel.fetchWebhooks();
             let tokyoWebhook = webhooks.find(wh => wh.owner.id === client.user.id && wh.name === 'Tokyo Support');
@@ -191,7 +180,7 @@ client.on('messageCreate', async message => {
             });
 
         } catch (error) {
-            console.error("🚨 DIRECT API ERROR:", error.response ? error.response.data : error.message);
+            console.error("🚨 AI ENGINE ERROR:", error);
             await message.channel.send(`⚠️ **System Alert:** Tokyo is currently offline due to a technical error.`);
         }
         return; 
