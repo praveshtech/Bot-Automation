@@ -154,9 +154,10 @@ client.on('messageCreate', async message => {
             Reply to the last message.
             `;
 
-            // 🔥 4. DIRECT GOOGLE API CALL (BYPASSING PACKAGE ERROR)
+            // 🔥 4. DIRECT GOOGLE API CALL (WITH BEARER TOKEN AUTHENTICATION)
             const apiKey = process.env.GEMINI_API_KEY;
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+            // Version ko v1 kar diya hai aur query param hata diya hai
+            const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent`;
 
             const response = await axios.post(apiUrl, {
                 contents: [{
@@ -164,13 +165,13 @@ client.on('messageCreate', async message => {
                 }]
             }, {
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}` // 👈 Yeh sabse main change hai (OAuth token ke liye)
                 }
             });
 
             let aiReply = response.data.candidates[0].content.parts[0].text;
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
-
             // 🔥 5. WEBHOOK SETUP & SEND
             const webhooks = await message.channel.fetchWebhooks();
             let tokyoWebhook = webhooks.find(wh => wh.owner.id === client.user.id && wh.name === 'Tokyo Support');
