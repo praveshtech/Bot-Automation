@@ -106,7 +106,7 @@ client.on('messageCreate', async message => {
     const msgLower = message.content.toLowerCase();
     const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
     
-    if (message.channel.name.includes('p2p-chat') && (message.mentions.has(client.user) || msgLower.includes('tokyo') || isAskingQuestion)) {
+    if (message.channel.name.includes('p2p-chat')) {
         
         await message.channel.sendTyping();
 
