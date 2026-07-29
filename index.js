@@ -599,24 +599,33 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
-            if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false });
+            if (verifiedRole) {
+                // Yahan humne .catch lagaya hai taaki permission error aane par bot crash na ho
+                await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false }).catch(err => console.error("Permission Edit Error (Lock):", err.message));
+            }
             const lockEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🌙 THE VAULT IS NOW RESTING').setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket here <#1503666259244482642> to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!').setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png').setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone 🔔 **Notice for all Verified Members**', embeds: [lockEmbed] });
-        } catch (err) {}
+        } catch (err) {
+            console.error("Lockchat error:", err);
+        }
     }
 
     if (command === '!openchat') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
-            if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null });
+            if (verifiedRole) {
+                // Crash-proof catch
+                await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null }).catch(err => console.error("Permission Edit Error (Open):", err.message));
+            }
             const unlockEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('☀️ THE VAULT IS OPEN').setDescription('Good morning, Syndicate! General chat is now **OPEN**.\n\nTrade safely, verify admins before trading, and remember: **NO DM DEALS EVER!**').setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone', embeds: [unlockEmbed] });
-        } catch (err) {}
-    }
-});
+        } catch (err) {
+            console.error("Openchat error:", err);
+        }
+    });
 
 // ==========================================
 // 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
