@@ -537,7 +537,60 @@ client.on('messageCreate', async message => {
         const pollBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('open_poll_modal').setLabel('Create Poll').setStyle(ButtonStyle.Primary).setEmoji('📊'));
         await message.channel.send({ embeds: [setupEmbed], components: [pollBtn] });
     }
-     
+    
+    // ==========================================
+    // 📂 ADMIN COMMAND: EXPORT CHAT FOR AI TRAINING
+    // ==========================================
+    if (command === '!exportchats') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+
+        const loadingMsg = await message.channel.send("⏳ **AI Training Protocol Initiated:** Fetching chat history... this might take a minute.");
+        let allMessages = [];
+        let lastId;
+
+        try {
+            // Discord ek baar mein max 100 messages deta hai, isliye hum loop lagayenge (10 bar = 1000 messages)
+            // Agar aapko aur zyada chahiye toh '10' ko '50' kar dena (5000 messages ke liye)
+            for (let i = 0; i < 10; i++) { 
+                const options = { limit: 100 };
+                if (lastId) options.before = lastId;
+
+                const fetched = await message.channel.messages.fetch(options);
+                if (fetched.size === 0) break;
+
+                fetched.forEach(msg => {
+                    // Sirf text messages, no bot commands, no empty messages
+                    if (!msg.author.bot && msg.content && !msg.content.startsWith('!') && !msg.content.startsWith('.')) {
+                        allMessages.push({
+                            author: msg.author.username,
+                            message: msg.cleanContent,
+                            time: new Date(msg.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+                        });
+                    }
+                });
+
+                lastId = fetched.last().id;
+            }
+
+            // File banakar save karna
+            const fs = require('fs');
+            fs.writeFileSync('chat_export.json', JSON.stringify(allMessages, null, 2));
+
+            const { AttachmentBuilder } = require('discord.js');
+            const file = new AttachmentBuilder('chat_export.json');
+
+            await loadingMsg.delete().catch(()=>{});
+            await message.channel.send({ content: `✅ **Data Extraction Complete!**\nSuccessfully exported \`${allMessages.length}\` real user messages. Download the JSON file below to prepare for Vector Database Training.`, files: [file] });
+
+        } catch (error) {
+            console.error("Export error:", error);
+            await loadingMsg.edit("❌ Error exporting chats. Check terminal for details.");
+        }
+        return;
+    }
+
+
+
     if (command === '!setupadvkyc') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
