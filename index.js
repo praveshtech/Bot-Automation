@@ -11,6 +11,8 @@ const faqData = require('./faqs.json');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const discordTranscripts = require('discord-html-transcripts');
+const { pipeline } = require('@xenova/transformers');
+let aiExtractor = null; // AI memory load karne ke liye
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -47,6 +49,12 @@ const userSelections = new Map();
 client.once('ready', async () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
+// Load AI Memory Engine in Background
+    pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2').then(ext => {
+        aiExtractor = ext;
+        console.log("🧠 Local AI Memory Engine Loaded!");
+    }).catch(err => console.error("Memory Engine Error:", err));
+
     
     // 🔥 SLASH COMMANDS REGISTRATION
     try {
@@ -102,13 +110,14 @@ client.on('messageCreate', async message => {
 
 
 // ==========================================
-    // 🤖 TOKYO AI ENGINE (ADVANCED SYSTEM)
+    // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
     // ==========================================
     if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
         
         await message.channel.sendTyping();
 
         try {
+            // 1. Fetch short-term memory (Last 12 messages)
             const fetchedMessages = await message.channel.messages.fetch({ limit: 12 });
             let chatHistory = "";
             fetchedMessages.reverse().forEach(msg => {
@@ -119,70 +128,88 @@ client.on('messageCreate', async message => {
             });
 
             let faqKnowledge = "";
-            for (const key in faqData) {
-                faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
+            for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
+
+            // 2. Fetch LONG-TERM MEMORY from Pinecone DB
+            let pastAdminAnswers = "No exact past references found.";
+            if (aiExtractor) {
+                try {
+                    // User ke message ko vector banayein
+                    const output = await aiExtractor(message.cleanContent, { pooling: 'mean', normalize: true });
+                    const vectorValues = Array.from(output.data);
+
+                    // Pinecone mein search karein (Top 5 similar past chats)
+                    const pineconeRes = await axios.post(
+                        `https://p2p-knowledge-cx251rp.svc.aped-4627-b74a.pinecone.io/query`,
+                        { vector: vectorValues, topK: 5, includeMetadata: true },
+                        { headers: { 'Api-Key': "pcsk_6LCryi_MLxE1UefXVGqPVQwDWsnXoCkRtgDJCDBEW7mZAv9njakpTdkrB2mx3vhKTS7pnb", 'Content-Type': 'application/json' } }
+                    );
+
+                    if (pineconeRes.data && pineconeRes.data.matches) {
+                        pastAdminAnswers = "";
+                        pineconeRes.data.matches.forEach(match => {
+                            if (match.score > 0.3) { // 30% se zyada match ho tabhi lo
+                                pastAdminAnswers += `- ${match.metadata.author} said: "${match.metadata.message}"\n`;
+                            }
+                        });
+                    }
+                } catch (dbError) { console.error("Pinecone Search Error:", dbError.message); }
             }
 
+            // 3. The Ultimate Prompt
             const systemContext = `
             You are 'Tokyo', an ADVANCED, HIGHLY INTELLIGENT, and POLITE female support enforcer for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             
-            SERVER DIRECTORY (STRICT CHANNELS - NEVER GUESS OR INVENT):
-            - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
-            - To Complete Profile Verification or KYC: <#1511636240729116773>
+            SERVER DIRECTORY:
+            - To Buy/Sell Crypto or Open a Trade Ticket: #buy-sell
+            - To Complete Profile Verification or KYC: #p2p-kyc
+            
+            HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST (Reference this to answer perfectly):
+            ${pastAdminAnswers}
+            
+            RECENT CHAT HISTORY (For Context):
+            ${chatHistory}
             
             SERVER KNOWLEDGE:
             ${faqKnowledge}
             
-            RECENT CHAT HISTORY (For Context & Memory):
-            ${chatHistory}
-            
             ADVANCED AI RULES:
-            1. Language Mirroring: Strictly reply in the exact language of the user (Pure English for English, Hinglish for Hindi/Hinglish).
-            2. Respectful Female Tone: In Hinglish, ALWAYS use 'Aap' (never 'Tu'/'Tum') and female grammar. Maintain a highly professional 'enforcer' persona.
-            3. Sentiment Adaptation: If they are panicked or scammed, reply with urgency and seriousness. If casual, be polite and welcoming.
-            4. Extremely Crisp & Formatted: Keep answers strictly to 1-2 short sentences. Use **bold** for key terms.
-            5. STRICTLY NO GREETINGS: DO NOT say "Good morning", "Good evening", "Welcome", "Hello", "Hi", or repeat the user's message. The system already tags them. START DIRECTLY WITH THE EXACT ANSWER OR INSTRUCTION.
-            6. CHANNELS RULE: Never invent channel names. Only direct users to #buy-sell for trading and #p2p-kyc for verification.
+            1. Language Mirroring: Strictly reply in the exact language of the user.
+            2. Respectful Female Tone: In Hinglish, ALWAYS use 'Aap' (never 'Tu'/'Tum') and female grammar.
+            3. Contextual Learning: Use the "HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST" section to give the exact same information or rules that admins provided previously.
+            4. Extremely Crisp: Keep answers strictly to 1-2 short sentences.
+            5. STRICTLY NO GREETINGS: DO NOT say "Good morning", "Welcome", "Hello", or repeat the user's message. START DIRECTLY WITH THE EXACT ANSWER.
+            6. CHANNELS RULE: Only direct users to #buy-sell for trading and #p2p-kyc for verification.
             7. Never say you are an AI.
             
             Reply to the last message based strictly on these rules.
             `;
+
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
             try {
-                const response = await axios.post(apiUrl, 
-                    { contents: [{ parts: [{ text: systemContext }] }] },
-                    { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } }
-                );
+                const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.log("🚨 Primary API failed, trying Fallback...");
                 const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
-                const fallbackResponse = await axios.post(fallbackUrl, 
-                    { contents: [{ parts: [{ text: systemContext }] }] },
-                    { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } }
-                );
+                const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
-            // Notification ke liye tag maintain kiya hai
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
             const { WebhookClient } = require('discord.js');
             const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
-
             await webhookClient.send({ content: aiReply });
 
         } catch (error) {
             console.error("🚨 AI ENGINE ERROR:", error?.response?.data || error.message);
-            await message.channel.send(`⚠️ **System Alert:** Tokyo is currently offline due to a technical error.`);
         }
         return; 
     }
     // ==========================================
-
 
 
 
