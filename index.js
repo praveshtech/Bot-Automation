@@ -143,7 +143,7 @@ client.on('messageCreate', async message => {
             
             Reply to the last message based on these rules.
             `;
-            `;
+        
 
             // 🔥 4. BULLETPROOF API CALL (Latest Models)
             let aiReply = "";
