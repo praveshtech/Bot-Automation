@@ -107,7 +107,7 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
   // ==========================================
-    // 🤖 TOKYO AI ENGINE (OFFICIAL SDK + GEMINI)
+    // 🤖 TOKYO AI ENGINE (OFFICIAL SDK + DIRECT WEBHOOK)
     // ==========================================
     const msgLower = message.content.toLowerCase();
     const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
@@ -154,29 +154,22 @@ client.on('messageCreate', async message => {
             Reply to the last message.
             `;
 
-            // 🔥 4. OFFICIAL SDK CALL (Using gemini-1.5-flash which is standard)
+            // 🔥 4. OFFICIAL SDK CALL
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             const result = await model.generateContent(systemContext);
             let aiReply = result.response.text();
             
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
-            // 🔥 5. WEBHOOK SETUP & SEND
-            const webhooks = await message.channel.fetchWebhooks();
-            let tokyoWebhook = webhooks.find(wh => wh.owner.id === client.user.id && wh.name === 'Tokyo Support');
-            const safeTokyoImage = 'https://i.imgur.com/vHq4R5U.jpeg';
+            // 🔥 5. DIRECT WEBHOOK SEND (Bina custom DP aur Name ke)
+            const { WebhookClient } = require('discord.js');
+            
+            // Aapka direct Webhook URL
+            const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
 
-            if (!tokyoWebhook) {
-                tokyoWebhook = await message.channel.createWebhook({
-                    name: 'Tokyo Support',
-                    avatar: safeTokyoImage,
-                });
-            }
-
-            await tokyoWebhook.send({
-                content: aiReply,
-                username: 'Tokyo',
-                avatarURL: safeTokyoImage, 
+            // Ab sirf message ka content bhejenge, baaki sab Discord khud manage karega
+            await webhookClient.send({
+                content: aiReply
             });
 
         } catch (error) {
@@ -186,6 +179,7 @@ client.on('messageCreate', async message => {
         return; 
     }
     // ==========================================
+
 
     // 👇 AAPKA PURANA P2P SCAM ALERT WALA CODE 👇
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
