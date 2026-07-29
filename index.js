@@ -154,9 +154,8 @@ client.on('messageCreate', async message => {
             Reply to the last message.
             `;
 
-            // 🔥 4. OFFICIAL SDK CALL (Model Name Fixed)
-            // Humne yahan 'gemini-1.5-flash-latest' kar diya hai
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); 
+            // 🔥 4. OFFICIAL SDK CALL (Universal Stable Model)
+            const model = genAI.getGenerativeModel({ model: "gemini-pro" }); 
             
             const result = await model.generateContent(systemContext);
             let aiReply = result.response.text();
