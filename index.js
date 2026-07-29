@@ -92,6 +92,9 @@ client.once('ready', async () => {
     }, 60 * 60 * 1000); 
 });
 
+client.on('messageCreate', async message => {
+    if (message.author.bot) return;
+
 // ==========================================
     // 🤖 TOKYO AI ENGINE (POLITE + CONTINUOUS LEARNING)
     // ==========================================
