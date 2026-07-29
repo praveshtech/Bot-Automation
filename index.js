@@ -147,11 +147,11 @@ client.on('messageCreate', async message => {
             
             Reply to the last message.
             `;
-
-            // 🔥 4. BULLETPROOF API CALL (Using x-goog-api-key Header)
+// 🔥 4. BULLETPROOF API CALL (Updated to latest 3.6 Models)
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+            // 🚨 Yahan humne naya model 'gemini-3.6-flash' daal diya hai
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
             try {
                 // Primary Request
@@ -161,9 +161,9 @@ client.on('messageCreate', async message => {
                 );
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.log("🚨 Primary API failed, trying Fallback to Gemini Pro...");
-                // Auto-Fallback to gemini-pro if flash gives 404
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+                console.log("🚨 Primary API failed, trying Fallback to Gemini 3.5 Flash-Lite...");
+                // 🚨 Fallback ke liye naya 'gemini-3.5-flash-lite' model laga diya hai
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
                 const fallbackResponse = await axios.post(fallbackUrl, 
                     { contents: [{ parts: [{ text: systemContext }] }] },
                     { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } }
