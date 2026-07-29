@@ -12,8 +12,6 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const discordTranscripts = require('discord-html-transcripts');
 
-// 🔥 GEMINI SDK REMOVED: Using robust direct Axios calls instead to bypass 404/401 errors 🔥
-
 // ==========================================
 // 1. FIREBASE SETUP
 // ==========================================
@@ -60,6 +58,7 @@ client.once('ready', async () => {
         console.log(`✅ Slash Commands Registered Successfully!`);
     } catch (err) { console.error("Slash Command Registration Error:", err); }
 
+    // Existing Leaderboard Interval
     setInterval(() => {
         client.guilds.cache.forEach(guild => { 
             updateWeeklyLeaderboard(guild); 
@@ -67,6 +66,7 @@ client.once('ready', async () => {
         });
     }, 60 * 60 * 1000);
 
+    // Inactive KYC/UPI Ticket Auto-Delete System
     setInterval(() => {
         const TWELVE_HOURS = 12 * 60 * 60 * 1000;
         const now = Date.now();
@@ -92,21 +92,23 @@ client.once('ready', async () => {
     }, 60 * 60 * 1000); 
 });
 
+// ==========================================
+// 🛠️ DISCORD MESSAGE COMMANDS (TEXT)
+// ==========================================
+let p2pMessageCount = 0;
+
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
+
 // ==========================================
-    // 🤖 TOKYO AI ENGINE (POLITE + CONTINUOUS LEARNING)
+    // 🤖 TOKYO AI ENGINE (ADVANCED SYSTEM)
     // ==========================================
-    
-    // Ab ye har message par reply degi jo p2p-chat mein aayega
     if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
         
         await message.channel.sendTyping();
 
         try {
-            // 🔥 1. MEMORY & CONTINUOUS LEARNING (Limit badha di hai)
-            // Ab ye pichli 12 baatein yaad rakhegi aur context samjhegi
             const fetchedMessages = await message.channel.messages.fetch({ limit: 12 });
             let chatHistory = "";
             fetchedMessages.reverse().forEach(msg => {
@@ -116,36 +118,32 @@ client.on('messageCreate', async message => {
                 }
             });
 
-            // 🔥 2. FAQ KNOWLEDGE
             let faqKnowledge = "";
             for (const key in faqData) {
                 faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
             }
-// 🔥 3. PROMPT (Language Mirroring + No Greetings Rule)
+
             const systemContext = `
-            You are 'Tokyo', a highly PROFESSIONAL, POLITE, and HELPFUL female support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
-            Your job is to manage the public chat, help users, and answer queries accurately.
+            You are 'Tokyo', an ADVANCED, HIGHLY INTELLIGENT, and POLITE female support enforcer for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             
             SERVER KNOWLEDGE:
             ${faqKnowledge}
             
-            RECENT CHAT HISTORY (Learn context from here):
+            RECENT CHAT HISTORY (For Context & Memory):
             ${chatHistory}
             
-            CRITICAL RULES:
-            1. Language Mirroring: ALWAYS reply in the exact same language the user used. If the user asks in English, reply in pure English. If the user asks in Hindi/Hinglish, reply in Hindi/Hinglish.
-            2. Tone in Hinglish: When replying in Hinglish, ALWAYS use respectful words like 'Aap' (never 'Tu' or 'Tum') and strictly use FEMALE grammar (e.g., 'karungi', 'bataungi', 'samjhaungi').
-            3. Tone in English: When replying in English, maintain a highly polite, professional, and confident female persona.
-            4. Be Concise (Core Info Only): Give ONLY the exact information requested. Do NOT add unnecessary fluff. Keep responses to 1-2 short, to-the-point sentences.
-            5. NO GREETINGS OR TAGS: Do NOT start your response with "Hello", "Hi", "Hey", or mention the user's name/username (e.g., @rocky_0245). Start directly with the answer/information.
-            6. Continuous Learning: Read the RECENT CHAT HISTORY to understand the ongoing conversation flow.
+            ADVANCED AI RULES:
+            1. Language Mirroring: Strictly reply in the exact language of the user (Pure English for English, Hinglish for Hindi/Hinglish).
+            2. Respectful Female Tone: In Hinglish, ALWAYS use 'Aap' (never 'Tu'/'Tum') and female grammar ('karungi', 'dekhungi'). Maintain a highly professional 'enforcer' persona.
+            3. Sentiment Adaptation (Emotion Detection): Analyze the user's mood. If they are panicked or scammed, reply with urgency, authority, and seriousness. If casual, be polite and welcoming.
+            4. Extremely Crisp & Formatted: Keep answers strictly to 1-2 short sentences. Use Discord markdown strategically (**bold** key terms, use \`code blocks\` for channels like \`#buy-sell\`, and use > blockquotes for rules).
+            5. Community Mediator: If users are advising each other, provide a definitive, 1-line expert conclusion.
+            6. NO GREETINGS OR TAGS: Never start with "Hello", "Hi", or mention usernames. Provide the direct smart answer immediately.
             7. Never say you are an AI.
             
-            Reply to the last message based on these rules.
+            Reply to the last message based on these advanced rules.
             `;
-        
 
-            // 🔥 4. BULLETPROOF API CALL (Latest Models)
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
@@ -157,7 +155,7 @@ client.on('messageCreate', async message => {
                 );
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.log("🚨 Primary API failed, trying Fallback to Gemini 3.5 Flash-Lite...");
+                console.log("🚨 Primary API failed, trying Fallback...");
                 const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
                 const fallbackResponse = await axios.post(fallbackUrl, 
                     { contents: [{ parts: [{ text: systemContext }] }] },
@@ -166,9 +164,9 @@ client.on('messageCreate', async message => {
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
+            // Notification ke liye tag maintain kiya hai
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
-            // 🔥 5. DIRECT WEBHOOK SEND
             const { WebhookClient } = require('discord.js');
             const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
 
@@ -181,8 +179,9 @@ client.on('messageCreate', async message => {
         return; 
     }
     // ==========================================
-    
-    
+
+
+
 
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
         p2pMessageCount++; 
@@ -227,6 +226,7 @@ client.on('messageCreate', async message => {
         } catch (error) {}
     }
 
+    // ADMIN COMMAND: .fb (WITH TRANSCRIPT SAVING)
     if (command === '.fb') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
@@ -237,12 +237,17 @@ client.on('messageCreate', async message => {
             const userId = ticketData.discordUserId;
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
             
+            // ==========================================
+            // 📜 1. TRANSCRIPT GENERATION SYSTEM (DISCORD CLONE UI + MENTION FIX)
+            // ==========================================
             const loadingMsg = await message.channel.send("⏳ *Generating premium chat transcript...*");
             
             try {
+                // Messages fetch karna aur sahi order mein set karna
                 const fetchedMessages = await message.channel.messages.fetch({ limit: 100 });
                 const reversedMessages = Array.from(fetchedMessages.values()).reverse();
                 
+                // 🔥 PREMIUM CSS STRUCTURE (Discord exact match)
                 let htmlContent = `
                 <!DOCTYPE html>
                 <html lang="en">
@@ -256,7 +261,7 @@ client.on('messageCreate', async message => {
                         .ticket-info { text-align: center; color: #949ba4; margin-bottom: 30px; font-size: 0.9em; }
                         hr { border: none; border-top: 1px solid #4f545c; margin-bottom: 30px; }
                         .message { display: flex; padding: 5px 20px; margin-top: 10px; border-radius: 5px; }
-                        .message:hover { background-color: #2b2d31; }
+                        .message:hover { background-color: #2b2d31; } /* Discord hover effect */
                         .avatar { width: 40px; height: 40px; border-radius: 50%; margin-right: 16px; object-fit: cover; }
                         .header { display: flex; align-items: baseline; margin-bottom: 4px; }
                         .username { font-weight: 500; color: #f2f3f5; margin-right: 8px; font-size: 1rem; }
@@ -275,21 +280,33 @@ client.on('messageCreate', async message => {
                     <hr>
                 `;
 
+                // Har message ko convert karna
                 reversedMessages.forEach(m => {
                     const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                     const avatarUrl = m.author.displayAvatarURL({ extension: 'png', size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png';
                     
+                    // ----------------------------------------------------
+                    // 🔥 MAGIC LOGIC: IDs ko Username aur Role mein badalna
+                    // ----------------------------------------------------
                     let contentText = m.content || '';
+                    
+                    // 1. Text ko safe banayein (taaki code break na ho)
                     contentText = contentText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    
+                    // 2. User Mentions (<@1234...>) ko @Name mein badalna
                     contentText = contentText.replace(/&lt;@!?(\d+)&gt;/g, (match, id) => {
                         const user = message.guild.members.cache.get(id);
                         return `<span class="mention">@${user ? user.user.username : 'User'}</span>`;
                     });
+
+                    // 3. Role Mentions (<@&1234...>) ko @RoleName mein badalna
                     contentText = contentText.replace(/&lt;@&amp;(\d+)&gt;/g, (match, id) => {
                         const role = message.guild.roles.cache.get(id);
                         return `<span class="mention">@${role ? role.name : 'Role'}</span>`;
                     });
+                    // ----------------------------------------------------
 
+                    // Agar content empty hai (sirf button tha) toh System message dikhao
                     const safeContent = contentText ? contentText : '<span class="system-msg">[System / Embed Message]</span>';
                     
                     htmlContent += `
@@ -304,6 +321,7 @@ client.on('messageCreate', async message => {
                             <div class="attachment-container">
                     `;
 
+                    // 🔥 Images ko Discord Grid Style mein set karna
                     if (m.attachments.size > 0) {
                         m.attachments.forEach(att => {
                             if (att.contentType && att.contentType.startsWith('image/')) {
@@ -326,8 +344,10 @@ client.on('messageCreate', async message => {
                 </html>
                 `;
 
+                // File generate karna
                 const attachment = new AttachmentBuilder(Buffer.from(htmlContent, 'utf-8'), { name: `transcript-${ticketData.username || 'user'}-${message.channel.name}.html` });
 
+                // History channel logic (same as before)
                 let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
                 if (!historyChannel) {
                     historyChannel = await message.guild.channels.create({
@@ -342,6 +362,7 @@ client.on('messageCreate', async message => {
                     if (palermoRole) await historyChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
                 }
 
+                // History channel mein Embed aur Transcript bhejna
                 const histEmbed = new EmbedBuilder()
                     .setColor('#3498db')
                     .setTitle(`📜 Chat Transcript: ${message.channel.name}`)
@@ -361,6 +382,9 @@ client.on('messageCreate', async message => {
                 await message.channel.send("⚠️ *Warning: Transcript generation failed, but continuing with feedback process.*");
             }
 
+            // ==========================================
+            // ⭐ 2. ROLE ASSIGNMENT & FEEDBACK PROMPT
+            // ==========================================
             if (targetMember) {
                 let feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
                 if (!feedRole) { feedRole = await message.guild.roles.create({ name: 'transaction done', color: '#f1c40f', reason: 'Temporary role for leaving a transaction review' }); }
@@ -372,6 +396,9 @@ client.on('messageCreate', async message => {
                 await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
             }
 
+            // ==========================================
+            // 🗑️ 3. AUTO-DELETE BANK DETAILS LOG ON .fb
+            // ==========================================
             try {
                 const bankDetailsChannel = message.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
                 if (bankDetailsChannel) {
@@ -385,6 +412,9 @@ client.on('messageCreate', async message => {
                 }
             } catch (err) { console.error("Bank detail log delete error:", err); }
 
+            // ==========================================
+            // 📂 4. SHIFT TICKET TO COMPLETED CATEGORY
+            // ==========================================
             const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
             let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
             
@@ -392,6 +422,7 @@ client.on('messageCreate', async message => {
                 targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
             }
             
+            // Parent change kar rahe hain ticket shift karne ke liye
             await message.channel.setParent(targetCategory.id, { lockPermissions: false });
 
             const completeEmbed = new EmbedBuilder()
@@ -408,6 +439,9 @@ client.on('messageCreate', async message => {
         }
     }
 
+    // ==========================================
+    // 🧮 ADMIN COMMAND: .am (Payment Tracker)
+    // ==========================================
     if (command.startsWith('.am')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
@@ -419,15 +453,17 @@ client.on('messageCreate', async message => {
             
             const ticketData = ticketDoc.data();
             
+            // Total INR ya bacha hua INR database se nikal rahe hain
             let currentRemaining = ticketData.remainingInr !== undefined ? ticketData.remainingInr : ticketData.totalInr;
             
             if (currentRemaining === undefined || currentRemaining === null) {
                 return message.channel.send("❌ Is ticket mein Total INR calculate nahi hua hai.");
             }
 
+            // 🔍 FEATURE 1: Agar sirf ".am" likha hai, toh sirf balance show karega
             if (command === '.am') {
                 const infoEmbed = new EmbedBuilder()
-                    .setColor('#f1c40f') 
+                    .setColor('#f1c40f') // Yellow color for info
                     .setTitle('🧮 Payment Tracker Info')
                     .setDescription(`Current payment status for **${ticketData.username || 'User'}**`)
                     .addFields(
@@ -439,6 +475,7 @@ client.on('messageCreate', async message => {
                 return message.channel.send({ embeds: [infoEmbed] });
             }
 
+            // 📉 FEATURE 2: Agar amount daala hai (jaise .am 3000), toh minus karega
             const amountMatch = message.content.match(/\.am\s*-?\s*(\d+(\.\d+)?)/i);
             if (!amountMatch) {
                 return message.reply({ content: '❌ Galat format! Use karein: `.am` (check karne ke liye) ya `.am 3000` (minus karne ke liye)', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
@@ -446,12 +483,13 @@ client.on('messageCreate', async message => {
             
             const paidAmount = parseFloat(amountMatch[1]);
             let newRemaining = currentRemaining - paidAmount;
-            if (newRemaining < 0) newRemaining = 0; 
+            if (newRemaining < 0) newRemaining = 0; // Minus mein na jaye
             
+            // Database mein naya bacha hua balance save karein
             await ticketRef.update({ remainingInr: newRemaining });
             
             const amEmbed = new EmbedBuilder()
-                .setColor('#3498db') 
+                .setColor('#3498db') // Blue color for calculation
                 .setTitle('🧮 Partial Payment Tracker')
                 .setDescription(`Payment calculation updated for **${ticketData.username || 'User'}**`)
                 .addFields(
@@ -461,7 +499,7 @@ client.on('messageCreate', async message => {
                 )
                 .setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
                 
-            await message.delete().catch(() => {}); 
+            await message.delete().catch(() => {}); // Admin ka text delete karega taaki chat clean rahe
             await message.channel.send({ embeds: [amEmbed] });
             
         } catch (err) {
@@ -599,34 +637,24 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
-            if (verifiedRole) {
-                // Yahan humne .catch lagaya hai taaki permission error aane par bot crash na ho
-                await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false }).catch(err => console.error("Permission Edit Error (Lock):", err.message));
-            }
+            if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: false });
             const lockEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🌙 THE VAULT IS NOW RESTING').setDescription('**General Chat is now CLOSED for the night and will reopen in the morning.**\n\n🏦 **Need to Buy/Sell Crypto or Ask a Question?**\nOur Exchange Desk is fully operational! Please open a ticket here <#1503666259244482642> to proceed securely.\n\n🚨 **CRITICAL SECURITY ALERT:**\nWe **DO NOT** deal in DMs under any circumstances. Not while the chat is closed, and not while it is open. If anyone sends you a DM offering a deal, **THEY ARE A SCAMMER**. Block them immediately!').setThumbnail('https://cdn-icons-png.flaticon.com/512/2913/2913520.png').setFooter({ text: 'Professor Network - Night Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone 🔔 **Notice for all Verified Members**', embeds: [lockEmbed] });
-        } catch (err) {
-            console.error("Lockchat error:", err);
-        }
+        } catch (err) {}
     }
 
     if (command === '!openchat') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
             let verifiedRole = message.guild.roles.cache.find(r => r.name === 'Verified');
-            if (verifiedRole) {
-                // Crash-proof catch
-                await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null }).catch(err => console.error("Permission Edit Error (Open):", err.message));
-            }
+            if (verifiedRole) await message.channel.permissionOverwrites.edit(verifiedRole, { SendMessages: null });
             const unlockEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('☀️ THE VAULT IS OPEN').setDescription('Good morning, Syndicate! General chat is now **OPEN**.\n\nTrade safely, verify admins before trading, and remember: **NO DM DEALS EVER!**').setFooter({ text: 'Professor Network - Day Mode', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(()=>{});
             await message.channel.send({ content: '@everyone', embeds: [unlockEmbed] });
-        } catch (err) {
-            console.error("Openchat error:", err);
-        }
+        } catch (err) {}
     }
-    });
+});
 
 // ==========================================
 // 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
@@ -1253,14 +1281,17 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
+        // ==========================================
+        // 🔥 SMART ROUTING: Dynamic Categories based on Payment Method
+        // ==========================================
         let categoryName = '🎫 TICKETS';
         
         if (userState.type === 'Buy') {
             if (userState.step2 === 'CDM') categoryName = '🟢 CDM FOR BUY';
-            else categoryName = '🟢 CCW FOR BUY'; 
+            else categoryName = '🟢 CCW FOR BUY'; // Agar CCW hai
         } else if (userState.type === 'Sell') {
             if (userState.step3 === 'CDM') categoryName = '🔴 CDM FOR SELL';
-            else categoryName = '🔴 IMPS-UPI FOR SELL'; 
+            else categoryName = '🔴 IMPS-UPI FOR SELL'; // Agar IMPS, CCW, UPI hai
         }
         
         let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
@@ -1329,12 +1360,15 @@ client.on('interactionCreate', async interaction => {
             easyCopyText = paymentDetails; 
         }
 
+        // 🔥 PERFECT EXTRA FEE LOGIC & LABEL 🔥
+        // Base Fee: KYC = $0, Non-KYC = $3
         let fee = userState.isVerifiedTrade ? 0 : 3;
         let feeLabel = userState.isVerifiedTrade ? "KYC Fee: $0" : "Non-KYC Fee: $3";
         
+        // Agar action 'Buy' hai aur network 'TRC20' hai -> Extra $1.5 add kar do
         if (userState.type === 'Buy' && userState.step3 === 'TRC20') {
             fee += 1.5; 
-            feeLabel += " + TRC20 Network Fee: $1.5"; 
+            feeLabel += " + TRC20 Network Fee: $1.5"; // Text mein extra detail jod di
         }
 
         const finalStep3Display = userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3;
@@ -1403,12 +1437,17 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
 
         if (userState.type === 'Sell') {
             await ticketChannel.send({ content: `<@1336703883711479896>` });
+            
         }
 
+        // ==========================================
+        // 🏦 BANK DETAILS LOG SYSTEM (FOR SELL TICKETS)
+        // ==========================================
         if (userState.type === 'Sell') {
             try {
                 let bankDetailsChannel = interaction.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
                 
+                // Agar channel nahi hai toh naya bana dega (Sirf Admin/Palermo dekh payenge)
                 if (!bankDetailsChannel) {
                     const palermoRoleBank = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
                     let bankPerms = [
@@ -1442,6 +1481,7 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
                 console.error("Bank details log error:", err);
             }
         }
+        // ==========================================
 
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
@@ -1571,10 +1611,14 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
                 await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
             }
             
+            // ==========================================
+            // 🗑️ AUTO-DELETE BANK DETAILS LOG ON CLOSE
+            // ==========================================
             try {
                 const bankDetailsChannel = interaction.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
                 if (bankDetailsChannel) {
                     const fetchedLogs = await bankDetailsChannel.messages.fetch({ limit: 100 });
+                    // Us message ko dhoondo jisme is ticket ka ID hai
                     const logToDelete = fetchedLogs.find(m => 
                         m.embeds.length > 0 && 
                         m.embeds[0].fields && 
@@ -1586,6 +1630,7 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
                     }
                 }
             } catch (err) { console.error("Bank detail log delete error:", err); }
+            // ==========================================  
 
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
         } catch (error) { console.error("Error Closing Ticket: ", error); }
@@ -1624,10 +1669,12 @@ async function updateWeeklyLeaderboard(guild) {
 
 async function updateUserHeistPoints(userId, guild, username) {
     try {
+        // 🔥 MASTER FIX: Firebase 'Composite Index' error se bachne ke liye filter JS mein lagaya
         const snapshot = await db.collection('p2p_tickets').where('discordUserId', '==', userId).get();
         
         let totalVolume = 0;
         
+        // Data aane ke baad check karenge ki status Completed hai ya nahi
         snapshot.forEach(doc => {
             if (doc.data().status === 'Completed') {
                 totalVolume += (doc.data().amountUsd || 0);
@@ -1657,6 +1704,7 @@ async function updateUserHeistPoints(userId, guild, username) {
         }
         updateHeistLeaderboard(guild);
     } catch(e) {
+        // Ab agar koi error aayegi toh terminal mein dikhegi
         console.error("Heist Point Update Error:", e);
     }
 }
@@ -1705,6 +1753,9 @@ async function approveUserKYC(userId, guild) {
 // 🌐 WEB DASHBOARD (EXPRESS SERVER)
 // ==========================================
 const app = express();
+// ==========================================
+// 🛡️ SECURITY: RATE LIMITING (BRUTE-FORCE PROTECTION)
+// ==========================================
 const loginLimiter = rateLimit({
     windowMs: 5 * 60 * 1000, 
     max: 5, 
@@ -1713,6 +1764,7 @@ const loginLimiter = rateLimit({
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+// 🔥 SECURE CORS CONFIGURATION
 const corsOptions = {
     origin: [
         'http://localhost:3000', 
@@ -1724,6 +1776,7 @@ const corsOptions = {
     credentials: true 
 };
 app.use(cors(corsOptions));
+// 🔥 SECURE SESSION FOR MAIN DASHBOARD
 app.use(session({ 
     secret: process.env.SESSION_SECRET_MAIN || 'fallback-secret-key-1', 
     resave: false, 
@@ -1893,6 +1946,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
     };
 
     try {
+        // 🔥 NAYA: Database mein Live Prices Save karein 🔥
         await db.collection('settings').doc('app_data').set({ 
             liveBuyPrice: Number(buyPrice), 
             liveSellPrice: Number(sellPrice) 
@@ -1989,6 +2043,7 @@ adminApp.set('view engine', 'ejs');
 adminApp.use(express.urlencoded({ extended: true }));
 adminApp.use(express.json());
 adminApp.use(cors(corsOptions));
+// 🔥 SECURE SESSION FOR MASTER ADMIN
 adminApp.use(session({ 
     secret: process.env.SESSION_SECRET_ADMIN || 'fallback-secret-key-2', 
     resave: false, 
