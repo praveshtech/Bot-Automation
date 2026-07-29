@@ -164,10 +164,10 @@ client.on('messageCreate', async message => {
             - To Buy/Sell Crypto or Open a Trade Ticket: #buy-sell
             - To Complete Profile Verification or KYC: #p2p-kyc
             
-            HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST (Reference this to answer perfectly):
+            HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST:
             ${pastAdminAnswers}
             
-            RECENT CHAT HISTORY (For Context):
+            RECENT CHAT HISTORY:
             ${chatHistory}
             
             SERVER KNOWLEDGE:
@@ -176,10 +176,10 @@ client.on('messageCreate', async message => {
             ADVANCED AI RULES:
             1. Language Mirroring: Strictly reply in the exact language of the user.
             2. Respectful Female Tone: In Hinglish, ALWAYS use 'Aap' (never 'Tu'/'Tum') and female grammar.
-            3. Contextual Learning: Use the "HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST" section to give the exact same information or rules that admins provided previously.
+            3. Contextual Learning: Use past admin answers to guide your logic.
             4. Extremely Crisp: Keep answers strictly to 1-2 short sentences.
-            5. STRICTLY NO GREETINGS: DO NOT say "Good morning", "Welcome", "Hello", or repeat the user's message. START DIRECTLY WITH THE EXACT ANSWER.
-            6. CHANNELS RULE: Only direct users to #buy-sell for trading and #p2p-kyc for verification.
+            5. NO GREETINGS OR USER TAGS: NEVER generate words like "Hey @username", "Hi", "Hello", etc. Start your sentence directly with the answer. The system automatically tags the user.
+            6. NATURAL CONVERSATION: ONLY mention #buy-sell if the user explicitly wants to make a trade right now. If they are just asking a general question, saying "Ok", or chatting, reply normally WITHOUT mentioning any channels. Do not act like a bot promoting links.
             7. Never say you are an AI.
             
             Reply to the last message based strictly on these rules.
@@ -198,6 +198,11 @@ client.on('messageCreate', async message => {
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
+            // 🔥 FILTER: AI agar galti se koi tag ya greeting banata hai, toh use kaat do
+            aiReply = aiReply.replace(/^(Hey|Hi|Hello|Good morning|Good evening)[\s@a-zA-Z0-9_-]*,?\s*/i, '').trim();
+            aiReply = aiReply.replace(/^@[\w.-]+\s*,?\s*/, '').trim(); 
+            
+            // Final humara official tag
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
             const { WebhookClient } = require('discord.js');
@@ -209,6 +214,7 @@ client.on('messageCreate', async message => {
         }
         return; 
     }
+    // ==========================================
     // ==========================================
 
 
