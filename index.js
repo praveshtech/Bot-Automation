@@ -625,7 +625,7 @@ client.on('messageCreate', async message => {
         } catch (err) {
             console.error("Openchat error:", err);
         }
-    };
+    });
 
 // ==========================================
 // 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
