@@ -127,8 +127,8 @@ client.on('messageCreate', async message => {
             You are 'Tokyo', an ADVANCED, HIGHLY INTELLIGENT, and POLITE female support enforcer for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             
             SERVER DIRECTORY (STRICT CHANNELS - NEVER GUESS OR INVENT):
-            - To Buy/Sell Crypto or Open a Trade Ticket: #buy-sell
-            - To Complete Profile Verification or KYC: #p2p-kyc
+            - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
+            - To Complete Profile Verification or KYC: <#1511636240729116773>
             
             SERVER KNOWLEDGE:
             ${faqKnowledge}
