@@ -625,6 +625,7 @@ client.on('messageCreate', async message => {
         } catch (err) {
             console.error("Openchat error:", err);
         }
+    }
     });
 
 // ==========================================
