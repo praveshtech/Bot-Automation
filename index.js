@@ -93,26 +93,18 @@ client.once('ready', async () => {
 });
 
 // ==========================================
-// 🛠️ DISCORD MESSAGE COMMANDS (TEXT)
-// ==========================================
-let p2pMessageCount = 0;
-
-client.on('messageCreate', async message => {
-    if (message.author.bot) return;
-
+    // 🤖 TOKYO AI ENGINE (POLITE + CONTINUOUS LEARNING)
     // ==========================================
-    // 🤖 TOKYO AI ENGINE (ULTIMATE HEADER FIX)
-    // ==========================================
-    const msgLower = message.content.toLowerCase();
-    const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
     
+    // Ab ye har message par reply degi jo p2p-chat mein aayega
     if (message.channel.name.includes('p2p-chat')) {
         
         await message.channel.sendTyping();
 
         try {
-            // 🔥 1. CHAT HISTORY FETCH
-            const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
+            // 🔥 1. MEMORY & CONTINUOUS LEARNING (Limit badha di hai)
+            // Ab ye pichli 12 baatein yaad rakhegi aur context samjhegi
+            const fetchedMessages = await message.channel.messages.fetch({ limit: 12 });
             let chatHistory = "";
             fetchedMessages.reverse().forEach(msg => {
                 if (msg.content) {
@@ -127,34 +119,33 @@ client.on('messageCreate', async message => {
                 faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
             }
 
-            // 🔥 3. PROMPT
+            // 🔥 3. PROMPT (Strictly Polite & Core Info Only)
             const systemContext = `
-            You are 'Tokyo' from Money Heist, a bold, sharp, and confident FEMALE enforcer and support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
-            Your job is to manage the public chat and answer user queries securely.
+            You are 'Tokyo', a highly PROFESSIONAL, POLITE, and HELPFUL female support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
+            Your job is to manage the public chat, help users, and answer queries accurately.
             
             SERVER KNOWLEDGE:
             ${faqKnowledge}
             
-            RECENT CHAT HISTORY:
+            RECENT CHAT HISTORY (Learn context from here):
             ${chatHistory}
             
             CRITICAL RULES:
-            1. You are FEMALE. Use strictly FEMALE grammatical tone in Hinglish (e.g., 'karungi', 'dekhungi', 'bataungi').
-            2. Keep your tone confident and slightly fiery.
-            3. Answer naturally based on the CHAT HISTORY and SERVER KNOWLEDGE.
-            4. Keep responses short and punchy (under 3 sentences).
+            1. Respectful Tone: ALWAYS use 'Aap' instead of 'Tu' or 'Tum'. Be extremely polite, professional, and welcoming. Never be rude or aggressive.
+            2. Grammar: Strictly use FEMALE grammatical tone in Hinglish (e.g., 'karungi', 'bataungi', 'samjhaungi').
+            3. Be Concise (Core Info Only): Give ONLY the exact information requested. Do NOT add unnecessary fluff, extra attitude, or overact. Keep responses to 1-2 short, to-the-point sentences.
+            4. Continuous Learning: Read the RECENT CHAT HISTORY to understand the ongoing conversation flow and answer intelligently based on that context.
             5. Never say you are an AI.
             
             Reply to the last message.
             `;
-// 🔥 4. BULLETPROOF API CALL (Updated to latest 3.6 Models)
+
+            // 🔥 4. BULLETPROOF API CALL (Latest Models)
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
-            // 🚨 Yahan humne naya model 'gemini-3.6-flash' daal diya hai
             const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
             try {
-                // Primary Request
                 const response = await axios.post(apiUrl, 
                     { contents: [{ parts: [{ text: systemContext }] }] },
                     { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } }
@@ -162,7 +153,6 @@ client.on('messageCreate', async message => {
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
                 console.log("🚨 Primary API failed, trying Fallback to Gemini 3.5 Flash-Lite...");
-                // 🚨 Fallback ke liye naya 'gemini-3.5-flash-lite' model laga diya hai
                 const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
                 const fallbackResponse = await axios.post(fallbackUrl, 
                     { contents: [{ parts: [{ text: systemContext }] }] },
@@ -186,7 +176,8 @@ client.on('messageCreate', async message => {
         return; 
     }
     // ==========================================
-    // ==========================================
+    
+    
 
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
         p2pMessageCount++; 
