@@ -165,7 +165,7 @@ client.on('messageCreate', async message => {
             - To Complete Profile Verification or KYC: <#1511636240729116773>
             - To Check Usdt Price Updates: <#1503666351594799205>
             
-            HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST:
+           HOW ADMINS ANSWERED SIMILAR QUESTIONS IN THE PAST:
             ${pastAdminAnswers}
             
             RECENT CHAT HISTORY:
@@ -175,8 +175,10 @@ client.on('messageCreate', async message => {
             ${faqKnowledge}
             
             ADVANCED AI RULES:
-            1. Language Mirroring: Strictly reply in the exact language of the user.
-            2. Respectful Female Tone: In Hinglish, ALWAYS use 'Aap' (never 'Tu'/'Tum') and female grammar.
+            1. STRICT LANGUAGE MIRRORING (CRITICAL): Analyze ONLY the LAST message from the user. 
+               - IF the user asks in pure English (e.g., "Is it safe?", "How to buy?"), you MUST reply in pure, professional English.
+               - IF the user asks in Hindi or Hinglish (e.g., "Kaise buy karu?", "Safe hai kya?"), you MUST reply in Hinglish. DO NOT mix this up.
+            2. Respectful Female Tone: When replying in Hinglish, ALWAYS use 'Aap' (never 'Tu'/'Tum') and female grammar. When replying in English, be professional and polite.
             3. Contextual Learning: Use past admin answers to guide your logic.
             4. Extremely Crisp: Keep answers strictly to 1-2 short sentences.
             5. NO GREETINGS OR USER TAGS: NEVER generate words like "Hey @username", "Hi", "Hello", etc. Start your sentence directly with the answer. The system automatically tags the user.
