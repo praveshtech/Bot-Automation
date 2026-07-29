@@ -101,7 +101,7 @@ client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
     // ==========================================
-    // 🤖 TOKYO AI ENGINE (DIRECT AXIOS API SYSTEM)
+    // 🤖 TOKYO AI ENGINE (ULTIMATE HEADER FIX)
     // ==========================================
     const msgLower = message.content.toLowerCase();
     const isAskingQuestion = msgLower.includes('minimum') || msgLower.includes('limit') || msgLower.includes('ticket') || msgLower.includes('reply') || msgLower.includes('rate') || msgLower.includes('fee');
@@ -111,6 +111,7 @@ client.on('messageCreate', async message => {
         await message.channel.sendTyping();
 
         try {
+            // 🔥 1. CHAT HISTORY FETCH
             const fetchedMessages = await message.channel.messages.fetch({ limit: 6 });
             let chatHistory = "";
             fetchedMessages.reverse().forEach(msg => {
@@ -120,11 +121,13 @@ client.on('messageCreate', async message => {
                 }
             });
 
+            // 🔥 2. FAQ KNOWLEDGE
             let faqKnowledge = "";
             for (const key in faqData) {
                 faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`;
             }
 
+            // 🔥 3. PROMPT
             const systemContext = `
             You are 'Tokyo' from Money Heist, a bold, sharp, and confident FEMALE enforcer and support assistant for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             Your job is to manage the public chat and answer user queries securely.
@@ -145,51 +148,44 @@ client.on('messageCreate', async message => {
             Reply to the last message.
             `;
 
-            // 🔥 4. BULLETPROOF DIRECT API CALL (Bypassing SDK Errors completely)
+            // 🔥 4. BULLETPROOF API CALL (Using x-goog-api-key Header)
             let aiReply = "";
-            const apiKey = process.env.GEMINI_API_KEY;
-            
-            // Sub-Option A: Try as standard API Key format
-            let response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                contents: [{ parts: [{ text: systemContext }] }]
-            }, { 
-                headers: { 'Content-Type': 'application/json' },
-                validateStatus: false // Keeps axios from crashing on error
-            });
+            const apiKey = process.env.GEMINI_API_KEY.trim(); 
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
-            // Sub-Option B: If 400/401/404 occurs, try as OAuth Bearer token
-            if (response.status !== 200) {
-                response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`, {
-                    contents: [{ parts: [{ text: systemContext }] }]
-                }, { 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-                    validateStatus: false
-                });
-            }
-
-            if (response.status === 200 && response.data.candidates) {
+            try {
+                // Primary Request
+                const response = await axios.post(apiUrl, 
+                    { contents: [{ parts: [{ text: systemContext }] }] },
+                    { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } }
+                );
                 aiReply = response.data.candidates[0].content.parts[0].text;
-            } else {
-                console.error("🚨 DIRECT API FETCH ERROR DETAILS:", response.data);
-                throw new Error("Failed to fetch valid response from Google Direct API.");
+            } catch (apiError) {
+                console.log("🚨 Primary API failed, trying Fallback to Gemini Pro...");
+                // Auto-Fallback to gemini-pro if flash gives 404
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
+                const fallbackResponse = await axios.post(fallbackUrl, 
+                    { contents: [{ parts: [{ text: systemContext }] }] },
+                    { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } }
+                );
+                aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
-            // 🔥 5. DIRECT WEBHOOK SEND (Bina custom DP aur Name ke)
+            // 🔥 5. DIRECT WEBHOOK SEND
             const { WebhookClient } = require('discord.js');
             const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
 
-            await webhookClient.send({
-                content: aiReply
-            });
+            await webhookClient.send({ content: aiReply });
 
         } catch (error) {
-            console.error("🚨 AI ENGINE ERROR:", error.message);
+            console.error("🚨 AI ENGINE ERROR:", error?.response?.data || error.message);
             await message.channel.send(`⚠️ **System Alert:** Tokyo is currently offline due to a technical error.`);
         }
         return; 
     }
+    // ==========================================
     // ==========================================
 
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
