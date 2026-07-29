@@ -187,7 +187,7 @@ client.on('messageCreate', async message => {
             - NATURAL CONVERSATION: Only mention #buy-sell if they explicitly want to trade right now. Do not spam channel links.
             - Never say you are an AI.
             
-            Reply to the last message based strictly on these rules.
+           Read the last message from the user, determine their language, and reply matching that EXACT language.
             `;
 
             let aiReply = "";
