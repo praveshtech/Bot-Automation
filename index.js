@@ -100,7 +100,7 @@ client.on('messageCreate', async message => {
     // ==========================================
     
     // Ab ye har message par reply degi jo p2p-chat mein aayega
-    if (message.channel.name.includes('p2p-chat')) {
+    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
         
         await message.channel.sendTyping();
 
