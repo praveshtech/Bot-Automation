@@ -112,6 +112,8 @@ client.on('messageCreate', async message => {
 // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
     // ==========================================
+    
+    const isImmuneAdmin = message.member && (message.member.permissions.has(PermissionsBitField.Flags.Administrator) || message.member.roles.cache.some(role => role.name === 'Palermo'));
     if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
         
         await message.channel.sendTyping();
@@ -164,6 +166,7 @@ client.on('messageCreate', async message => {
             - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
             - To Complete Profile Verification or KYC: <#1511636240729116773>
             - To Check Usdt Price Updates: <#1503666351594799205>
+            - If User Ask To Buy Usdt By Using UPI Or Bank Transaction Then said Them To Create a Ticket- <#1503666259244482642> And Do Video Kyc 
             
            PAST ADMIN ANSWERS (Use this ONLY for knowledge, but TRANSLATE it into the user's language):
             ${pastAdminAnswers}
