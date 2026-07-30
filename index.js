@@ -112,22 +112,9 @@ client.on('messageCreate', async message => {
 // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
     // ==========================================
-
-    // 🛑 Yahan apni aur baaki admins ki Discord User IDs daal dein (Strings ke andar)
-    const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
-
-    const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
-    const isTokyoMentioned = message.mentions.has(client.user);
-
-    // Agar message admin ka hai aur usne Tokyo ko tag nahi kiya, toh Tokyo chup rahegi
-    if (isAuthorAdmin && !isTokyoMentioned) {
-        return; 
-    }
-
-    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.') && !message.author.bot) {
+    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
         
         await message.channel.sendTyping();
-        // ... Baaki ka aapka saara purana AI aur Pinecone search wala code yahin rahega ...
 
         try {
             // 1. Fetch short-term memory (Last 12 messages)
@@ -177,7 +164,6 @@ client.on('messageCreate', async message => {
             - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
             - To Complete Profile Verification or KYC: <#1511636240729116773>
             - To Check Usdt Price Updates: <#1503666351594799205>
-            - If User Ask To Buy Usdt By Using UPI Or Bank Transaction Then said Them To Create a Ticket- <#1503666259244482642> And Do Video Kyc 
             
            PAST ADMIN ANSWERS (Use this ONLY for knowledge, but TRANSLATE it into the user's language):
             ${pastAdminAnswers}
@@ -286,7 +272,8 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
             const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel." });            
+            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel.", ephemeral: true });
+            
             const ticketData = ticketDoc.data();
             const userId = ticketData.discordUserId;
             const targetMember = await message.guild.members.fetch(userId).catch(() => null);
@@ -337,8 +324,8 @@ client.on('messageCreate', async message => {
                 // Har message ko convert karna
                 reversedMessages.forEach(m => {
                     const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-                    const avatarUrl = m.author ? m.author.displayAvatarURL({ extension: 'png', size: 64 }) : 'https://cdn.discordapp.com/embed/avatars/0.png';
-                    const username = m.author ? m.author.username : 'System';
+                    const avatarUrl = m.author.displayAvatarURL({ extension: 'png', size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    
                     // ----------------------------------------------------
                     // 🔥 MAGIC LOGIC: IDs ko Username aur Role mein badalna
                     // ----------------------------------------------------
@@ -368,7 +355,7 @@ client.on('messageCreate', async message => {
                         <img src="${avatarUrl}" class="avatar" alt="Avatar">
                         <div>
                             <div class="header">
-                                <span class="username">${username}</span>
+                                <span class="username">${m.author.username}</span>
                                 <span class="timestamp">${time}</span>
                             </div>
                             <div class="content">${safeContent}</div>
@@ -1714,7 +1701,8 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
             const mainTicketChannel = interaction.guild.channels.cache.get('1503666259244482642'); 
             if (mainTicketChannel) {
                 const fetchedMessages = await mainTicketChannel.messages.fetch({ limit: 50 });
-               fetchedMessages.filter(m => m.author && m.author.id === client.user.id).forEach(msg => msg.delete().catch(console.error));                await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
+                fetchedMessages.filter(m => m.author.id === client.user.id).forEach(msg => msg.delete().catch(console.error));
+                await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
             }
             
             // ==========================================
