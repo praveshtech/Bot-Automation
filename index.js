@@ -139,8 +139,6 @@ client.on('messageCreate', async message => {
 // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
     // ==========================================
-    const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
-    const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
     
     // 🔥 NAYA FIX: Ab agar aap tag na karke sirf 'tokyo' bhi likhenge, toh wo samajh jayegi
     const isBotCalled = message.mentions.has(client.user) || message.content.toLowerCase().includes('tokyo');
