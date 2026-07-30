@@ -112,11 +112,22 @@ client.on('messageCreate', async message => {
 // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
     // ==========================================
-    
-    const isImmuneAdmin = message.member && (message.member.permissions.has(PermissionsBitField.Flags.Administrator) || message.member.roles.cache.some(role => role.name === 'Palermo'));
-    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
+
+    // 🛑 Yahan apni aur baaki admins ki Discord User IDs daal dein (Strings ke andar)
+    const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
+
+    const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
+    const isTokyoMentioned = message.mentions.has(client.user);
+
+    // Agar message admin ka hai aur usne Tokyo ko tag nahi kiya, toh Tokyo chup rahegi
+    if (isAuthorAdmin && !isTokyoMentioned) {
+        return; 
+    }
+
+    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.') && !message.author.bot) {
         
         await message.channel.sendTyping();
+        // ... Baaki ka aapka saara purana AI aur Pinecone search wala code yahin rahega ...
 
         try {
             // 1. Fetch short-term memory (Last 12 messages)
