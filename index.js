@@ -141,12 +141,16 @@ client.on('messageCreate', async message => {
     // ==========================================
     const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
     const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
-    const isTokyoMentioned = message.mentions.has(client.user);
+    
+    // 🔥 NAYA FIX: Ab agar aap tag na karke sirf 'tokyo' bhi likhenge, toh wo samajh jayegi
+    const isBotCalled = message.mentions.has(client.user) || message.content.toLowerCase().includes('tokyo');
 
-    // Dono channels allow karein: p2p-chat aur tokyo-training
+    // Dono channels ko allow kar diya
     const isAllowedChannel = message.channel.name.includes('p2p-chat') || message.channel.name.includes('tokyo-training');
 
-    if (isAllowedChannel && !message.content.startsWith('!') && !message.content.startsWith('.') && !message.author.bot && (!isAuthorAdmin || isTokyoMentioned)) {
+    if (isAllowedChannel && !message.content.startsWith('!') && !message.content.startsWith('.') && !message.author.bot && (!isAuthorAdmin || isBotCalled)) {
+        
+        await message.channel.sendTyping();
 
         try {
             // 1. Fetch short-term memory (Last 12 messages)
