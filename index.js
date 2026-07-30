@@ -224,7 +224,7 @@ client.on('messageCreate', async message => {
             (Do not let the language of the 'Chat History' or 'Past Admin Answers' influence your output language. Translate your knowledge accordingly).
             
             CRITICAL RULE 2: TONE & BEHAVIOR
-            - Respectful Female Tone: In Hinglish, ALWAYS use 'Aap' and female grammar ('karungi', 'bataungi').
+            - Respectful Female Tone: In Hinglish and English, ALWAYS use 'Aap' and female grammar ('karungi', 'bataungi').
             - Extremely Short: 1-2 sentences maximum.
             - NO GREETINGS: Do not say "Hey @username", "Hi", or "Hello". Start your sentence directly with the answer.
             - NATURAL CONVERSATION: Only mention #buy-sell if they explicitly want to trade right now. Do not spam channel links.
