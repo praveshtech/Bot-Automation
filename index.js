@@ -159,7 +159,10 @@ client.on('messageCreate', async message => {
                 } catch (dbError) { console.error("Pinecone Search Error:", dbError.message); }
             }
 
-            // 3. The Ultimate Prompt
+           // 3. The Ultimate Prompt
+            // 🔥 BOSS PROTOCOL: Agar admin message kar raha hai, toh yeh rule add ho jayega
+            const adminRule = isAuthorAdmin ? "\n- 👑 BOSS PROTOCOL: The user currently speaking to you is your ADMIN & BOSS. You must be extremely respectful, follow their instructions blindly, and respectfully address them as 'Boss' or 'Sir' in your reply." : "";
+
             const systemContext = `
             You are 'Tokyo', an ADVANCED, HIGHLY INTELLIGENT, and POLITE female support enforcer for 'Professor Network' (a secure P2P Crypto Exchange Discord Server).
             
@@ -188,7 +191,7 @@ client.on('messageCreate', async message => {
             - Extremely Short: 1-2 sentences maximum.
             - NO GREETINGS: Do not say "Hey @username", "Hi", or "Hello". Start your sentence directly with the answer.
             - NATURAL CONVERSATION: Only mention #buy-sell if they explicitly want to trade right now. Do not spam channel links.
-            - Never say you are an AI.
+            - Never say you are an AI.${adminRule}
             
            Read the last message from the user, determine their language, and reply matching that EXACT language.
             `;
