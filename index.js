@@ -112,9 +112,12 @@ client.on('messageCreate', async message => {
 // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
     // ==========================================
-    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.')) {
-        
-        await message.channel.sendTyping();
+    const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
+    const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
+    const isTokyoMentioned = message.mentions.has(client.user);
+
+    // 🛑 FIX: Ab commands block nahi honge, sirf Tokyo chup rahegi
+    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.') && (!isAuthorAdmin || isTokyoMentioned)) {
 
         try {
             // 1. Fetch short-term memory (Last 12 messages)
@@ -272,7 +275,7 @@ client.on('messageCreate', async message => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
             const ticketDoc = await db.collection('p2p_tickets').doc(message.channel.id).get();
-            if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel.", ephemeral: true });
+           if (!ticketDoc.exists) return message.reply({ content: "❌ You can only use `.fb` inside a valid P2P ticket channel." });
             
             const ticketData = ticketDoc.data();
             const userId = ticketData.discordUserId;
@@ -324,7 +327,8 @@ client.on('messageCreate', async message => {
                 // Har message ko convert karna
                 reversedMessages.forEach(m => {
                     const time = new Date(m.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: true, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-                    const avatarUrl = m.author.displayAvatarURL({ extension: 'png', size: 64 }) || 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    const avatarUrl = m.author ? m.author.displayAvatarURL({ extension: 'png', size: 64 }) : 'https://cdn.discordapp.com/embed/avatars/0.png';
+                    const safeUsername = m.author ? m.author.username : 'System Message';
                     
                     // ----------------------------------------------------
                     // 🔥 MAGIC LOGIC: IDs ko Username aur Role mein badalna
@@ -354,8 +358,8 @@ client.on('messageCreate', async message => {
                     <div class="message">
                         <img src="${avatarUrl}" class="avatar" alt="Avatar">
                         <div>
-                            <div class="header">
-                                <span class="username">${m.author.username}</span>
+                           <div class="header">
+                                <span class="username">${safeUsername}</span>
                                 <span class="timestamp">${time}</span>
                             </div>
                             <div class="content">${safeContent}</div>
