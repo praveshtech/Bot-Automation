@@ -108,6 +108,33 @@ let p2pMessageCount = 0;
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
+    // ==========================================
+    // 🧠 TOKYO MANUAL TRAINING SYSTEM
+    // ==========================================
+    const fs = require('fs');
+    let tokyoMemory = [];
+    if (fs.existsSync('./tokyo_memory.json')) {
+        tokyoMemory = JSON.parse(fs.readFileSync('./tokyo_memory.json'));
+    }
+
+    const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
+    const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
+
+    if (message.content.toLowerCase().startsWith('!train') && isAuthorAdmin) {
+        const newRule = message.content.replace('!train', '').trim();
+        if (!newRule) return message.reply("❌ Batao kya sikhana hai? Example: `!train Professor Network par hum direct payment karte hain, koi buyer nahi hota.`");
+
+        tokyoMemory.push(newRule);
+        fs.writeFileSync('./tokyo_memory.json', JSON.stringify(tokyoMemory, null, 2));
+        return message.reply(`✅ **Tokyo learned a new rule!**\n🧠 Sahi Jawab Saved: "${newRule}"`);
+    }
+
+    if (message.content.toLowerCase().startsWith('!cleartrain') && isAuthorAdmin) {
+        tokyoMemory = [];
+        fs.writeFileSync('./tokyo_memory.json', JSON.stringify(tokyoMemory, null, 2));
+        return message.reply(`🗑️ **Tokyo ki manual training memory clear kar di gayi hai!**`);
+    }
+
 
 // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
@@ -116,8 +143,10 @@ client.on('messageCreate', async message => {
     const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
     const isTokyoMentioned = message.mentions.has(client.user);
 
-    // 🛑 FIX: Ab commands block nahi honge, sirf Tokyo chup rahegi
-    if (message.channel.name.includes('p2p-chat') && !message.content.startsWith('!') && !message.content.startsWith('.') && (!isAuthorAdmin || isTokyoMentioned)) {
+    // Dono channels allow karein: p2p-chat aur tokyo-training
+    const isAllowedChannel = message.channel.name.includes('p2p-chat') || message.channel.name.includes('tokyo-training');
+
+    if (isAllowedChannel && !message.content.startsWith('!') && !message.content.startsWith('.') && !message.author.bot && (!isAuthorAdmin || isTokyoMentioned)) {
 
         try {
             // 1. Fetch short-term memory (Last 12 messages)
@@ -160,7 +189,8 @@ client.on('messageCreate', async message => {
             }
 
            // 3. The Ultimate Prompt
-            // 🔥 BOSS PROTOCOL: Agar admin message kar raha hai, toh yeh rule add ho jayega
+            // Nayi trained memory ko format karna
+            let memoryRules = tokyoMemory.map((rule, index) => `${index + 1}. ${rule}`).join('\n');
             const adminRule = isAuthorAdmin ? "\n- 👑 BOSS PROTOCOL: The user currently speaking to you is your ADMIN & BOSS. You must be extremely respectful, follow their instructions blindly, and respectfully address them as 'Boss' or 'Sir' in your reply." : "";
 
             const systemContext = `
@@ -170,6 +200,7 @@ client.on('messageCreate', async message => {
             - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
             - To Complete Profile Verification or KYC: <#1511636240729116773>
             - To Check Usdt Price Updates: <#1503666351594799205>
+            - If User Ask To Buy Usdt By Using UPI Or Bank Transaction Then said Them To Create a Ticket- <#1503666259244482642> And Do Video Kyc 
             
            PAST ADMIN ANSWERS (Use this ONLY for knowledge, but TRANSLATE it into the user's language):
             ${pastAdminAnswers}
@@ -179,6 +210,10 @@ client.on('messageCreate', async message => {
             
             SERVER KNOWLEDGE:
             ${faqKnowledge}
+
+            🚨 CRITICAL ADMIN CORRECTIONS (HIGHEST PRIORITY) 🚨
+            You MUST STRICTLY obey these manually trained rules over any past chats, general knowledge, or standard P2P logic. These are absolute facts:
+            ${memoryRules || "No new corrections yet."}
             
            CRITICAL RULE 1: STRICT LANGUAGE MATCHING
             You MUST detect the language of the user's VERY LAST message and match it completely.
