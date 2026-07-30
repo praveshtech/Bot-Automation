@@ -250,12 +250,19 @@ client.on('messageCreate', async message => {
             aiReply = aiReply.replace(/^(Hey|Hi|Hello|Good morning|Good evening)[\s@a-zA-Z0-9_-]*,?\s*/i, '').trim();
             aiReply = aiReply.replace(/^@[\w.-]+\s*,?\s*/, '').trim(); 
             
-            // Final humara official tag
+           // Final humara official tag
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
-            const { WebhookClient } = require('discord.js');
-            const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
-            await webhookClient.send({ content: aiReply });
+            // 🔥 FIX: Dynamic Channel Reply
+            if (message.channel.name.includes('p2p-chat')) {
+                // Agar p2p-chat hai, toh purana Webhook use karo
+                const { WebhookClient } = require('discord.js');
+                const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
+                await webhookClient.send({ content: aiReply });
+            } else {
+                // Agar tokyo-training ya koi aur channel hai, toh wahi same channel mein reply karo
+                await message.channel.send({ content: aiReply });
+            }
 
         } catch (error) {
             console.error("🚨 AI ENGINE ERROR:", error?.response?.data || error.message);
