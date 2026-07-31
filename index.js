@@ -199,12 +199,13 @@ client.on('messageCreate', async message => {
             =========================================
             🏦 PROFESSOR NETWORK - MASTER MANIFESTO (HOW WE WORK):
             - Identity: We are a PRIVATE Vault/OTC Exchange. Users deal DIRECTLY with Admins/Platform. There are NO 3rd-party buyers or sellers.
-            - Buying USDT (User gets USDT, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
-            - Selling USDT (User gets INR, Gives USDT): Minimum Limit is $50. Payment methods: IMPS/UPI or CDM.
+            - Supported Crypto & Networks: We strictly provide liquidity for the following: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20). (If users ask for Bitcoin, Ethereum, or other altcoins, politely inform them we ONLY support these specific USDT and USDC networks).
+            - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
+            - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI or CDM.
             - Fee Structure: 
                 1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
                 2. 'Non-KYC' users = $3 Fee. 
-                3. Network Fee: Buying via TRC20 network costs an extra $1.5 fee.
+                3. Network Fee: Varies depending on the chosen network (e.g., TRC20, ERC20, BEP20, Arbitrum). The exact network fee will be calculated and provided during the private ticket process.
             - KYC Levels:
                 1. Basic Verification: For general access.
                 2. Advanced KYC (Vault Verified): Requires Aadhaar/PAN. Unlocks $0 fee trades.
