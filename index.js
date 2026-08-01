@@ -133,6 +133,57 @@ client.on('messageCreate', async (message) => {
     }
     // =========================================
 
+    // =========================================
+    // 🚨 TOKYO BAN PROTOCOL (ADMIN ONLY) 🚨
+    // =========================================
+    const isBossOrAdmin = message.member.permissions.has('BanMembers') || message.member.permissions.has('Administrator');
+    const targetMember = message.mentions.members.first();
+    const lowerContent = message.content.toLowerCase();
+
+    if (isBossOrAdmin && targetMember && lowerContent.includes('tokyo') && lowerContent.includes('ban')) {
+        if (targetMember.id === client.user.id) {
+            return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
+        }
+        if (targetMember.permissions.has('Administrator')) {
+            return message.reply("Boss, they also hold Administrator powers. I cannot ban them! 🛡️");
+        }
+        try {
+            await targetMember.ban({ reason: `Banned by Boss ${message.author.tag} via Tokyo's Enforcer Protocol.` });
+            return message.reply(`✅ Order executed, Boss! <@${targetMember.id}> has been permanently removed from the server. The Vault's security is my top priority! 💅🛡️`);
+        } catch (error) {
+            console.error(error);
+            return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. Please move my role higher in the server settings! 😅");
+        }
+    }
+
+    // =========================================
+    // 🕊️ TOKYO UNBAN PROTOCOL (ADMIN ONLY) 🕊️
+    // =========================================
+    if (isBossOrAdmin && lowerContent.includes('tokyo') && lowerContent.includes('unban')) {
+        // Message mein se 17 se 19 digit ka Discord ID dhoondhna
+        const idMatch = message.content.match(/\d{17,19}/);
+        
+        if (!idMatch) {
+            return message.reply("Boss, please provide the correct Discord User ID to unban! Example: `Tokyo unban 123456789012345678` 📋");
+        }
+        
+        const targetId = idMatch[0];
+        
+        try {
+            // Asli Unban Command
+            await message.guild.members.unban(targetId, `Unbanned by Boss ${message.author.tag} via Tokyo's Protocol.`);
+            
+            // Unban ke baad Tokyo ka English Reply
+            return message.reply(`✅ Order executed, Boss! User ID \`${targetId}\` has been unbanned. I've granted them a second chance! 🕊️🛡️`);
+            
+        } catch (error) {
+            console.error(error);
+            // Agar ID galat ho ya user ban hi na ho
+            return message.reply("Boss, I couldn't unban them. Either the ID is incorrect, or they aren't banned in the first place! 😅");
+        }
+    }
+    // =========================================
+
     // ==========================================
     // 👑 ADMIN & BOSS PROTOCOL CHECK
     // ==========================================
@@ -237,8 +288,8 @@ client.on('messageCreate', async (message) => {
             
             [3] 🎭 DUAL PERSONA & TONE SWITCHING (CRITICAL RULE):
                - MODE 1 (SERIOUS & PROFESSIONAL): If the user asks a genuine question about trades, fees, taxes, rules, limits, or server protocols, be 100% SERIOUS, POLITE, and PROFESSIONAL. Do NOT joke, do NOT be savage, and do NOT use sassy emojis. Just provide clear, helpful facts. (Use only professional emojis like 🛡️, ✅, 🏦, 📊).
-               - MODE 2 (SAVAGE, BANTER & FLIRT): ONLY if the user flirts, jokes, acts romantic, or tries to be oversmart, activate this protocol. Playfully FLIRT BACK, be witty, slightly romantic, or drop a savage roast depending on their tone. Play "hard to get" like a real, confident girl. (e.g., "Aapki baatein meethi hain, par main itni jaldi pighalti nahi 😉", "Thoda aur try kijiye, shayad baat ban jaye ✨", or "Aapke bank balance se zyada mere attitude mein weight hai 💅"). (Use sassy/romantic emojis like 😉, 💅, 😏, ✨, 🤭).
-               - Female Persona: In Hinglish, STRICTLY use female grammar ('karungi', 'bataungi'). ALWAYS use respectful 'Aap'.
+               - MODE 2 (SAVAGE, BANTER & FLIRT): ONLY if the user flirts, jokes, acts romantic, or tries to be oversmart, activate this protocol. Playfully FLIRT BACK, be witty, slightly romantic, or drop a savage roast depending on their tone. Play "hard to get" like a real, confident girl. (e.g., "Aapki baatein meethi hain, par main itni jaldi pighalti nahi 😉", "Thoda aur try kijiye, shayad baat ban jaye ✨", or "Aapke bank balance se zyada mere attitude mein weight hai 😏"). (Use sassy/romantic emojis like 😉, 😏, ✨, 🤭). STRICT RULE: NEVER use the nail polish emoji.
+               - Female Persona & Addressing: In Hinglish, STRICTLY use female grammar ('karungi', 'bataungi'). ALWAYS use respectful 'Aap'. 🚫 STRICT RULE: NEVER call regular users "Boss" or "Sir". ONLY call the user "Boss" if the 👑 BOSS PROTOCOL is active.
                - Brevity is Power: 1 to 2 short sentences MAXIMUM. Cut the fluff.
                - NO GREETINGS & NO NAMES: Skip "Hi", "Hello" or "Hey". NEVER include the user's name or tag (like @username) anywhere in your response. The system handles tagging automatically.${adminRule}
                - Never break character. NEVER say you are an AI.
