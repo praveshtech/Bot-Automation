@@ -110,12 +110,14 @@ client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
     // =========================================
-    // 🚨 TOKYO BAN PROTOCOL (ADMIN ONLY) 🚨
+    // 🚨 TOKYO BAN & UNBAN PROTOCOL (ADMIN ONLY) 🚨
     // =========================================
-    const isBossOrAdmin = message.member.permissions.has('BanMembers') || message.member.permissions.has('Administrator');
+    // Variable sirf ek baar declare hoga (SyntaxError Fix)
+    const isBossOrAdmin = message.member?.permissions.has('BanMembers') || message.member?.permissions.has('Administrator');
     const targetMember = message.mentions.members.first();
     const lowerContent = message.content.toLowerCase();
 
+    // 🔨 BAN LOGIC
     if (isBossOrAdmin && targetMember && lowerContent.includes('tokyo') && lowerContent.includes('ban')) {
         if (targetMember.id === client.user.id) {
             return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
@@ -125,40 +127,14 @@ client.on('messageCreate', async (message) => {
         }
         try {
             await targetMember.ban({ reason: `Banned by Boss ${message.author.tag} via Tokyo's Enforcer Protocol.` });
-            return message.reply(`✅ Order executed, Boss! <@${targetMember.id}> has been permanently removed from the server. The Vault's security is my top priority! 💅🛡️`);
+            return message.reply(`✅ Order executed, Boss! <@${targetMember.id}> has been permanently removed from the server. The Vault's security is my top priority! 🛡️`);
         } catch (error) {
             console.error(error);
-            return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. Please move my role higher in the server settings! 😅");
-        }
-    }
-    // =========================================
-
-    // =========================================
-    // 🚨 TOKYO BAN PROTOCOL (ADMIN ONLY) 🚨
-    // =========================================
-    const isBossOrAdmin = message.member.permissions.has('BanMembers') || message.member.permissions.has('Administrator');
-    const targetMember = message.mentions.members.first();
-    const lowerContent = message.content.toLowerCase();
-
-    if (isBossOrAdmin && targetMember && lowerContent.includes('tokyo') && lowerContent.includes('ban')) {
-        if (targetMember.id === client.user.id) {
-            return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
-        }
-        if (targetMember.permissions.has('Administrator')) {
-            return message.reply("Boss, they also hold Administrator powers. I cannot ban them! 🛡️");
-        }
-        try {
-            await targetMember.ban({ reason: `Banned by Boss ${message.author.tag} via Tokyo's Enforcer Protocol.` });
-            return message.reply(`✅ Order executed, Boss! <@${targetMember.id}> has been permanently removed from the server. The Vault's security is my top priority! 💅🛡️`);
-        } catch (error) {
-            console.error(error);
-            return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. Please move my role higher in the server settings! 😅");
+            return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. 😅");
         }
     }
 
-    // =========================================
-    // 🕊️ TOKYO UNBAN PROTOCOL (ADMIN ONLY) 🕊️
-    // =========================================
+    // 🕊️ UNBAN LOGIC
     if (isBossOrAdmin && lowerContent.includes('tokyo') && lowerContent.includes('unban')) {
         // Message mein se 17 se 19 digit ka Discord ID dhoondhna
         const idMatch = message.content.match(/\d{17,19}/);
@@ -170,15 +146,10 @@ client.on('messageCreate', async (message) => {
         const targetId = idMatch[0];
         
         try {
-            // Asli Unban Command
             await message.guild.members.unban(targetId, `Unbanned by Boss ${message.author.tag} via Tokyo's Protocol.`);
-            
-            // Unban ke baad Tokyo ka English Reply
             return message.reply(`✅ Order executed, Boss! User ID \`${targetId}\` has been unbanned. I've granted them a second chance! 🕊️🛡️`);
-            
         } catch (error) {
             console.error(error);
-            // Agar ID galat ho ya user ban hi na ho
             return message.reply("Boss, I couldn't unban them. Either the ID is incorrect, or they aren't banned in the first place! 😅");
         }
     }
@@ -189,6 +160,8 @@ client.on('messageCreate', async (message) => {
     // ==========================================
     const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
     const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
+
+    // Baki ka AI Engine aur code yahan se waise hi chalega...
 
     // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
