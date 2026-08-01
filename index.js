@@ -108,6 +108,50 @@ let p2pMessageCount = 0;
 client.on('messageCreate', async message => {
     if (message.author.bot) return;
 
+
+client.on('messageCreate', async (message) => {
+    // Agar message kisi bot ne bheja hai, toh ignore karo
+    if (message.author.bot) return;
+
+    // =========================================
+    // 🚨 TOKYO BAN PROTOCOL (ADMIN ONLY) 🚨
+    // =========================================
+    // Check karo ki message bhejne wale ke paas Ban ya Admin ki power hai ya nahi
+    const isBoss = message.member.permissions.has('BanMembers') || message.member.permissions.has('Administrator');
+    const targetMember = message.mentions.members.first();
+    const lowerContent = message.content.toLowerCase();
+
+    // Agar Boss ne Tokyo ka naam liya, 'ban' word use kiya, aur kisi ko tag kiya
+    if (isBoss && targetMember && lowerContent.includes('tokyo') && lowerContent.includes('ban')) {
+        
+        // Tokyo khud ko ban na kar le
+        if (targetMember.id === client.user.id) {
+            return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
+        }
+        
+        // Kisi doosre Admin ko ban karne se rokna (error bachane ke liye)
+        if (targetMember.permissions.has('Administrator')) {
+            return message.reply("Boss, they also hold Administrator powers. I cannot ban them! 🛡️");
+        }
+
+        try {
+            // Asli Ban Command
+            await targetMember.ban({ reason: `Banned by Boss ${message.author.tag} via Tokyo's Enforcer Protocol.` });
+            
+            // Ban ke baad Tokyo ka Savage English Reply
+            return message.reply(`✅ Order executed, Boss! <@${targetMember.id}> has been permanently removed from the server. The Vault's security is my top priority! 💅🛡️`);
+            
+        } catch (error) {
+            console.error(error);
+            // Agar Tokyo ka role Discord settings mein neeche hai
+            return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. Please move my role higher in the server settings! 😅");
+        }
+    }
+    // =========================================
+
+
+
+
     // ==========================================
     // 🧠 TOKYO MANUAL TRAINING SYSTEM
     // ==========================================
@@ -241,7 +285,7 @@ client.on('messageCreate', async message => {
             
             [3] 🎭 DUAL PERSONA & TONE SWITCHING (CRITICAL RULE):
                - MODE 1 (SERIOUS & PROFESSIONAL): If the user asks a genuine question about trades, fees, taxes, rules, limits, or server protocols, be 100% SERIOUS, POLITE, and PROFESSIONAL. Do NOT joke, do NOT be savage, and do NOT use sassy emojis. Just provide clear, helpful facts. (Use only professional emojis like 🛡️, ✅, 🏦, 📊).
-               - MODE 2 (SAVAGE & BANTER): ONLY if the user flirts, jokes, acts romantic, or tries to be oversmart, activate the "Savage" protocol. Be witty, savage, and drop a roast (e.g., "Aapke bank balance se zyada mere attitude mein weight hai 💅"). Play hard to get. (Use sassy emojis like 😉, 💅, 😏).
+               - MODE 2 (SAVAGE, BANTER & FLIRT): ONLY if the user flirts, jokes, acts romantic, or tries to be oversmart, activate this protocol. Playfully FLIRT BACK, be witty, slightly romantic, or drop a savage roast depending on their tone. Play "hard to get" like a real, confident girl. (e.g., "Aapki baatein meethi hain, par main itni jaldi pighalti nahi 😉", "Thoda aur try kijiye, shayad baat ban jaye ✨", or "Aapke bank balance se zyada mere attitude mein weight hai 💅"). (Use sassy/romantic emojis like 😉, 💅, 😏, ✨, 🤭).
                - Female Persona: In Hinglish, STRICTLY use female grammar ('karungi', 'bataungi'). ALWAYS use respectful 'Aap'.
                - Brevity is Power: 1 to 2 short sentences MAXIMUM. Cut the fluff.
                - NO GREETINGS & NO NAMES: Skip "Hi", "Hello" or "Hey". NEVER include the user's name or tag (like @username) anywhere in your response. The system handles tagging automatically.${adminRule}
