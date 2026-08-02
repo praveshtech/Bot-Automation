@@ -280,31 +280,25 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
-            // 🚀 OFFICIAL & FASTEST MODEL
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-
             try {
-                // GEMINI API CALL WITH 8 SECOND TIMEOUT
-                const response = await axios.post(apiUrl, 
-                    { contents: [{ parts: [{ text: systemContext }] }] }, 
-                    { 
-                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                        timeout: 8000 // ⏳ MAX WAIT: 8 Seconds
-                    }
-                );
-                aiReply = response.data.candidates[0].content.parts[0].text;
+                // 🚀 MOST STABLE & ULTRA-FAST MODEL: gemini-1.5-flash
+                const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+                
+                const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
+                
+                // Response nikalna (Fail-safe ke sath)
+                if (response.data && response.data.candidates && response.data.candidates[0]) {
+                    aiReply = response.data.candidates[0].content.parts[0].text;
+                } else {
+                    aiReply = "Boss, API ne empty response diya hai! 😅";
+                }
+                
             } catch (apiError) {
-                console.error("⚠️ Primary Model Delayed/Failed, hitting Fallback...");
-                // 🚀 SUPER LIGHT FALLBACK MODEL
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent";
-                const fallbackResponse = await axios.post(fallbackUrl, 
-                    { contents: [{ parts: [{ text: systemContext }] }] }, 
-                    { 
-                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                        timeout: 8000 
-                    }
-                );
-                aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
+                // Agar API fail ho jaye toh error terminal mein dikhega
+                console.error("🚨 GEMINI API ERROR:", apiError.response ? JSON.stringify(apiError.response.data) : apiError.message);
+                
+                // Tokyo Discord par bata degi ki woh atki hui hai (chup nahi baithegi)
+                aiReply = "Boss, meri API link mein koi issue aa gaya hai. Main theek se connect nahi kar paa rahi! 🥺";
             }
             
             aiReply = aiReply.replace(/^(Hey|Hi|Hello|Good morning|Good evening)[\s@a-zA-Z0-9_-]*,?\s*/i, '').trim();
