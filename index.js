@@ -280,18 +280,25 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
-            // 🚀 LATEST & FASTEST MODEL: gemini-2.0-flash
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-
             try {
+                // 🚀 MOST STABLE & ULTRA-FAST MODEL: gemini-1.5-flash
+                const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+                
                 const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
-                aiReply = response.data.candidates[0].content.parts[0].text;
+                
+                // Response nikalna (Fail-safe ke sath)
+                if (response.data && response.data.candidates && response.data.candidates[0]) {
+                    aiReply = response.data.candidates[0].content.parts[0].text;
+                } else {
+                    aiReply = "Boss, API ne empty response diya hai! 😅";
+                }
+                
             } catch (apiError) {
-                console.error("2.0 Flash failed, using 1.5 Flash fallback...");
-                // 🚀 FALLBACK MODEL: gemini-1.5-flash (Agar kabhi 2.0 par load zyada ho)
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-                const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
-                aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
+                // Agar API fail ho jaye toh error terminal mein dikhega
+                console.error("🚨 GEMINI API ERROR:", apiError.response ? JSON.stringify(apiError.response.data) : apiError.message);
+                
+                // Tokyo Discord par bata degi ki woh atki hui hai (chup nahi baithegi)
+                aiReply = "Boss, meri API link mein koi issue aa gaya hai. Main theek se connect nahi kar paa rahi! 🥺";
             }
             
             aiReply = aiReply.replace(/^(Hey|Hi|Hello|Good morning|Good evening)[\s@a-zA-Z0-9_-]*,?\s*/i, '').trim();
