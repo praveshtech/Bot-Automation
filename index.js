@@ -279,31 +279,14 @@ client.on('messageCreate', async (message) => {
             `;
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
-            
-            // 🚀 EXACT MODEL FORMAT: Added '-latest' so Google recognizes it
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
             try {
-                // GEMINI API CALL WITH 8 SECOND TIMEOUT
-                const response = await axios.post(apiUrl, 
-                    { contents: [{ parts: [{ text: systemContext }] }] }, 
-                    { 
-                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                        timeout: 8000 // ⏳ MAX WAIT: 8 Seconds
-                    }
-                );
+                const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.error("⚠️ Primary Model Failed (404/Timeout), hitting Universal Fallback...");
-                // 🚀 UNIVERSAL FALLBACK: Classic 'gemini-pro' (100% stable on all keys)
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
-                const fallbackResponse = await axios.post(fallbackUrl, 
-                    { contents: [{ parts: [{ text: systemContext }] }] }, 
-                    { 
-                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                        timeout: 8000 
-                    }
-                );
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
+                const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
