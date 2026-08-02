@@ -279,13 +279,17 @@ client.on('messageCreate', async (message) => {
             `;
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+            
+            // 🚀 LATEST & FASTEST MODEL: gemini-2.0-flash
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
             try {
                 const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
+                console.error("2.0 Flash failed, using 1.5 Flash fallback...");
+                // 🚀 FALLBACK MODEL: gemini-1.5-flash (Agar kabhi 2.0 par load zyada ho)
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
                 const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
