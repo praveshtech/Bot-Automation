@@ -280,17 +280,30 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
-            // 🚀 CURRENT LATEST & FASTEST MODEL
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+            // 🚀 PRO MODEL (Maximum Intelligence & Accuracy)
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
 
             try {
-                const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
+                // GEMINI API CALL WITH TIMEOUT
+                const response = await axios.post(apiUrl, 
+                    { contents: [{ parts: [{ text: systemContext }] }] }, 
+                    { 
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        timeout: 10000 // ⏳ MAX WAIT: 10 Seconds (Pro thoda time leta hai)
+                    }
+                );
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.error("Primary model failed, using fallback...");
-                // 🚀 FALLBACK MODEL
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
-                const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
+                console.error("⚠️ Pro Model Delayed/Failed, hitting Flash Fallback...");
+                // 🚀 FALLBACK MODEL (Agar Pro busy ho toh Flash turant sambhal lega)
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+                const fallbackResponse = await axios.post(fallbackUrl, 
+                    { contents: [{ parts: [{ text: systemContext }] }] }, 
+                    { 
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        timeout: 8000 
+                    }
+                );
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
