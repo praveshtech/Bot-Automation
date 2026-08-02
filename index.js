@@ -280,25 +280,18 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
+            // 🚀 CURRENT LATEST & FASTEST MODEL
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+
             try {
-                // 🚀 MOST STABLE & ULTRA-FAST MODEL: gemini-1.5-flash
-                const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
-                
                 const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
-                
-                // Response nikalna (Fail-safe ke sath)
-                if (response.data && response.data.candidates && response.data.candidates[0]) {
-                    aiReply = response.data.candidates[0].content.parts[0].text;
-                } else {
-                    aiReply = "Boss, API ne empty response diya hai! 😅";
-                }
-                
+                aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                // Agar API fail ho jaye toh error terminal mein dikhega
-                console.error("🚨 GEMINI API ERROR:", apiError.response ? JSON.stringify(apiError.response.data) : apiError.message);
-                
-                // Tokyo Discord par bata degi ki woh atki hui hai (chup nahi baithegi)
-                aiReply = "Boss, meri API link mein koi issue aa gaya hai. Main theek se connect nahi kar paa rahi! 🥺";
+                console.error("Primary model failed, using fallback...");
+                // 🚀 FALLBACK MODEL
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
+                const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
+                aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
             aiReply = aiReply.replace(/^(Hey|Hi|Hello|Good morning|Good evening)[\s@a-zA-Z0-9_-]*,?\s*/i, '').trim();
