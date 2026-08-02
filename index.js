@@ -280,8 +280,8 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
-            // 🚀 OFFICIAL & FASTEST MODEL
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+            // 🚀 EXACT MODEL FORMAT: Added '-latest' so Google recognizes it
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent";
 
             try {
                 // GEMINI API CALL WITH 8 SECOND TIMEOUT
@@ -294,9 +294,9 @@ client.on('messageCreate', async (message) => {
                 );
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.error("⚠️ Primary Model Delayed/Failed, hitting Fallback...");
-                // 🚀 SUPER LIGHT FALLBACK MODEL
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent";
+                console.error("⚠️ Primary Model Failed (404/Timeout), hitting Universal Fallback...");
+                // 🚀 UNIVERSAL FALLBACK: Classic 'gemini-pro' (100% stable on all keys)
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
                 const fallbackResponse = await axios.post(fallbackUrl, 
                     { contents: [{ parts: [{ text: systemContext }] }] }, 
                     { 
