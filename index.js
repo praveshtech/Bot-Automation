@@ -280,17 +280,30 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
-            // 🚀 CURRENT LATEST & FASTEST MODEL
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
+            // 🚀 OFFICIAL & FASTEST MODEL
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
             try {
-                const response = await axios.post(apiUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
+                // GEMINI API CALL WITH 8 SECOND TIMEOUT
+                const response = await axios.post(apiUrl, 
+                    { contents: [{ parts: [{ text: systemContext }] }] }, 
+                    { 
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        timeout: 8000 // ⏳ MAX WAIT: 8 Seconds
+                    }
+                );
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.error("Primary model failed, using fallback...");
-                // 🚀 FALLBACK MODEL
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
-                const fallbackResponse = await axios.post(fallbackUrl, { contents: [{ parts: [{ text: systemContext }] }] }, { headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey } });
+                console.error("⚠️ Primary Model Delayed/Failed, hitting Fallback...");
+                // 🚀 SUPER LIGHT FALLBACK MODEL
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent";
+                const fallbackResponse = await axios.post(fallbackUrl, 
+                    { contents: [{ parts: [{ text: systemContext }] }] }, 
+                    { 
+                        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                        timeout: 8000 
+                    }
+                );
                 aiReply = fallbackResponse.data.candidates[0].content.parts[0].text;
             }
             
