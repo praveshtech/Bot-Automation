@@ -280,8 +280,8 @@ client.on('messageCreate', async (message) => {
             let aiReply = "";
             const apiKey = process.env.GEMINI_API_KEY.trim(); 
             
-            // 🚀 PRO MODEL (Maximum Intelligence & Accuracy)
-            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
+            // 🚀 PRO MODEL (Fixed Name: Added '-latest')
+            const apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent";
 
             try {
                 // GEMINI API CALL WITH TIMEOUT
@@ -289,14 +289,14 @@ client.on('messageCreate', async (message) => {
                     { contents: [{ parts: [{ text: systemContext }] }] }, 
                     { 
                         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-                        timeout: 10000 // ⏳ MAX WAIT: 10 Seconds (Pro thoda time leta hai)
+                        timeout: 10000 // ⏳ MAX WAIT: 10 Seconds
                     }
                 );
                 aiReply = response.data.candidates[0].content.parts[0].text;
             } catch (apiError) {
-                console.error("⚠️ Pro Model Delayed/Failed, hitting Flash Fallback...");
-                // 🚀 FALLBACK MODEL (Agar Pro busy ho toh Flash turant sambhal lega)
-                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+                console.error("⚠️ Pro Model Delayed/Failed, hitting Fallback...");
+                // 🚀 SUPER STABLE FALLBACK (Classic Gemini Pro, 100% available)
+                const fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent";
                 const fallbackResponse = await axios.post(fallbackUrl, 
                     { contents: [{ parts: [{ text: systemContext }] }] }, 
                     { 
