@@ -1465,13 +1465,13 @@ client.on('interactionCreate', async interaction => {
 
         if(!walletData['TRC20']) {
             walletData = {
-                'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg' },
-                'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg' },
-                'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg' },
-                'ARBITRUM': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg' },
+                'TRC20': { address: 'TAWUyhkEHUj5ySkWK4CbUPrPqTRY8BfzoL', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065822081744916/usdt_trc20.jpeg?ex=6a72c5a1&is=6a717421&hm=d51d2a991539e02a635d9eb5808c3ea33489811d91151b4b5b58c802bc92ef1d' },
+                'ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065755899957248/usdt_erc20.jpeg?ex=6a72c591&is=6a717411&hm=6111227322a4f3d01f62fe21dbcb7b1805ab52daa6c357cd3416f95ae97bcaa8' },
+                'BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065723637235712/usdt_bep20.jpeg?ex=6a72c58a&is=6a71740a&hm=4eb5ddd83d7ba5b61ff700c5b8973d50d2c23be1a4ffc0c96ac20c64c6e47644' },
+                'ARBITRUM': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065691865514034/usdt_Arbitrum.jpeg?ex=6a72c582&is=6a717402&hm=b01b163b48142580c6272889917d5c2184a3ac079ba9246597543ee17e9a59b2' },
                 'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg' },
                 'USDC_ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg' },
-                'USDC_BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg' }
+                'USDC_BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065659259129896/usdc_bep20.jpeg?ex=6a72c57a&is=6a7173fa&hm=d4d532ae27a0ebd800156ccafd44c5c45ef8a1354d65dd6c9d6b0689f75e738b' }
             };
         }
 
