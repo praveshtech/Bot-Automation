@@ -239,6 +239,7 @@ client.on('messageCreate', async (message) => {
             - Ticket Protocols: Users must open a ticket ONLY when ready to transact.
             - Prohibited Actions: Fake screenshots, Chargebacks, and Third-party payments are strictly PROHIBITED (immediate blacklist).
             - Security Rules: Admins NEVER DM first. No DM deals.
+            - When Someone ask you who made you Then tell <#1001128047128358923>
             =========================================
 
             SERVER DIRECTORY:
