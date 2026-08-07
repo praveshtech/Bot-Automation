@@ -41,43 +41,43 @@ async function trackTRC20(client) {
 }
 
 // ==========================================
-// 🔗 2. EVM TRACKER (ERC20, BEP20, ARBITRUM) - HTTP Polling (SAFE MODE)
+// 🔗 2. EVM TRACKER - HIGH PERFORMANCE MODE
 // ==========================================
 const erc20Abi = [ "event Transfer(address indexed from, address indexed to, uint amount)" ];
 
 async function trackEVM(client, rpcUrl, tokenAddress, networkName, decimals, explorerUrl) {
     try {
-        // Changed to JsonRpcProvider (HTTP) instead of WebSocket
         const provider = new ethers.JsonRpcProvider(rpcUrl);
         const contract = new ethers.Contract(tokenAddress, erc20Abi, provider);
         
         let lastBlock = await provider.getBlockNumber();
         console.log(`📡 HTTP Tracking Started for ${networkName} (Block: ${lastBlock})`);
 
-        // Check every 15 seconds without freezing the bot
+        // 🎯 THE MASTER FIX: Sirf apne wallet (to: WALLETS.EVM) ka data mango
+        const myWalletFilter = contract.filters.Transfer(null, WALLETS.EVM);
+
         setInterval(async () => {
             try {
                 const currentBlock = await provider.getBlockNumber();
                 if (currentBlock > lastBlock) {
-                    const events = await contract.queryFilter("Transfer", lastBlock + 1, currentBlock);
+                    // Ab bot poori duniya ka nahi, sirf aapke wallet ka transfer check karega (0 CPU load)
+                    const events = await contract.queryFilter(myWalletFilter, lastBlock + 1, currentBlock);
                     
                     for (const event of events) {
                         const from = event.args[0];
-                        const to = event.args[1];
+                        // event.args[1] is 'to', which is already filtered to be our wallet
                         const amount = event.args[2];
 
-                        if (to.toLowerCase() === WALLETS.EVM.toLowerCase()) {
-                            const formattedAmount = ethers.formatUnits(amount, decimals);
-                            if (parseFloat(formattedAmount) > 0) {
-                                const txLink = `${explorerUrl}${event.transactionHash}`;
-                                sendDiscordAlert(client, formattedAmount, networkName, from, txLink);
-                            }
+                        const formattedAmount = ethers.formatUnits(amount, decimals);
+                        if (parseFloat(formattedAmount) > 0) {
+                            const txLink = `${explorerUrl}${event.transactionHash}`;
+                            sendDiscordAlert(client, formattedAmount, networkName, from, txLink);
                         }
                     }
                     lastBlock = currentBlock;
                 }
             } catch (err) {
-                // Ignore temporary network timeouts so bot doesn't freeze
+                // Ignore timeouts
             }
         }, 15000); 
 
@@ -117,12 +117,12 @@ async function sendDiscordAlert(client, amount, network, sender, txLink) {
 // 🚀 MASTER EXPORT FUNCTION
 // ==========================================
 module.exports = function startPaymentTrackers(client) {
-    console.log("🏦 Initializing Safe HTTP Crypto Payment Trackers...");
+    console.log("🏦 Initializing Super Fast Crypto Payment Trackers...");
 
     // 1. TRC20 Polling
     setInterval(() => trackTRC20(client), 15000);
 
-    // 2. EVM Polling (Using HTTPS instead of WSS to prevent Discord Freezing)
+    // 2. EVM Polling
     trackEVM(client, 'https://ethereum-rpc.publicnode.com', '0xdAC17F958D2ee523a2206206994597C13D831ec7', 'USDT ERC20', 6, 'https://etherscan.io/tx/');
     trackEVM(client, 'https://bsc-rpc.publicnode.com', '0x55d398326f99059fF775485246999027B3197955', 'USDT BEP20', 18, 'https://bscscan.com/tx/');
     trackEVM(client, 'https://arbitrum-one-rpc.publicnode.com', '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', 'USDT Arbitrum', 6, 'https://arbiscan.io/tx/');
