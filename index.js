@@ -50,7 +50,6 @@ client.once('ready', async () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
     
-    
     // Load AI Memory Engine in Background
     pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2').then(ext => {
         aiExtractor = ext;
