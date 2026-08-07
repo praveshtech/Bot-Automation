@@ -906,6 +906,32 @@
         document.addEventListener("DOMContentLoaded", () => {
             filterLogs();
         });
+          
+        // 🔥 CUSTOM DATE MODAL FIX 🔥
+function openCustomVolModal() { 
+    pauseOnModalOpen(); 
+    const modal = document.getElementById('customVolModal'); 
+    const content = document.getElementById('customVolModalContent'); 
+    modal.classList.remove('hidden'); 
+    setTimeout(() => { 
+        content.classList.remove('scale-95', 'opacity-0'); 
+        content.classList.add('scale-100', 'opacity-100'); 
+    }, 10); 
+}
+
+function closeCustomVolModal() { 
+    resumeOnModalClose(); 
+    const modal = document.getElementById('customVolModal'); 
+    const content = document.getElementById('customVolModalContent'); 
+    content.classList.remove('scale-100', 'opacity-100'); 
+    content.classList.add('scale-95', 'opacity-0'); 
+    setTimeout(() => { 
+        modal.classList.add('hidden'); 
+        // Agli baar kholne ke liye result box wapas chhupa do
+        document.getElementById('cv-result-box').classList.add('hidden'); 
+    }, 300); 
+}
+
 
         function calculateCustomVolume() {
             const startVal = document.getElementById('cv-start').value; const endVal = document.getElementById('cv-end').value;
