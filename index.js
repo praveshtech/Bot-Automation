@@ -12,7 +12,6 @@ const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
 const discordTranscripts = require('discord-html-transcripts');
 const { pipeline } = require('@xenova/transformers');
-const startPaymentTrackers = require('./paymentTracker');
 let aiExtractor = null; 
 
 // ==========================================
@@ -50,8 +49,7 @@ const userSelections = new Map();
 client.once('ready', async () => {
     console.log(`✅ BOT ONLINE: Logged in as ${client.user.tag}`);
     console.log(`🔥 FIREBASE: Connected Successfully`);
-    // Load Tracker
-    startPaymentTrackers(client);
+    
     
     // Load AI Memory Engine in Background
     pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2').then(ext => {
