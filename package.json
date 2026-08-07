@@ -6,11 +6,19 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.2.0",
+    "@xenova/transformers": "^2.16.1",
+    "axios": "^1.6.8",
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.6",
+    "discord-html-transcripts": "^3.2.0",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "ejs": "^5.0.2",
+    "ethers": "^6.11.1",
+    "exceljs": "^4.4.0",
     "express": "^4.22.1",
+    "express-rate-limit": "^7.2.0",
     "express-session": "^1.19.0",
     "firebase-admin": "^12.7.0"
   }
