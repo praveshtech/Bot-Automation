@@ -5,7 +5,7 @@ const { ethers } = require('ethers');
 // ==========================================
 // 🛠️ CONFIGURATION
 // ==========================================
-const ALERT_CHANNEL_ID = '1515980898196000831'; 
+const ALERT_CHANNEL_ID = '1535194410340450365'; 
 
 const WALLETS = {
     TRON: 'TAWUyhkEHUj5ySkWK4CbUPrPqTRY8BfzoL', 
