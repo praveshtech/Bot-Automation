@@ -2160,7 +2160,7 @@ app.get('/', requireLogin, async (req, res) => {
     } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
 
-const PORT = 80;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => { console.log(`📊 Admin Vault Dashboard is LIVE on Port ${PORT}`); });
 
 // ==========================================
