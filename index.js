@@ -513,7 +513,7 @@ client.on('messageCreate', async (message) => {
                     // 🎨 CERTIFICATE GENERATOR (For Ticket Room)
                     const canvas = Canvas.createCanvas(960, 1280); 
                     const ctx = canvas.getContext('2d');
-                    const bg = await Canvas.loadImage('./Certificate.jpeg');
+                    const bg = await Canvas.loadImage('./Certificate.png');
                     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
                     ctx.textAlign = 'center';
