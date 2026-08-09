@@ -502,7 +502,11 @@ client.on('messageCreate', async (message) => {
                 await targetMember.roles.add(feedRole);
 
                 let certAttachment = null;
-                const certFileName = 'Professor_Certificate.jpeg';
+                const certFileName = 'Professor_Certificate.png'; // Extention PNG kar diya
+               // ... canvas drawing code wahi same rahega ...
+
+               // toBuffer mein explicitly PNG define kiya taaki quality 100% sharp rahe
+                certAttachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: certFileName });
                 
                 try {
                     // 🎨 CERTIFICATE GENERATOR (For Ticket Room)
