@@ -508,6 +508,7 @@ client.on('messageCreate', async (message) => {
                // toBuffer mein explicitly PNG define kiya taaki quality 100% sharp rahe
                 certAttachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: certFileName });
                 
+                
                 try {
                     // 🎨 CERTIFICATE GENERATOR (For Ticket Room)
                     const canvas = Canvas.createCanvas(960, 1280); 
