@@ -512,22 +512,23 @@ client.on('messageCreate', async (message) => {
                     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
                     ctx.textAlign = 'center';
-                    // 1. Username likhna (Upar kiya: 530)
-                    ctx.font = 'bold 45px "Arial"';
+                    
+                    // 1. Username likhna (Bold hataya, Size 38, Patla Font)
+                    ctx.font = '38px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000'; 
-                    ctx.fillText(ticketData.username.toUpperCase(), canvas.width / 2, 530); 
+                    ctx.fillText(ticketData.username.toUpperCase(), canvas.width / 2, 600); 
 
-                    // 2. Amount Likhna (Upar kiya: 710)
-                    ctx.font = 'bold 55px "Arial"';
+                    // 2. Amount Likhna (Bold hataya, Size 48, Patla Font)
+                    ctx.font = '48px "Helvetica", sans-serif';
                     ctx.fillStyle = '#b91c1c'; 
-                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, canvas.width / 2, 710);
+                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, canvas.width / 2, 735);
 
-                    // 3. Date Likhna (Neeche aur thoda left kiya: 170, 1240)
+                    // 3. Date Likhna (Bold hataya, Size 26, Patla Font)
                     ctx.textAlign = 'left';
-                    ctx.font = 'bold 30px "Arial"';
+                    ctx.font = '26px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000';
                     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    ctx.fillText(dateStr, 170, 1240); 
+                    ctx.fillText(dateStr, 220, 1215);
 
                     certAttachment = new AttachmentBuilder(canvas.toBuffer(), { name: certFileName });
                 } catch (err) {
