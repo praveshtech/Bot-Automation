@@ -502,40 +502,37 @@ client.on('messageCreate', async (message) => {
                 await targetMember.roles.add(feedRole);
 
                 let certAttachment = null;
-                const certFileName = 'Professor_Certificate.png'; // Extention PNG kar diya
-               // ... canvas drawing code wahi same rahega ...
-
-               // toBuffer mein explicitly PNG define kiya taaki quality 100% sharp rahe
-                certAttachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: certFileName });
-                
+                const certFileName = 'Professor_Certificate.png'; // Output PNG hi rahega taaki quality ultra-sharp rahe
                 
                 try {
                     // 🎨 CERTIFICATE GENERATOR (For Ticket Room)
                     const canvas = Canvas.createCanvas(960, 1280); 
                     const ctx = canvas.getContext('2d');
-                    const bg = await Canvas.loadImage('./Certificate.png');
+                    
+                    // 🔥 YAHAN CHANGE KIYA HAI: Aapki nayi .jpg file load kar rahe hain
+                    const bg = await Canvas.loadImage('./Certificate.jpg');
                     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
                     ctx.textAlign = 'center';
                     
-                    // 1. Username likhna (Upar kiya aur thoda Left kiya)
+                    // 1. Username likhna
                     ctx.font = '38px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000'; 
                     ctx.fillText(ticketData.username.toUpperCase(), 500, 585); 
 
-                    // 2. Amount Likhna (Upar kiya aur thoda Left kiya)
+                    // 2. Amount Likhna
                     ctx.font = '48px "Helvetica", sans-serif';
                     ctx.fillStyle = '#b91c1c'; 
                     ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 500, 715);
 
-                    // 3. Date Likhna (Thoda aur Right kiya)
+                    // 3. Date Likhna
                     ctx.textAlign = 'left';
                     ctx.font = '26px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000';
                     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                     ctx.fillText(dateStr, 140, 1215);
 
-                    certAttachment = new AttachmentBuilder(canvas.toBuffer(), { name: certFileName });
+                    certAttachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: certFileName });
                 } catch (err) {
                     console.error("Certificate Generation Error (.fb):", err);
                 }
