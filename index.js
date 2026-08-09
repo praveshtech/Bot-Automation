@@ -510,7 +510,7 @@ client.on('messageCreate', async (message) => {
                     const ctx = canvas.getContext('2d');
                     
                     // 🔥 YAHAN CHANGE KIYA HAI: Aapki nayi .jpg file load kar rahe hain
-                    const bg = await Canvas.loadImage('./Certificate.jpg');
+                   const bg = await Canvas.loadImage('./Certificate.png');
                     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
                     ctx.textAlign = 'center';
