@@ -528,7 +528,7 @@ client.on('messageCreate', async (message) => {
                     ctx.font = '26px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000';
                     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    ctx.fillText(dateStr, 170, 1215);
+                    ctx.fillText(dateStr, 150, 1215);
 
                     certAttachment = new AttachmentBuilder(canvas.toBuffer(), { name: certFileName });
                 } catch (err) {
