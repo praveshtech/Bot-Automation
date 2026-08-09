@@ -513,23 +513,22 @@ client.on('messageCreate', async (message) => {
 
                     ctx.textAlign = 'center';
                     
-                    // 1. Username likhna (Upar kiya aur thoda Left kiya)
+                    // 1. Username likhna (Upar kiya aur Right kiya)
                     ctx.font = '38px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000'; 
-                    ctx.fillText(ticketData.username.toUpperCase(), 450, 585); 
+                    ctx.fillText(ticketData.username.toUpperCase(), 500, 570); 
 
-                    // 2. Amount Likhna (Upar kiya aur thoda Left kiya)
+                    // 2. Amount Likhna (Upar kiya aur Right kiya)
                     ctx.font = '48px "Helvetica", sans-serif';
                     ctx.fillStyle = '#b91c1c'; 
-                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 450, 715);
+                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 500, 695);
 
-                    // 3. Date Likhna (Thoda aur Right kiya)
+                    // 3. Date Likhna (Thoda Left kiya)
                     ctx.textAlign = 'left';
                     ctx.font = '26px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000';
                     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    ctx.fillText(dateStr, 270, 1215);
-
+                    ctx.fillText(dateStr, 200, 1215);
                     certAttachment = new AttachmentBuilder(canvas.toBuffer(), { name: certFileName });
                 } catch (err) {
                     console.error("Certificate Generation Error (.fb):", err);
