@@ -516,12 +516,12 @@ client.on('messageCreate', async (message) => {
                     // 1. Username likhna (Upar kiya aur thoda Left kiya)
                     ctx.font = '38px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000'; 
-                    ctx.fillText(ticketData.username.toUpperCase(), 450, 585); 
+                    ctx.fillText(ticketData.username.toUpperCase(), 470, 585); 
 
                     // 2. Amount Likhna (Upar kiya aur thoda Left kiya)
                     ctx.font = '48px "Helvetica", sans-serif';
                     ctx.fillStyle = '#b91c1c'; 
-                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 450, 715);
+                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 470, 715);
 
                     // 3. Date Likhna (Thoda aur Right kiya)
                     ctx.textAlign = 'left';
