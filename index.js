@@ -13,6 +13,7 @@ const rateLimit = require('express-rate-limit');
 const discordTranscripts = require('discord-html-transcripts');
 const { pipeline } = require('@xenova/transformers');
 const startPaymentTrackers = require('./paymentTracker');
+const Canvas = require('canvas');
 let aiExtractor = null; 
 
 // ==========================================
@@ -495,15 +496,55 @@ client.on('messageCreate', async (message) => {
                 await message.channel.send("⚠️ *Warning: Transcript generation failed, but continuing with feedback process.*");
             }
 
-            if (targetMember) {
+           if (targetMember) {
                 let feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
                 if (!feedRole) { feedRole = await message.guild.roles.create({ name: 'transaction done', color: '#f1c40f', reason: 'Temporary role for leaving a transaction review' }); }
                 await targetMember.roles.add(feedRole);
 
-                const feedbackPromptEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('⭐ Rate Your Experience!').setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nYour trust means everything to us. Could you take a quick moment to share your experience with **Professor Network**? \n\nYour honest review helps our community grow and helps others trade safely. 🤝\n\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing us! ⚡`).setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
+                let certAttachment = null;
+                const certFileName = 'Professor_Certificate.jpeg';
+                
+                try {
+                    // 🎨 CERTIFICATE GENERATOR (For Ticket Room)
+                    const canvas = Canvas.createCanvas(960, 1280); 
+                    const ctx = canvas.getContext('2d');
+                    const bg = await Canvas.loadImage('./Certificate.jpeg');
+                    ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+                    ctx.textAlign = 'center';
+                    ctx.font = 'bold 45px "Arial"';
+                    ctx.fillStyle = '#000000'; 
+                    ctx.fillText(ticketData.username.toUpperCase(), canvas.width / 2, 570); 
+
+                    ctx.font = 'bold 55px "Arial"';
+                    ctx.fillStyle = '#b91c1c'; 
+                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, canvas.width / 2, 750);
+
+                    ctx.textAlign = 'left';
+                    ctx.font = 'bold 30px "Arial"';
+                    ctx.fillStyle = '#000000';
+                    const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    ctx.fillText(dateStr, 180, 1140); 
+
+                    certAttachment = new AttachmentBuilder(canvas.toBuffer(), { name: certFileName });
+                } catch (err) {
+                    console.error("Certificate Generation Error (.fb):", err);
+                }
+
+                const feedbackPromptEmbed = new EmbedBuilder()
+                    .setColor('#f1c40f')
+                    .setTitle('⭐ Rate Your Experience!')
+                    .setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nHere is your **Official Certificate of Completion**! You can save this image and attach it while submitting your review.\n\nYour honest review helps our community grow. 🤝\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing Professor Network! ⚡`)
+                    .setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
+
+                let msgOptions = { content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] };
+                if (certAttachment) {
+                    feedbackPromptEmbed.setImage(`attachment://${certFileName}`);
+                    msgOptions.files = [certAttachment];
+                }
 
                 await message.delete().catch(() => {});
-                await message.channel.send({ content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] });
+                await message.channel.send(msgOptions);
             }
 
             try {
