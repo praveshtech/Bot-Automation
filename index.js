@@ -189,6 +189,22 @@ client.on('messageCreate', async (message) => {
             let faqKnowledge = "";
             for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
 
+
+
+            // 🔥 TOKYO LIVE MARKET DATA INTEGRATION 🔥
+            let tokyoBuyPrice = 88;
+            let tokyoSellPrice = 88;
+            try {
+                const setDoc = await db.collection('settings').doc('app_data').get();
+                if (setDoc.exists) {
+                    const data = setDoc.data();
+                    if (data.liveBuyPrice) tokyoBuyPrice = data.liveBuyPrice;
+                    if (data.liveSellPrice) tokyoSellPrice = data.liveSellPrice;
+                }
+            } catch (e) { console.log('Error fetching price for Tokyo:', e); }
+
+
+
             // 2. Fetch LONG-TERM MEMORY from Pinecone DB
             let pastAdminAnswers = "No exact past references found.";
             if (aiExtractor) {
@@ -244,6 +260,14 @@ client.on('messageCreate', async (message) => {
             - Security Rules: Admins NEVER DM first. No DM deals.
             - When Someone ask you who made you Then tell <#1001128047128358923>
             =========================================
+
+            =========================================
+            📈 LIVE MARKET RATES (CRITICAL):
+            If a user asks about current rates or prices, you MUST use these exact real-time values:
+            - USDT BUY Rate (User pays INR, gets Crypto): ₹${tokyoBuyPrice}
+            - USDT SELL Rate (User gives Crypto, gets INR): ₹${tokyoSellPrice}
+            =========================================
+
 
             SERVER DIRECTORY:
             - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
