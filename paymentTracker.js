@@ -137,8 +137,17 @@ async function sendDiscordAlert(client, amount, network, sender, txLink) {
 module.exports = function startPaymentTrackers(client) {
     console.log("🏦 Initializing Anti-Freeze Crypto Payment Trackers...");
 
+    // 🔗 TRC20 Tracker
     setTimeout(() => trackTRC20(client), 2000);
+    
+    // 🔗 USDT Trackers (EVM)
     trackEVM(client, 'https://ethereum-rpc.publicnode.com', '0xdAC17F958D2ee523a2206206994597C13D831ec7', 'USDT ERC20', 6, 'https://etherscan.io/tx/');
     trackEVM(client, 'https://bsc-rpc.publicnode.com', '0x55d398326f99059fF775485246999027B3197955', 'USDT BEP20', 18, 'https://bscscan.com/tx/');
-    trackEVM(client, 'https://arbitrum-one-rpc.publicnode.com', '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', 'USDT Arbitrum', 6, 'https://arbiscan.io/tx/');
+    
+    // 🔥 THE FIX: Changed Arbitrum RPC to Official Node
+    trackEVM(client, 'https://arb1.arbitrum.io/rpc', '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9', 'USDT Arbitrum', 6, 'https://arbiscan.io/tx/');
+
+    // 🪙 USDC Trackers
+    trackEVM(client, 'https://ethereum-rpc.publicnode.com', '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 'USDC ERC20', 6, 'https://etherscan.io/tx/');
+    trackEVM(client, 'https://bsc-rpc.publicnode.com', '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', 'USDC BEP20', 18, 'https://bscscan.com/tx/');
 };
