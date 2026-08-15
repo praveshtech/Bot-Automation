@@ -691,6 +691,67 @@ client.on('messageCreate', async (message) => {
         setTimeout(() => { setupMsg.delete().catch(() => {}); }, 15000);
     }
 
+        // ==========================================
+    // 🇮🇳 BULK FLAG ADDER COMMAND
+    // ==========================================
+    if (command === '!addflags') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Adding 🇮🇳 flags to all members.*");
+        
+        try {
+            const members = await message.guild.members.fetch();
+            let successCount = 0;
+            
+            for (const [id, member] of members) {
+                if (!member.user.bot) { // Bot ke aage flag nahi lagayega
+                    const currentName = member.nickname || member.user.username;
+                    // Agar pehle se flag nahi hai, toh add karo
+                    if (!currentName.includes(':flag_in:')) {
+                        await member.setNickname(`${currentName} :flag_in:`).catch(()=>{});
+                        successCount++;
+                    }
+                }
+            }
+            await loadingMsg.edit(`✅ **Success, Boss!** Added 🇮🇳 flag to \`${successCount}\` members.`);
+        } catch (err) {
+            console.error(err);
+            await loadingMsg.edit("❌ **Error:** Make sure my Bot Role is at the TOP of the server roles!");
+        }
+        return;
+    }
+
+        // ==========================================
+    // 🗑️ BULK FLAG REMOVER COMMAND
+    // ==========================================
+    if (command === '!removeflags') {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing 🇮🇳 flags from all members.*");
+        
+        try {
+            const members = await message.guild.members.fetch();
+            let successCount = 0;
+            
+            for (const [id, member] of members) {
+                if (!member.user.bot) { // Bot ko ignore karega
+                    const currentName = member.nickname || member.user.username;
+                    // Agar naam mein flag hai, toh usko hatayega
+                    if (currentName.includes(':flag_in:')) {
+                        // Flag aur uske aage-peeche ka space hata dega
+                        const newName = currentName.replace(':flag_in:', '').trim();
+                        await member.setNickname(newName).catch(()=>{});
+                        successCount++;
+                    }
+                }
+            }
+            await loadingMsg.edit(`✅ **Success, Boss!** Removed 🇮🇳 flag from \`${successCount}\` members and restored their original names.`);
+        } catch (err) {
+            console.error(err);
+            await loadingMsg.edit("❌ **Error:** Make sure my Bot Role is at the TOP of the server roles!");
+        }
+        return;
+    }
+
+
     if (command === '!poll') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         await message.delete().catch(() => {});
