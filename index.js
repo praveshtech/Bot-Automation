@@ -731,11 +731,11 @@ client.on('messageCreate', async (message) => {
     }
 
     // ==========================================
-    // 🗑️ BULK FLAG REMOVER COMMAND (ANTI-FREEZE)
+    // 🗑️ BULK FLAG REMOVER COMMAND (FIXED)
     // ==========================================
     if (command === '!removeflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
-        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing flags. This may take a few minutes!*");
+        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing all flags (Emojis & text codes)!*");
         
         try {
             const members = await message.guild.members.fetch();
@@ -744,30 +744,30 @@ client.on('messageCreate', async (message) => {
             
             for (const [id, member] of members) {
                 if (member.user.bot) continue; 
-                if (member.id === message.guild.ownerId) continue; 
+                if (id === message.guild.ownerId) continue; 
                 if (member.roles.highest.position >= botRolePosition) continue; 
                 
                 const currentName = member.nickname || member.user.username;
                 
-                if (currentName.includes('🇮🇳')) {
-                    const newName = currentName.replace('🇮🇳', '').trim();
+                // Check karega ki emoji ya :flag_in: text hai ya nahi
+                if (currentName.includes('🇮🇳') || currentName.includes(':flag_in:')) {
+                    const newName = currentName.replace('🇮🇳', '').replace(':flag_in:', '').trim();
                     try {
                         await member.setNickname(newName);
                         successCount++;
-                        await new Promise(resolve => setTimeout(resolve, 500)); // Delay
+                        await new Promise(resolve => setTimeout(resolve, 500)); 
                     } catch (e) {
                         console.log(`Skipped ${currentName}.`);
                     }
                 }
             }
-            await loadingMsg.edit(`✅ **Success, Boss!** Removed 🇮🇳 flag from \`${successCount}\` members and restored their original names.`);
+            await loadingMsg.edit(`✅ **Success, Boss!** Removed flags from \`${successCount}\` members and cleaned up their names.`);
         } catch (err) {
             console.error(err);
             await loadingMsg.edit("❌ **Critical Error.** Check console.");
         }
         return;
     }
-
 
     if (command === '!poll') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
