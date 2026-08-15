@@ -711,9 +711,9 @@ client.on('messageCreate', async (message) => {
                 
                 const currentName = member.nickname || member.user.username;
                 
-                if (!currentName.includes('🇮🇳')) {
+                if (!currentName.includes(':flag_in:')) {
                     try {
-                        await member.setNickname(`${currentName} 🇮🇳`);
+                        await member.setNickname(`${currentName} :flag_in:`);
                         successCount++;
                         // 🔥 THE FIX: 0.5 sec ka delay taaki Discord bot ko block na kare
                         await new Promise(resolve => setTimeout(resolve, 500)); 
@@ -749,8 +749,8 @@ client.on('messageCreate', async (message) => {
                 
                 const currentName = member.nickname || member.user.username;
                 
-                if (currentName.includes('🇮🇳')) {
-                    const newName = currentName.replace('🇮🇳', '').trim();
+                if (currentName.includes(':flag_in:')) {
+                    const newName = currentName.replace(':flag_in:', '').trim();
                     try {
                         await member.setNickname(newName);
                         successCount++;
