@@ -691,62 +691,79 @@ client.on('messageCreate', async (message) => {
         setTimeout(() => { setupMsg.delete().catch(() => {}); }, 15000);
     }
 
-        // ==========================================
-    // 🇮🇳 BULK FLAG ADDER COMMAND
+       // ==========================================
+    // 🇮🇳 BULK FLAG ADDER COMMAND (ANTI-FREEZE)
     // ==========================================
     if (command === '!addflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
-        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Adding 🇮🇳 flags to all members.*");
+        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... This may take a few minutes due to Discord limits. Please wait!*");
         
         try {
             const members = await message.guild.members.fetch();
             let successCount = 0;
+            // Bot ka khud ka role position check karna
+            const botRolePosition = message.guild.members.me.roles.highest.position;
             
             for (const [id, member] of members) {
-                if (!member.user.bot) { // Bot ke aage flag nahi lagayega
-                    const currentName = member.nickname || member.user.username;
-                    // Agar pehle se flag nahi hai, toh add karo
-                    if (!currentName.includes(':flag_in:')) {
-                        await member.setNickname(`${currentName} :flag_in:`).catch(()=>{});
+                if (member.user.bot) continue; // Bot ko skip karo
+                if (member.id === message.guild.ownerId) continue; // Owner ko skip karo (Discord allow nahi karta)
+                if (member.roles.highest.position >= botRolePosition) continue; // Jinka role bot se upar hai, unko skip karo
+                
+                const currentName = member.nickname || member.user.username;
+                
+                if (!currentName.includes('🇮🇳')) {
+                    try {
+                        await member.setNickname(`${currentName} 🇮🇳`);
                         successCount++;
+                        // 🔥 THE FIX: 0.5 sec ka delay taaki Discord bot ko block na kare
+                        await new Promise(resolve => setTimeout(resolve, 500)); 
+                    } catch (e) {
+                        console.log(`Skipped ${currentName} due to permission limit.`);
                     }
                 }
             }
-            await loadingMsg.edit(`✅ **Success, Boss!** Added 🇮🇳 flag to \`${successCount}\` members.`);
+            await loadingMsg.edit(`✅ **Success, Boss!** Added 🇮🇳 flag to \`${successCount}\` members securely.`);
         } catch (err) {
             console.error(err);
-            await loadingMsg.edit("❌ **Error:** Make sure my Bot Role is at the TOP of the server roles!");
+            await loadingMsg.edit("❌ **Critical Error.** Check console.");
         }
         return;
     }
 
-        // ==========================================
-    // 🗑️ BULK FLAG REMOVER COMMAND
+    // ==========================================
+    // 🗑️ BULK FLAG REMOVER COMMAND (ANTI-FREEZE)
     // ==========================================
     if (command === '!removeflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
-        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing 🇮🇳 flags from all members.*");
+        const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing flags. This may take a few minutes!*");
         
         try {
             const members = await message.guild.members.fetch();
             let successCount = 0;
+            const botRolePosition = message.guild.members.me.roles.highest.position;
             
             for (const [id, member] of members) {
-                if (!member.user.bot) { // Bot ko ignore karega
-                    const currentName = member.nickname || member.user.username;
-                    // Agar naam mein flag hai, toh usko hatayega
-                    if (currentName.includes(':flag_in:')) {
-                        // Flag aur uske aage-peeche ka space hata dega
-                        const newName = currentName.replace(':flag_in:', '').trim();
-                        await member.setNickname(newName).catch(()=>{});
+                if (member.user.bot) continue; 
+                if (member.id === message.guild.ownerId) continue; 
+                if (member.roles.highest.position >= botRolePosition) continue; 
+                
+                const currentName = member.nickname || member.user.username;
+                
+                if (currentName.includes('🇮🇳')) {
+                    const newName = currentName.replace('🇮🇳', '').trim();
+                    try {
+                        await member.setNickname(newName);
                         successCount++;
+                        await new Promise(resolve => setTimeout(resolve, 500)); // Delay
+                    } catch (e) {
+                        console.log(`Skipped ${currentName}.`);
                     }
                 }
             }
             await loadingMsg.edit(`✅ **Success, Boss!** Removed 🇮🇳 flag from \`${successCount}\` members and restored their original names.`);
         } catch (err) {
             console.error(err);
-            await loadingMsg.edit("❌ **Error:** Make sure my Bot Role is at the TOP of the server roles!");
+            await loadingMsg.edit("❌ **Critical Error.** Check console.");
         }
         return;
     }
