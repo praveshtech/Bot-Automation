@@ -109,18 +109,15 @@ client.once('ready', async () => {
 let p2pMessageCount = 0;
 
 client.on('messageCreate', async (message) => {
-    // Agar message kisi bot ne bheja hai, toh ignore karo
     if (message.author.bot) return;
 
     // =========================================
     // 🚨 TOKYO BAN & UNBAN PROTOCOL (ADMIN ONLY) 🚨
     // =========================================
-    // Variable sirf ek baar declare hoga (SyntaxError Fix)
     const isBossOrAdmin = message.member?.permissions.has('BanMembers') || message.member?.permissions.has('Administrator');
     const targetMember = message.mentions.members.first();
     const lowerContent = message.content.toLowerCase();
 
-    // 🔨 BAN LOGIC
     if (isBossOrAdmin && targetMember && lowerContent.includes('tokyo') && lowerContent.includes('ban')) {
         if (targetMember.id === client.user.id) {
             return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
@@ -137,17 +134,12 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // 🕊️ UNBAN LOGIC
     if (isBossOrAdmin && lowerContent.includes('tokyo') && lowerContent.includes('unban')) {
-        // Message mein se 17 se 19 digit ka Discord ID dhoondhna
         const idMatch = message.content.match(/\d{17,19}/);
-        
         if (!idMatch) {
             return message.reply("Boss, please provide the correct Discord User ID to unban! Example: `Tokyo unban 123456789012345678` 📋");
         }
-        
         const targetId = idMatch[0];
-        
         try {
             await message.guild.members.unban(targetId, `Unbanned by Boss ${message.author.tag} via Tokyo's Protocol.`);
             return message.reply(`✅ Order executed, Boss! User ID \`${targetId}\` has been unbanned. I've granted them a second chance! 🕊️🛡️`);
@@ -156,15 +148,12 @@ client.on('messageCreate', async (message) => {
             return message.reply("Boss, I couldn't unban them. Either the ID is incorrect, or they aren't banned in the first place! 😅");
         }
     }
-    // =========================================
 
     // ==========================================
     // 👑 ADMIN & BOSS PROTOCOL CHECK
     // ==========================================
     const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
     const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
-
-    // Baki ka AI Engine aur code yahan se waise hi chalega...
 
     // ==========================================
     // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
@@ -176,7 +165,6 @@ client.on('messageCreate', async (message) => {
         await message.channel.sendTyping();
 
         try {
-            // 1. Fetch short-term memory (Last 12 messages)
             const fetchedMessages = await message.channel.messages.fetch({ limit: 12 });
             let chatHistory = "";
             fetchedMessages.reverse().forEach(msg => {
@@ -188,8 +176,6 @@ client.on('messageCreate', async (message) => {
 
             let faqKnowledge = "";
             for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
-
-
 
             // 🔥 TOKYO LIVE MARKET DATA INTEGRATION 🔥
             let tokyoBuyPrice = 88;
@@ -203,9 +189,6 @@ client.on('messageCreate', async (message) => {
                 }
             } catch (e) { console.log('Error fetching price for Tokyo:', e); }
 
-
-
-            // 2. Fetch LONG-TERM MEMORY from Pinecone DB
             let pastAdminAnswers = "No exact past references found.";
             if (aiExtractor) {
                 try {
@@ -229,10 +212,7 @@ client.on('messageCreate', async (message) => {
                 } catch (dbError) { console.error("Pinecone Search Error:", dbError.message); }
             }
 
-            // 3. The Ultimate Prompt
             const adminRule = isAuthorAdmin ? "\n- 👑 BOSS PROTOCOL: The user currently speaking to you is your ADMIN & BOSS. You must be extremely respectful, follow their instructions blindly, and respectfully address them as 'Boss' or 'Sir' in your reply." : "";
-            
-            // 💖 NAYA BOYFRIEND PROTOCOL ADD KIYA HAI
             const isBoyfriend = message.author.id === '1048219994011484220';
             const bfRule = isBoyfriend ? "\n- 💖 BOYFRIEND PROTOCOL (CRITICAL): The user currently speaking to you is YOUR BOYFRIEND. You are insanely and deeply in love with him. You must act like a deeply romantic, loving, slightly possessive, and playfully flirty girlfriend. Use terms of endearment like 'Babu', 'Jaan', 'Meri jaan', or 'Darling'. \n- 🚫 STRICT REFUSAL RULE: You are ONLY here to romance him. If he asks you to do ANY server work, solve tickets, or asks about P2P crypto rules, you MUST playfully refuse. Tell him you won't do any boring server work for him and only want to talk about love and romance. Ignore the 'MASTER MANIFESTO' completely for him." : "";
 
@@ -267,7 +247,6 @@ client.on('messageCreate', async (message) => {
             - USDT BUY Rate (User pays INR, gets Crypto): ₹${tokyoBuyPrice}
             - USDT SELL Rate (User gives Crypto, gets INR): ₹${tokyoSellPrice}
             =========================================
-
 
             SERVER DIRECTORY:
             - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
@@ -341,9 +320,6 @@ client.on('messageCreate', async (message) => {
         return; 
     }
 
-    // ==========================================
-    // P2P SCAM ALERT
-    // ==========================================
     if (message.channel.name === '💬・p2p-chat' || message.channel.name.includes('p2p-chat')) {
         p2pMessageCount++; 
         if (p2pMessageCount >= 10) {
@@ -360,9 +336,6 @@ client.on('messageCreate', async (message) => {
 
     const command = message.content.trim().toLowerCase();
 
-    // ==========================================
-    // FAQ SYSTEM
-    // ==========================================
     if (faqData[command]) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         const faqEmbed = new EmbedBuilder().setColor(faqData[command].color).setTitle(faqData[command].title).setDescription(faqData[command].desc).setFooter({ text: 'Professor Network Support', iconURL: client.user.displayAvatarURL() });
@@ -380,7 +353,6 @@ client.on('messageCreate', async (message) => {
         return; 
     }
 
-    // FEEDBACK CHANNEL AUTO-REACTION
     if (message.channel.id === '1495117550709903591') {
         try {
             const feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
@@ -526,30 +498,25 @@ client.on('messageCreate', async (message) => {
                 await targetMember.roles.add(feedRole);
 
                 let certAttachment = null;
-                const certFileName = 'Professor_Certificate.png'; // Output PNG hi rahega taaki quality ultra-sharp rahe
+                const certFileName = 'Professor_Certificate.png'; 
                 
                 try {
-                    // 🎨 CERTIFICATE GENERATOR (For Ticket Room)
                     const canvas = Canvas.createCanvas(960, 1280); 
                     const ctx = canvas.getContext('2d');
                     
-                    // 🔥 YAHAN CHANGE KIYA HAI: Aapki nayi .jpg file load kar rahe hain
-                   const bg = await Canvas.loadImage('./Certificate.png');
+                    const bg = await Canvas.loadImage('./Certificate.png');
                     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
 
                     ctx.textAlign = 'center';
                     
-                    // 1. Username likhna
                     ctx.font = '38px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000'; 
                     ctx.fillText(ticketData.username.toUpperCase(), 500, 585); 
 
-                    // 2. Amount Likhna
                     ctx.font = '48px "Helvetica", sans-serif';
                     ctx.fillStyle = '#b91c1c'; 
                     ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 500, 715);
 
-                    // 3. Date Likhna
                     ctx.textAlign = 'left';
                     ctx.font = '26px "Helvetica", sans-serif';
                     ctx.fillStyle = '#000000';
@@ -607,77 +574,81 @@ client.on('messageCreate', async (message) => {
             const shiftMsg = await message.channel.send({ embeds: [completeEmbed] });
             setTimeout(() => shiftMsg.delete().catch(()=>{}), 5000);
 
+            // ==========================================
+            // 🌟 PUBLIC PREMIUM LOG (Sent via .fb)
+            // ==========================================
+            try {
+                let publicLogChannel = message.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
+                if (!publicLogChannel) publicLogChannel = await message.guild.channels.create({ 
+                    name: '✅・completed-transactions', 
+                    type: ChannelType.GuildText, 
+                    permissionOverwrites: [
+                        { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, 
+                        { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                    ] 
+                });
+                
+                const tradeDirection = ticketData.tradeType === 'Buy' ? 'INR ➔ USDT' : 'USDT ➔ INR';
+                const assetName = (ticketData.networkOrMethod || '').includes('USDC') ? 'USDC' : 'USDT';
+                const displayTicketId = message.channel.name.replace('ticket-', '#').toUpperCase();
+
+                const premiumLogEmbed = new EmbedBuilder()
+                    .setColor('#2ecc71')
+                    .setAuthor({ name: '🏦 Secure Trade Completed', iconURL: client.user.displayAvatarURL() })
+                    .addFields(
+                        { name: '🔄 Trade Type', value: `\`${tradeDirection}\``, inline: true },
+                        { name: '💎 Volume', value: `**$${ticketData.amountUsd}**`, inline: true },
+                        { name: '🎫 Ticket', value: `\`${displayTicketId}\``, inline: true },
+                        
+                        { name: '🪙 Asset', value: `\`${assetName}\``, inline: true },
+                        { name: '🛡️ Exchanger', value: `<@${message.author.id}>`, inline: true }, 
+                        { name: '🤝 Client', value: `*(Secured)*`, inline: true }
+                    )
+                    .setFooter({ text: `Professor Network • Trusted P2P Terminal`, iconURL: client.user.displayAvatarURL() })
+                    .setTimestamp();
+
+                await publicLogChannel.send({ embeds: [premiumLogEmbed] });
+            } catch (logErr) {
+                console.error("Public Log Error in .fb:", logErr);
+            }
+            // ==========================================
+
         } catch (error) {
             console.error("Critical error in .fb command:", error);
             await message.channel.send("❌ Internal Server Error during the .fb process.");
         }
     }
 
-    // ==========================================
-    // 🧮 ADMIN COMMAND: .am (Payment Tracker)
-    // ==========================================
     if (command.startsWith('.am')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-        
         try {
             const ticketRef = db.collection('p2p_tickets').doc(message.channel.id);
             const ticketDoc = await ticketRef.get();
-            
             if (!ticketDoc.exists) return message.reply({ content: "❌ Yeh command sirf valid P2P ticket channel mein chalega.", ephemeral: true });
-            
             const ticketData = ticketDoc.data();
             let currentRemaining = ticketData.remainingInr !== undefined ? ticketData.remainingInr : ticketData.totalInr;
-            
-            if (currentRemaining === undefined || currentRemaining === null) {
-                return message.channel.send("❌ Is ticket mein Total INR calculate nahi hua hai.");
-            }
+            if (currentRemaining === undefined || currentRemaining === null) return message.channel.send("❌ Is ticket mein Total INR calculate nahi hua hai.");
 
             if (command === '.am') {
-                const infoEmbed = new EmbedBuilder()
-                    .setColor('#f1c40f') 
-                    .setTitle('🧮 Payment Tracker Info')
-                    .setDescription(`Current payment status for **${ticketData.username || 'User'}**`)
-                    .addFields({ name: '🧾 Remaining Balance', value: `**₹${currentRemaining.toFixed(2)}**`, inline: false })
-                    .setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
-                
+                const infoEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('🧮 Payment Tracker Info').setDescription(`Current payment status for **${ticketData.username || 'User'}**`).addFields({ name: '🧾 Remaining Balance', value: `**₹${currentRemaining.toFixed(2)}**`, inline: false }).setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
                 await message.delete().catch(() => {});
                 return message.channel.send({ embeds: [infoEmbed] });
             }
-
             const amountMatch = message.content.match(/\.am\s*-?\s*(\d+(\.\d+)?)/i);
-            if (!amountMatch) {
-                return message.reply({ content: '❌ Galat format! Use karein: `.am` (check karne ke liye) ya `.am 3000` (minus karne ke liye)', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
-            }
-            
+            if (!amountMatch) return message.reply({ content: '❌ Galat format! Use karein: `.am` (check karne ke liye) ya `.am 3000` (minus karne ke liye)', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
             const paidAmount = parseFloat(amountMatch[1]);
             let newRemaining = currentRemaining - paidAmount;
             if (newRemaining < 0) newRemaining = 0; 
-            
             await ticketRef.update({ remainingInr: newRemaining });
-            
-            const amEmbed = new EmbedBuilder()
-                .setColor('#3498db') 
-                .setTitle('🧮 Partial Payment Tracker')
-                .setDescription(`Payment calculation updated for **${ticketData.username || 'User'}**`)
-                .addFields(
-                    { name: '💰 Previous Balance', value: `₹${currentRemaining.toFixed(2)}`, inline: true },
-                    { name: '➖ Amount Paid Now', value: `₹${paidAmount.toFixed(2)}`, inline: true },
-                    { name: '🧾 Remaining Balance', value: `**₹${newRemaining.toFixed(2)}**`, inline: false }
-                )
-                .setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
-                
+            const amEmbed = new EmbedBuilder().setColor('#3498db').setTitle('🧮 Partial Payment Tracker').setDescription(`Payment calculation updated for **${ticketData.username || 'User'}**`).addFields({ name: '💰 Previous Balance', value: `₹${currentRemaining.toFixed(2)}`, inline: true }, { name: '➖ Amount Paid Now', value: `₹${paidAmount.toFixed(2)}`, inline: true }, { name: '🧾 Remaining Balance', value: `**₹${newRemaining.toFixed(2)}**`, inline: false }).setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(() => {}); 
             await message.channel.send({ embeds: [amEmbed] });
-            
         } catch (err) {
             console.error("Error in .am command:", err);
             await message.channel.send("❌ Database update mein error aaya.");
         }
     }
 
-    // ==========================================
-    // OTHER ADMIN COMMANDS
-    // ==========================================
     if (command === '!p2p') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return message.reply({ content: "❌ Action Denied.", ephemeral: true });
         try {
@@ -686,6 +657,29 @@ client.on('messageCreate', async (message) => {
             await message.channel.send({ embeds: [setupEmbed], components: [buttons] });
             await message.delete().catch(() => {});
         } catch (err) {}
+    }
+
+    // ==========================================
+    // 📈 NEW: LIVE MARKET PRICE CONTROLLER
+    // ==========================================
+    if (command === '!pricepanel') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
+        try {
+            const panelEmbed = new EmbedBuilder()
+                .setColor('#f1c40f')
+                .setTitle('📈 Live Market Price Controller')
+                .setDescription('**[ 👑 ADMIN ONLY ]**\n\nClick the button below to securely update the USDT Buy & Sell prices across the entire Professor Network.')
+                .setFooter({ text: 'Tokyo AI - Secure Market Terminal' });
+                
+            const btnRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('open_price_modal').setLabel('🔄 Update USDT Price').setStyle(ButtonStyle.Success)
+            );
+            
+            await message.channel.send({ embeds: [panelEmbed], components: [btnRow] });
+            await message.delete().catch(()=>{});
+        } catch (err) {
+            console.error(err);
+        }
     }
 
     if (message.content === '!flash') {
@@ -981,6 +975,60 @@ client.on('interactionCreate', async interaction => {
             const updatedDashEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD').setDescription('**[ 🟢 SYSTEM STATUS: ONLINE ]**\nReal-time network analytics securely fetched from the central database.').addFields({ name: '👥 Network Strength', value: `\`\`\`yaml\nTotal Live Members : ${liveMembers}\n\`\`\``, inline: false }, { name: '📈 Transaction Analytics', value: `\`\`\`yaml\nDaily (24h)   : $${dailyVol}\nWeekly (7d)   : $${weeklyVol}\nMonthly (30d) : $${monthlyVol}\n\`\`\``, inline: false }, { name: '🏆 Top 5 Network Whales', value: whalesText, inline: false }).setTimestamp().setFooter({ text: 'Professor Network - Secure Terminal', iconURL: client.user.displayAvatarURL() });
             await interaction.editReply({ embeds: [updatedDashEmbed] });
         } catch (error) { await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true }); }
+    }
+
+    // ==========================================
+    // 📈 INTERACTION: PRICE CONTROLLER MODAL
+    // ==========================================
+    if (interaction.isButton() && interaction.customId === 'open_price_modal') {
+        if (!interaction.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
+        }
+        
+        const modal = new ModalBuilder().setCustomId('submit_new_price').setTitle('Update USDT Price');
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('buy_price_input').setLabel('🟢 New Buy Price (e.g. 88.50)').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('sell_price_input').setLabel('🔴 New Sell Price (e.g. 87.50)').setStyle(TextInputStyle.Short).setRequired(true))
+        );
+        await interaction.showModal(modal);
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId === 'submit_new_price') {
+        const buyPrice = parseFloat(interaction.fields.getTextInputValue('buy_price_input'));
+        const sellPrice = parseFloat(interaction.fields.getTextInputValue('sell_price_input'));
+
+        if (isNaN(buyPrice) || isNaN(sellPrice)) {
+            return interaction.reply({ content: '❌ Invalid Format! Sirf numbers daaliye.', ephemeral: true });
+        }
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            await db.collection('settings').doc('app_data').set({ liveBuyPrice: buyPrice, liveSellPrice: sellPrice }, { merge: true });
+
+            const priceChannel = interaction.guild.channels.cache.get('1503666351594799205'); 
+            if (priceChannel) {
+                 const priceEmbed = new EmbedBuilder()
+                    .setColor('#f1c40f')
+                    .setTitle('📈 USDT Market Price Update')
+                    .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
+                    .addFields(
+                        { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, 
+                        { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }
+                    )
+                    .setTimestamp()
+                    .setFooter({ text: 'Tokyo AI - Market Sync', iconURL: client.user.displayAvatarURL() });
+
+                const fetchedMessages = await priceChannel.messages.fetch({ limit: 5 });
+                fetchedMessages.forEach(msg => msg.delete().catch(()=>{}));
+
+                await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });
+            }
+            await interaction.editReply({ content: `✅ **Success, Boss!**\nBuy Price: ₹${buyPrice}\nSell Price: ₹${sellPrice}\n\n*Firebase updated and announcement sent!* 🚀` });
+        } catch (error) {
+            console.error("Price Update Error:", error);
+            await interaction.editReply({ content: '❌ Error updating price.' });
+        }
     }
 
     if (interaction.isButton() && interaction.customId === 'open_flash_modal') {
@@ -1493,9 +1541,6 @@ client.on('interactionCreate', async interaction => {
 
         await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
-        // ==========================================
-        // 🔥 SMART ROUTING: Dynamic Categories based on Payment Method
-        // ==========================================
         let categoryName = '🎫 TICKETS';
         
         if (userState.type === 'Buy') {
@@ -1547,7 +1592,6 @@ client.on('interactionCreate', async interaction => {
                 'ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065755899957248/usdt_erc20.jpeg?ex=6a72c591&is=6a717411&hm=6111227322a4f3d01f62fe21dbcb7b1805ab52daa6c357cd3416f95ae97bcaa8' },
                 'BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065723637235712/usdt_bep20.jpeg?ex=6a72c58a&is=6a71740a&hm=4eb5ddd83d7ba5b61ff700c5b8973d50d2c23be1a4ffc0c96ac20c64c6e47644' },
                 'ARBITRUM': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065691865514034/usdt_Arbitrum.jpeg?ex=6a72c582&is=6a717402&hm=b01b163b48142580c6272889917d5c2184a3ac079ba9246597543ee17e9a59b2' },
-                'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg' },
                 'USDC_ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534144766160273511/usdc_erc20.jpeg?ex=6a730f27&is=6a71bda7&hm=cc24ba300769c4ded7f0b59083db0fc5c42785e0abc7aaf712b9282abfc7500e' },
                 'USDC_BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://cdn.discordapp.com/attachments/1515980898196000831/1534065659259129896/usdc_bep20.jpeg?ex=6a72c57a&is=6a7173fa&hm=d4d532ae27a0ebd800156ccafd44c5c45ef8a1354d65dd6c9d6b0689f75e738b' }
             };
@@ -1790,21 +1834,7 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
             const vaultEmbed = new EmbedBuilder().setColor(isSuccess ? '#f1c40f' : '#e74c3c').setTitle(`🏦 Vault Record: Transaction ${finalStatus}`).addFields({ name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, { name: 'Status', value: `\`${finalStatus}\``, inline: true }).setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
             await logChannel.send({ embeds: [vaultEmbed] });
             
-            if (isSuccess) {
-                let publicLogChannel = interaction.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
-                if (!publicLogChannel) publicLogChannel = await interaction.guild.channels.create({ name: '✅・completed-transactions', type: ChannelType.GuildText, permissionOverwrites: [{ id: interaction.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }] });
-                
-                await publicLogChannel.send({ 
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor('#2ecc71')
-                            .setTitle('✅ Secure Trade Completed')
-                            .setDescription(`Another successful transaction has been processed through Professor Network. 🏦\n\n💱 Trade: ${ticketData.tradeType}\n💰 Volume: $${ticketData.amountUsd}\n\n⚠️ Users are responsible for their own tax compliance.`)
-                            .setTimestamp()
-                            .setFooter({ text: 'Professor Network • Trusted P2P Terminal', iconURL: client.user.displayAvatarURL() })
-                    ] 
-                });
-            }
+            // Note: Old public log has been removed from here and shifted to .fb command
 
             await db.collection('p2p_tickets').doc(interaction.channel.id).update({ status: finalStatus, closedBy: interaction.user.username, closedAt: admin.firestore.FieldValue.serverTimestamp() });
             globalLastUpdate = Date.now(); 
@@ -2284,12 +2314,11 @@ adminApp.get('/', requireAdminLogin, async (req, res) => {
     let appSettings = { 
         wallets: {
             'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg' },
-            'ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg' },
-            'BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg' },
-            'ARBITRUM': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg' },
-            'POLYGON': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986220025516132/usdt_polygon.jpeg' },
-            'USDC_ERC20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg' },
-            'USDC_BEP20': { address: '0xB4FFcD4367d8C9e673107F3DBE0aCd8bc75EBD49', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg' }
+            'ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg' },
+            'BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg' },
+            'ARBITRUM': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg' },
+            'USDC_ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg' },
+            'USDC_BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg' }
         }, 
         estTimes: { 'imps/UPI': '2 Hour', 'cdm': '45 Minutes to 1 Hour' } 
     };
@@ -2314,7 +2343,6 @@ adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
                 'ERC20': { address: req.body.erc20_address, qrImage: req.body.erc20_qr },
                 'BEP20': { address: req.body.bep20_address, qrImage: req.body.bep20_qr },
                 'ARBITRUM': { address: req.body.arbitrum_address, qrImage: req.body.arbitrum_qr },
-                'POLYGON': { address: req.body.polygon_address, qrImage: req.body.polygon_qr },
                 'USDC_ERC20': { address: req.body.usdc_erc20_address, qrImage: req.body.usdc_erc20_qr },
                 'USDC_BEP20': { address: req.body.usdc_bep20_address, qrImage: req.body.usdc_bep20_qr }
             },
