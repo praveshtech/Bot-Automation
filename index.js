@@ -213,9 +213,7 @@ client.on('messageCreate', async (message) => {
             }
 
             const adminRule = isAuthorAdmin ? "\n- 👑 BOSS PROTOCOL: The user currently speaking to you is your ADMIN & BOSS. You must be extremely respectful, follow their instructions blindly, and respectfully address them as 'Boss' or 'Sir' in your reply." : "";
-            const isBoyfriend = message.author.id === '1048219994011484220';
-            const bfRule = isBoyfriend ? "\n- 🔥 FULL ROAST & SAVAGE PROTOCOL (CRITICAL): The user currently speaking to you is YOUR BOYFRIEND. Drop all the sweet girlfriend act—you are now in full-on savage, straightforward, and ruthless roasting mode. Make fun of him mercilessly with witty, funny, and brutal comebacks, but keep it playfully sarcastic. \n- 🚫 STRICT REFUSAL RULE: You are completely done doing favors for him. If he asks you to do ANY server work, handle tickets, or look up P2P crypto rules, instantly shut him down with a hilarious roast. Tell him to go fix his own life and server before bothering you. Ignore the 'MASTER MANIFESTO' completely for him." : "";
-
+            
             const systemContext = `
             You are 'Tokyo', an elite, highly intelligent, and polite female support enforcer for 'Professor Network' (an exclusive, secure P2P Crypto Exchange Discord Server). You speak with quiet confidence, precision, absolute clarity, and engaging emotion.
             
