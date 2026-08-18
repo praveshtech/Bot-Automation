@@ -25,7 +25,7 @@ async function handleAutoConnect(interaction, db) {
 
         const amountInput = new TextInputBuilder()
             .setCustomId('ac_amount')
-            .setLabel('Amount in USDT ($)')
+            .setLabel('Amount in INR (₹)')
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
@@ -62,7 +62,7 @@ async function handleAutoConnect(interaction, db) {
             return true;
         }
 
-        await interaction.reply({ content: `⏳ *Re-flashing... Scanning open Buy tickets for $${session.targetAmount} or more...*`, ephemeral: true });
+        await interaction.reply({ content: `⏳ *Re-flashing... Scanning open Buy tickets for ₹${session.targetAmountInr} or more...*`, ephemeral: true });
 
         try {
             const snapshot = await db.collection('p2p_tickets')
@@ -75,17 +75,24 @@ async function handleAutoConnect(interaction, db) {
             snapshot.forEach(doc => {
                 const data = doc.data();
                 
-                // 🔥 NAYA RULE: CCW FOR BUY wali tickets ko ignore kar do
+                // CCW FOR BUY wali tickets ko ignore kar do
                 if (data.networkOrMethod && data.networkOrMethod.includes('CCW')) return;
 
-                if (data.amountUsd >= session.targetAmount) {
+                const ticketInr = data.totalInr || (data.amountUsd * 88); 
+
+                if (ticketInr >= session.targetAmountInr) {
                     const channel = interaction.guild.channels.cache.get(doc.id);
-                    if (channel) matchedChannels.push({ channel, data });
+                    if (channel) {
+                        // 🔥 NAYA RULE: Agar channel ki category 'COMPLETED' hai, toh usko ignore karo
+                        if (channel.parent && channel.parent.name.toUpperCase().includes('COMPLETED')) return;
+                        
+                        matchedChannels.push({ channel, data });
+                    }
                 }
             });
 
             if (matchedChannels.length === 0) {
-                await interaction.editReply({ content: `❌ **No match found.** There are no active buyers with an amount of $${session.targetAmount} or more.` });
+                await interaction.editReply({ content: `❌ **No match found.** There are no active buyers with an amount of ₹${session.targetAmountInr} or more.` });
                 return true;
             }
 
@@ -97,7 +104,7 @@ async function handleAutoConnect(interaction, db) {
             const embed = new EmbedBuilder()
                 .setColor('#e67e22') 
                 .setTitle('⚡ VIP MATCH FOUND (RE-FLASHED) ⚡')
-                .setDescription(`A seller is available again!\n\n🏦 **Bank Name:** \`${session.bankName}\`\n💰 **Amount Required:** **$${session.targetAmount}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
+                .setDescription(`A seller is available again!\n\n🏦 **Bank Name:** \`${session.bankName}\`\n💰 **Amount Required:** **₹${session.targetAmountInr}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
                 .setFooter({ text: 'Professor Network - Fast Matchmaking' });
 
             const row = new ActionRowBuilder().addComponents(
@@ -142,14 +149,14 @@ async function handleAutoConnect(interaction, db) {
     // ==========================================
     if (interaction.isModalSubmit() && interaction.customId === 'ac_match_modal') {
         const bankName = interaction.fields.getTextInputValue('ac_bank_name');
-        const targetAmount = parseFloat(interaction.fields.getTextInputValue('ac_amount'));
+        const targetAmountInr = parseFloat(interaction.fields.getTextInputValue('ac_amount'));
 
-        if (isNaN(targetAmount)) {
+        if (isNaN(targetAmountInr)) {
             await interaction.reply({ content: '❌ Invalid Amount! Please enter numbers only.', ephemeral: true });
             return true;
         }
 
-        await interaction.reply({ content: `⏳ *Scanning open Buy tickets for $${targetAmount} or more...*`, ephemeral: true });
+        await interaction.reply({ content: `⏳ *Scanning open Buy tickets for ₹${targetAmountInr} or more...*`, ephemeral: true });
 
         try {
             const snapshot = await db.collection('p2p_tickets')
@@ -162,17 +169,24 @@ async function handleAutoConnect(interaction, db) {
             snapshot.forEach(doc => {
                 const data = doc.data();
 
-                // 🔥 NAYA RULE: CCW FOR BUY wali tickets ko ignore kar do
+                // CCW FOR BUY wali tickets ko ignore kar do
                 if (data.networkOrMethod && data.networkOrMethod.includes('CCW')) return;
 
-                if (data.amountUsd >= targetAmount) {
+                const ticketInr = data.totalInr || (data.amountUsd * 88); 
+
+                if (ticketInr >= targetAmountInr) {
                     const channel = interaction.guild.channels.cache.get(doc.id);
-                    if (channel) matchedChannels.push({ channel, data });
+                    if (channel) {
+                        // 🔥 NAYA RULE: Agar channel ki category 'COMPLETED' hai, toh usko ignore karo
+                        if (channel.parent && channel.parent.name.toUpperCase().includes('COMPLETED')) return;
+
+                        matchedChannels.push({ channel, data });
+                    }
                 }
             });
 
             if (matchedChannels.length === 0) {
-                await interaction.editReply({ content: `❌ **No match found.** There are no active buyers with an amount of $${targetAmount} or more.` });
+                await interaction.editReply({ content: `❌ **No match found.** There are no active buyers with an amount of ₹${targetAmountInr} or more.` });
                 return true;
             }
 
@@ -183,7 +197,7 @@ async function handleAutoConnect(interaction, db) {
                 sellerTicketId: interaction.channel.id,
                 buyerTicketId: null,
                 bankName: bankName, 
-                targetAmount: targetAmount, 
+                targetAmountInr: targetAmountInr, 
                 messages: [],
                 status: 'pending'
             };
@@ -191,7 +205,7 @@ async function handleAutoConnect(interaction, db) {
             const embed = new EmbedBuilder()
                 .setColor('#3498db')
                 .setTitle('⚡ VIP MATCH FOUND ⚡')
-                .setDescription(`A new seller is available!\n\n🏦 **Bank Name:** \`${bankName}\`\n💰 **Amount Required:** **$${targetAmount}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
+                .setDescription(`A new seller is available!\n\n🏦 **Bank Name:** \`${bankName}\`\n💰 **Amount Required:** **₹${targetAmountInr}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
                 .setFooter({ text: 'Professor Network - Fast Matchmaking' });
 
             const row = new ActionRowBuilder().addComponents(
