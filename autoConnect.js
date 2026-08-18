@@ -74,6 +74,10 @@ async function handleAutoConnect(interaction, db) {
 
             snapshot.forEach(doc => {
                 const data = doc.data();
+                
+                // 🔥 NAYA RULE: CCW FOR BUY wali tickets ko ignore kar do
+                if (data.networkOrMethod && data.networkOrMethod.includes('CCW')) return;
+
                 if (data.amountUsd >= session.targetAmount) {
                     const channel = interaction.guild.channels.cache.get(doc.id);
                     if (channel) matchedChannels.push({ channel, data });
@@ -157,6 +161,10 @@ async function handleAutoConnect(interaction, db) {
 
             snapshot.forEach(doc => {
                 const data = doc.data();
+
+                // 🔥 NAYA RULE: CCW FOR BUY wali tickets ko ignore kar do
+                if (data.networkOrMethod && data.networkOrMethod.includes('CCW')) return;
+
                 if (data.amountUsd >= targetAmount) {
                     const channel = interaction.guild.channels.cache.get(doc.id);
                     if (channel) matchedChannels.push({ channel, data });
