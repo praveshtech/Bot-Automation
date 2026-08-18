@@ -15,6 +15,8 @@ const { pipeline } = require('@xenova/transformers');
 const startPaymentTrackers = require('./paymentTracker');
 const Canvas = require('canvas');
 let aiExtractor = null; 
+const handleAutoConnect = require('./autoConnect');
+global.matchSessions = new Map(); // Global varia
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -64,7 +66,9 @@ client.once('ready', async () => {
         await client.application.commands.set([
             { name: 'complete', description: 'Shift ticket to completed category for night settlement' },
             { name: 'match', description: 'Match this ticket with another (Escrow)', options: [{ name: 'target', type: 3, description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', required: false }] },
-            { name: 'unmatch', description: 'Unmatch this ticket and return to original category' }
+            { name: 'unmatch', description: 'Unmatch this ticket and return to original category' },
+            { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
+            { name: 're', description: 'Re-flash: Resend the last match details to all buyers' }
         ]);
         console.log(`✅ Slash Commands Registered Successfully!`);
     } catch (err) { console.error("Slash Command Registration Error:", err); }
@@ -942,6 +946,28 @@ client.on('messageCreate', async (message) => {
 // 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
 // ==========================================
 client.on('interactionCreate', async interaction => {
+
+    // 🔥 VIP Auto-Connect Module Handler (CRASH-PROOF SHIELD)
+    try {
+        const isAcHandled = await handleAutoConnect(interaction, db);
+        if (isAcHandled) return; 
+    } catch (error) {
+        console.error('🚨 [CRITICAL ERROR] Auto-Connect Module:', error);
+        
+        // Agar error aati hai toh Discord par user ko gracefully bata do, bot crash nahi hoga
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: '❌ Auto-Connect system mein ek technical error aayi hai. Console logs check karein.' });
+            } else {
+                await interaction.reply({ content: '❌ Auto-Connect system mein ek technical error aayi hai. Console logs check karein.', ephemeral: true });
+            }
+        } catch (replyError) {
+            console.error('🚨 Could not send error message to Discord:', replyError);
+        }
+        return; // Error aane par baki code na chale taaki bot safe rahe
+    }
+    
+    
 
     if (interaction.isChatInputCommand()) {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
