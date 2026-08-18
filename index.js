@@ -68,7 +68,8 @@ client.once('ready', async () => {
             { name: 'match', description: 'Match this ticket with another (Escrow)', options: [{ name: 'target', type: 3, description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', required: false }] },
             { name: 'unmatch', description: 'Unmatch this ticket and return to original category' },
             { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
-            { name: 're', description: 'Re-flash: Resend the last match details to all buyers' }
+            { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
+            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' } // 🔥 Yeh naya add hua hai
         ]);
         console.log(`✅ Slash Commands Registered Successfully!`);
     } catch (err) { console.error("Slash Command Registration Error:", err); }
