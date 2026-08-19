@@ -99,7 +99,7 @@ async function handleAutoConnect(interaction, db) {
 
             const embed = new EmbedBuilder()
                 .setColor('#e67e22') 
-                .setTitle('⚡ VIP MATCH FOUND (RE-FLASHED) ⚡')
+                .setTitle('⚡ VIP MATCH FOUND ⚡')
                 .setDescription(`A seller is available again!\n\n🏦 **Bank Name:** \`${session.bankName}\`\n💰 **Amount Required:** **₹${session.targetAmountInr}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
                 .setFooter({ text: 'Professor Network - Fast Matchmaking' });
 
@@ -253,7 +253,7 @@ async function handleAutoConnect(interaction, db) {
 
             const embed = new EmbedBuilder()
                 .setColor('#3498db')
-                .setTitle('⚡ VIP MATCH FOUND ⚡')
+                .setTitle('⚡ NEW DETAILS AVAILABLE ⚡')
                 .setDescription(`A new seller is available!\n\n🏦 **Bank Name:** \`${bankName}\`\n💰 **Amount Required:** **₹${targetAmountInr}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
                 .setFooter({ text: 'Professor Network - Fast Matchmaking' });
 
@@ -308,7 +308,7 @@ async function handleAutoConnect(interaction, db) {
             if (session.adminInteraction) {
                 try {
                     await session.adminInteraction.editReply({
-                        content: `🎉 **VIP MATCH CLAIMED!** 🚀\n\nA buyer has claimed the details.\n🔗 **Click Here To Go To Buyer:** <#${interaction.channel.id}>\n\n*(Please visit the buyer's ticket to confirm. If the buyer backs out, type \`/re\` here to flash the details again!)*`,
+                        content: `🎉 **NEW DETAILS AVAILABLE!** 🚀\n\nA buyer has claimed the details.\n🔗 **Click Here To Go To Buyer:** <#${interaction.channel.id}>\n\n*(Please visit the buyer's ticket to confirm. If the buyer backs out, type \`/re\` here to flash the details again!)*`,
                         components: [] 
                     });
                 } catch (err) {}
