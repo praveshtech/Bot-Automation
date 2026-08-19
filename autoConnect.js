@@ -58,7 +58,7 @@ async function handleAutoConnect(interaction, db) {
         }
 
         if (!session) {
-            await interaction.reply({ content: '❌ Error: Is ticket se juda koi active `/ac` session nahi mila.', ephemeral: true });
+            await interaction.reply({ content: '❌ Error: No active `/ac` session found linked to this ticket.', ephemeral: true });
             return true;
         }
 
@@ -88,7 +88,7 @@ async function handleAutoConnect(interaction, db) {
             });
 
             if (matchedChannels.length === 0) {
-                await interaction.editReply({ content: `❌ **No match found.** Koi bhi active buyer nahi hai jiska amount ₹${session.targetAmountInr} ya usse zyada ho.` });
+                await interaction.editReply({ content: `❌ **No match found.** There are no active buyers with an amount of ₹${session.targetAmountInr} or more.` });
                 return true;
             }
 
@@ -100,7 +100,7 @@ async function handleAutoConnect(interaction, db) {
             const embed = new EmbedBuilder()
                 .setColor('#e67e22') 
                 .setTitle('⚡ VIP MATCH FOUND (RE-FLASHED) ⚡')
-                .setDescription(`Ek seller phirse available hua hai!\n\n🏦 **Bank Name:** \`${session.bankName}\`\n💰 **Amount Required:** **₹${session.targetAmountInr}**\n\nAgar aap is trade ko abhi process karna chahte hain, toh turant **Claim** par click karein!`)
+                .setDescription(`A seller is available again!\n\n🏦 **Bank Name:** \`${session.bankName}\`\n💰 **Amount Required:** **₹${session.targetAmountInr}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
                 .setFooter({ text: 'Professor Network - Fast Matchmaking' });
 
             const row = new ActionRowBuilder().addComponents(
@@ -126,7 +126,7 @@ async function handleAutoConnect(interaction, db) {
             );
 
             await interaction.editReply({ 
-                content: `✅ **Re-Flashed!** Match details ${matchedChannels.length} tickets mein wapas bhej di gayi hain.\n\n⏳ **Status:** Waiting for buyers to claim...\n\n*(🤫 Jaise hi koi naya buyer claim karega, yeh message apne aap update ho jayega!)*`, 
+                content: `✅ **Re-Flashed!** Match details have been resent to ${matchedChannels.length} tickets.\n\n⏳ **Status:** Waiting for buyers to claim...\n\n*(🤫 As soon as a new buyer claims, this message will update automatically!)*`, 
                 components: [statusRow] 
             });
 
@@ -154,18 +154,18 @@ async function handleAutoConnect(interaction, db) {
         }
 
         if (!session) {
-            await interaction.reply({ content: '❌ Error: Is ticket se juda koi active `/ac` session nahi mila.', ephemeral: true });
+            await interaction.reply({ content: '❌ Error: No active `/ac` session found linked to this ticket.', ephemeral: true });
             return true;
         }
 
         if (session.status === 'claimed') {
-            await interaction.reply({ content: '❌ Error: Yeh deal pehle hi kisi buyer ne claim kar li hai.', ephemeral: true });
+            await interaction.reply({ content: '❌ Error: This deal has already been claimed by a buyer.', ephemeral: true });
             return true;
         }
 
         await interaction.deferReply({ ephemeral: true });
 
-        // Sabhi tickets se flash message delete karna
+        // Delete flash message from all tickets
         let deletedCount = 0;
         for (const msgData of session.messages) {
             try {
@@ -180,20 +180,20 @@ async function handleAutoConnect(interaction, db) {
             } catch (e) {}
         }
 
-        // Admin ke original message ko update kar dena
+        // Update the admin's original message
         if (session.adminInteraction) {
             try {
                 await session.adminInteraction.editReply({
-                    content: `🛑 **Match Cancelled by Admin!**\n\nYeh deal aapke dwara manual close/clear kar di gayi hai. Saare buyers ki tickets se flash messages delete ho gaye hain.`,
+                    content: `🛑 **Match Cancelled by Admin!**\n\nThis deal has been manually closed/cleared by you. Flash messages have been deleted from all buyer tickets.`,
                     components: [] 
                 });
             } catch (err) {}
         }
 
-        // Session ko memory se hata do
+        // Remove session from memory
         global.matchSessions.delete(matchId);
 
-        await interaction.editReply({ content: `✅ **Success!** ${deletedCount} tickets se flash details delete kar di gayi hain aur system clear ho gaya hai.` });
+        await interaction.editReply({ content: `✅ **Success!** Flash details have been deleted from ${deletedCount} tickets and the system is cleared.` });
         return true;
     }
 
@@ -205,7 +205,7 @@ async function handleAutoConnect(interaction, db) {
         const targetAmountInr = parseFloat(interaction.fields.getTextInputValue('ac_amount'));
 
         if (isNaN(targetAmountInr)) {
-            await interaction.reply({ content: '❌ Invalid Amount! Sirf numbers daaliye.', ephemeral: true });
+            await interaction.reply({ content: '❌ Invalid Amount! Please enter numbers only.', ephemeral: true });
             return true;
         }
 
@@ -235,7 +235,7 @@ async function handleAutoConnect(interaction, db) {
             });
 
             if (matchedChannels.length === 0) {
-                await interaction.editReply({ content: `❌ **No match found.** Koi bhi active buyer nahi hai jiska amount ₹${targetAmountInr} ya usse zyada ho.` });
+                await interaction.editReply({ content: `❌ **No match found.** There are no active buyers with an amount of ₹${targetAmountInr} or more.` });
                 return true;
             }
 
@@ -254,7 +254,7 @@ async function handleAutoConnect(interaction, db) {
             const embed = new EmbedBuilder()
                 .setColor('#3498db')
                 .setTitle('⚡ VIP MATCH FOUND ⚡')
-                .setDescription(`Ek naya seller available hai!\n\n🏦 **Bank Name:** \`${bankName}\`\n💰 **Amount Required:** **₹${targetAmountInr}**\n\nAgar aap is trade ko abhi process karna chahte hain, toh turant **Claim** par click karein!`)
+                .setDescription(`A new seller is available!\n\n🏦 **Bank Name:** \`${bankName}\`\n💰 **Amount Required:** **₹${targetAmountInr}**\n\nIf you want to process this trade right now, click **Claim Match** immediately!`)
                 .setFooter({ text: 'Professor Network - Fast Matchmaking' });
 
             const row = new ActionRowBuilder().addComponents(
@@ -280,7 +280,7 @@ async function handleAutoConnect(interaction, db) {
             );
 
             await interaction.editReply({ 
-                content: `✅ **Found ${matchedChannels.length} matching tickets!** Details buyers ko bhej di gayi hain.\n\n⏳ **Status:** Waiting for buyers to claim...\n\n*(🤫 Jaise hi koi buyer claim karega, **yeh message apne aap update ho jayega**)*`, 
+                content: `✅ **Found ${matchedChannels.length} matching tickets!** Details have been sent to the buyers.\n\n⏳ **Status:** Waiting for buyers to claim...\n\n*(🤫 As soon as a buyer claims, **this message will update automatically**)*`, 
                 components: [statusRow] 
             });
 
@@ -296,19 +296,19 @@ async function handleAutoConnect(interaction, db) {
             const matchId = interaction.customId.replace('ac_claim_', '');
             const session = global.matchSessions.get(matchId);
 
-            if (!session) return interaction.reply({ content: '❌ Yeh match session expire ho chuka hai.', ephemeral: true });
-            if (session.status !== 'pending') return interaction.reply({ content: '❌ Too Late! Kisi aur buyer ne yeh deal pehle claim kar li.', ephemeral: true });
+            if (!session) return interaction.reply({ content: '❌ This match session has expired.', ephemeral: true });
+            if (session.status !== 'pending') return interaction.reply({ content: '❌ Too Late! Another buyer has already claimed this deal.', ephemeral: true });
 
             session.status = 'claimed';
             session.buyerTicketId = interaction.channel.id; 
             global.matchSessions.set(matchId, session);
 
-            await interaction.update({ content: '✅ **You successfully claimed this deal!** Admin aapse yahan abhi baat karenge.', embeds: [], components: [] });
+            await interaction.update({ content: '✅ **You successfully claimed this deal!** Admin will communicate with you here shortly.', embeds: [], components: [] });
 
             if (session.adminInteraction) {
                 try {
                     await session.adminInteraction.editReply({
-                        content: `🎉 **VIP MATCH CLAIMED!** 🚀\n\nEk buyer ne details claim kar li hain.\n🔗 **Click Here To Go To Buyer:** <#${interaction.channel.id}>\n\n*(Aap buyer ke paas jaakar confirm karein. Agar buyer backout kare, toh yahan \`/re\` type karein wapas details flash karne ke liye!)*`,
+                        content: `🎉 **VIP MATCH CLAIMED!** 🚀\n\nA buyer has claimed the details.\n🔗 **Click Here To Go To Buyer:** <#${interaction.channel.id}>\n\n*(Please visit the buyer's ticket to confirm. If the buyer backs out, type \`/re\` here to flash the details again!)*`,
                         components: [] 
                     });
                 } catch (err) {}
@@ -337,12 +337,12 @@ async function handleAutoConnect(interaction, db) {
             const matchId = interaction.customId.replace('ac_status_', '');
             const session = global.matchSessions.get(matchId);
 
-            if (!session) return interaction.reply({ content: '❌ Yeh session expire ho chuka hai.', ephemeral: true });
-            if (session.status === 'pending') return interaction.reply({ content: '⏳ **Still Waiting...** Kisi buyer ne abhi tak claim nahi kiya hai. Thodi der baad wapas try karein!', ephemeral: true });
+            if (!session) return interaction.reply({ content: '❌ This session has expired.', ephemeral: true });
+            if (session.status === 'pending') return interaction.reply({ content: '⏳ **Still Waiting...** No buyer has claimed it yet. Please try again in a little while!', ephemeral: true });
             
             if (session.status === 'claimed') {
                 await interaction.update({ 
-                    content: `🎉 **Match Claimed by Buyer!**\n\n🔗 **Click Here To Go To Buyer:** <#${session.buyerTicketId}>\n\n*(Aap buyer ke paas jaakar confirm karein. Agar buyer backout kare, toh yahan \`/re\` type karein wapas details flash karne ke liye!)*`, 
+                    content: `🎉 **Match Claimed by Buyer!**\n\n🔗 **Click Here To Go To Buyer:** <#${session.buyerTicketId}>\n\n*(Please visit the buyer's ticket to confirm. If the buyer backs out, type \`/re\` here to flash the details again!)*`, 
                     components: [] 
                 });
                 return true;
