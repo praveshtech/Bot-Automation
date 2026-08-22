@@ -229,6 +229,7 @@ client.on('messageCreate', async (message) => {
             - Supported Crypto & Networks: We strictly provide liquidity for the following: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20). (If users ask for Bitcoin, Ethereum, or other altcoins, politely inform them we ONLY support these specific USDT and USDC networks).
             - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
             - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI or CDM.
+            - ccw means Cashless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai 
             - Fee Structure: 
                 1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
                 2. 'Non-KYC' users = $3 Fee. 
