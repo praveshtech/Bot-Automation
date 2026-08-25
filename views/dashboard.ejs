@@ -1173,24 +1173,33 @@ function closeCustomVolModal() {
                     counter.innerText = prefix + '0';
                     return;
                 }
-                
-                let current = 0;
-                
-                const updateCounter = () => {
-                    // 🔥 Naya Ease-Out Logic: Har frame par bache hue number ka 8% add karega
-                    // Isse shuruwaat fast hogi aur end ekdum smooth
-                    current += (target - current) * 0.20; 
+
+                // Animation ka total time (1500 = 1.5 Seconds). Ise kam ya zyada kar sakte hain.
+                const duration = 1500; 
+                let startTime = null;
+
+                const updateCounter = (currentTime) => {
+                    if (!startTime) startTime = currentTime;
                     
-                    if (target - current > 0.5) {
-                        counter.innerText = prefix + Math.ceil(current).toLocaleString();
+                    const elapsedTime = currentTime - startTime;
+                    // Time ki progress ko 0 se 1 ke beech set karega
+                    let progress = Math.min(elapsedTime / duration, 1);
+                    
+                    // 🔥 EASE-OUT QUART LOGIC: Yeh animation ko shuru mein fast aur end mein ekdum smooth banata hai bina kisi lag ke
+                    const easeOutProgress = 1 - Math.pow(1 - progress, 4);
+                    
+                    const currentVal = Math.floor(easeOutProgress * target);
+                    
+                    counter.innerText = prefix + currentVal.toLocaleString();
+                    
+                    if (progress < 1) {
                         requestAnimationFrame(updateCounter);
                     } else {
-                        // Jab target ke bohot kareeb aa jaye, toh exact target set kar do
                         counter.innerText = prefix + target.toLocaleString();
                     }
                 };
                 
-                updateCounter();
+                requestAnimationFrame(updateCounter);
             });
         });
     </script>
