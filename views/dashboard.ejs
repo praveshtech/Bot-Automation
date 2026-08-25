@@ -1166,10 +1166,30 @@ function closeCustomVolModal() {
 
         document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll('.animate-counter').forEach(counter => {
-                const target = +counter.getAttribute('data-target'), prefix = counter.getAttribute('data-prefix') || '';
-                if (target === 0) return counter.innerText = prefix + '0';
-                let current = 0; const increment = target / (1500 / 16);
-                const updateCounter = () => { current += increment; if (current < target) { counter.innerText = prefix + Math.ceil(current).toLocaleString(); requestAnimationFrame(updateCounter); } else { counter.innerText = prefix + target.toLocaleString(); } };
+                const target = +counter.getAttribute('data-target');
+                const prefix = counter.getAttribute('data-prefix') || '';
+                
+                if (target === 0) {
+                    counter.innerText = prefix + '0';
+                    return;
+                }
+                
+                let current = 0;
+                
+                const updateCounter = () => {
+                    // 🔥 Naya Ease-Out Logic: Har frame par bache hue number ka 8% add karega
+                    // Isse shuruwaat fast hogi aur end ekdum smooth
+                    current += (target - current) * 0.08; 
+                    
+                    if (target - current > 0.5) {
+                        counter.innerText = prefix + Math.ceil(current).toLocaleString();
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        // Jab target ke bohot kareeb aa jaye, toh exact target set kar do
+                        counter.innerText = prefix + target.toLocaleString();
+                    }
+                };
+                
                 updateCounter();
             });
         });
