@@ -1179,7 +1179,7 @@ function closeCustomVolModal() {
                 const updateCounter = () => {
                     // 🔥 Naya Ease-Out Logic: Har frame par bache hue number ka 8% add karega
                     // Isse shuruwaat fast hogi aur end ekdum smooth
-                    current += (target - current) * 0.08; 
+                    current += (target - current) * 0.20; 
                     
                     if (target - current > 0.5) {
                         counter.innerText = prefix + Math.ceil(current).toLocaleString();
