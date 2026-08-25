@@ -17,6 +17,7 @@ const Canvas = require('canvas');
 let aiExtractor = null; 
 const handleAutoConnect = require('./autoConnect');
 global.matchSessions = new Map(); // Global varia
+const cron = require('node-cron');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -69,7 +70,7 @@ client.once('ready', async () => {
             { name: 'unmatch', description: 'Unmatch this ticket and return to original category' },
             { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
             { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
-            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' } // 🔥 Yeh naya add hua hai
+            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' } 
         ]);
         console.log(`✅ Slash Commands Registered Successfully!`);
     } catch (err) { console.error("Slash Command Registration Error:", err); }
@@ -106,6 +107,112 @@ client.once('ready', async () => {
             }
         });
     }, 60 * 60 * 1000); 
+
+    // ==========================================
+    // ⏰ AUTO-CLOSE TICKETS AT 10:00 AM (IST)
+    // ==========================================
+    cron.schedule('0 10 * * *', async () => {
+        console.log("⏰ 10:00 AM Alert: Executing Auto-Close for Completed Tickets...");
+
+        client.guilds.cache.forEach(async guild => {
+            // Sirf in 2 categories ko target karenge
+            const completedBuyCat = guild.channels.cache.find(c => c.name === '🟢 COMPLETED BUY' && c.type === ChannelType.GuildCategory);
+            const completedSellCat = guild.channels.cache.find(c => c.name === '🔴 COMPLETED SELL' && c.type === ChannelType.GuildCategory);
+
+            const channelsToClose = [];
+            if (completedBuyCat) channelsToClose.push(...completedBuyCat.children.cache.values());
+            if (completedSellCat) channelsToClose.push(...completedSellCat.children.cache.values());
+
+            if (channelsToClose.length === 0) {
+                console.log("✅ No tickets found to auto-close today.");
+                return;
+            }
+
+            console.log(`⏳ Found ${channelsToClose.length} tickets to close. Processing...`);
+
+            for (const channel of channelsToClose) {
+                try {
+                    const ticketDoc = await db.collection('p2p_tickets').doc(channel.id).get();
+                    if (!ticketDoc.exists) {
+                        await channel.delete().catch(() => {});
+                        continue;
+                    }
+
+                    const ticketData = ticketDoc.data();
+                    const closedBy = 'Auto-System (10 AM)';
+
+                    // 1. User ko DM aur Role dena
+                    const member = await guild.members.fetch(ticketData.discordUserId).catch(() => null);
+                    if (member) {
+                        let feedRole = guild.roles.cache.find(r => r.name === 'transaction done');
+                        if (feedRole) await member.roles.add(feedRole).catch(() => {});
+
+                        const receiptEmbed = new EmbedBuilder()
+                            .setColor('#2ecc71')
+                            .setTitle('✅ Transaction Completed')
+                            .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦`)
+                            .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+
+                        const receiptBtn = new ActionRowBuilder().addComponents(
+                            new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
+                        );
+                        
+                        await member.send({ embeds: [receiptEmbed], components: [receiptBtn] }).catch(()=>{});
+
+                        const feedbackEmbed = new EmbedBuilder()
+                            .setColor('#f1c40f')
+                            .setTitle('⭐ Rate Your Experience')
+                            .setDescription(`We hope you had a smooth trade!\n\nPlease click the button below to give your valuable feedback in <#1495117550709903591>.\nYour reviews help us build community trust. 🤝`)
+                            .setFooter({ text: 'Professor Network • Reviews' });
+
+                        const feedbackBtn = new ActionRowBuilder().addComponents(
+                            new ButtonBuilder().setLabel('⭐ Give Feedback Here').setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${guild.id}/1495117550709903591`)
+                        );
+                        await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
+                    }
+
+                    // 2. Transaction Log mein update
+                    let logChannel = guild.channels.cache.find(c => c.name === 'transaction-logs');
+                    if (logChannel) {
+                        const vaultEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle(`🏦 Vault Record: Transaction Completed`).addFields({ name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, { name: '🔒 Handled By', value: closedBy, inline: true }, { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, { name: 'Status', value: `\`Completed\``, inline: true }).setTimestamp().setFooter({ text: `Ticket ID: ${channel.id}` });
+                        await logChannel.send({ embeds: [vaultEmbed] });
+                    }
+
+                    // 3. Database Update
+                    await db.collection('p2p_tickets').doc(channel.id).update({ status: 'Completed', closedBy: closedBy, closedAt: admin.firestore.FieldValue.serverTimestamp() });
+                    globalLastUpdate = Date.now(); 
+
+                    // 4. Leaderboard & Heist Points update
+                    updateWeeklyLeaderboard(guild); 
+                    await updateUserHeistPoints(ticketData.discordUserId, guild, ticketData.username);
+
+                    // 5. Delete Bank Details Log
+                    try {
+                        const bankDetailsChannel = guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
+                        if (bankDetailsChannel) {
+                            const fetchedLogs = await bankDetailsChannel.messages.fetch({ limit: 100 });
+                            const logToDelete = fetchedLogs.find(m => m.embeds.length > 0 && m.embeds[0].fields && m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(channel.id)));
+                            if (logToDelete) await logToDelete.delete();
+                        }
+                    } catch (err) {}
+
+                    // 6. Final Ticket Channel Delete
+                    await channel.delete().catch(console.error);
+
+                    // API Rate Limit se bachne ke liye 2 seconds ka chhota sa gap
+                    await new Promise(resolve => setTimeout(resolve, 2000)); 
+
+                } catch (error) {
+                    console.error(`❌ Error auto-closing ticket ${channel.name}:`, error);
+                }
+            }
+            console.log("✅ 10:00 AM Auto-Close Mission Successful!");
+        });
+    }, {
+        timezone: "Asia/Kolkata"
+    });
+
+// 🔥 YAHAN BRACKET GAYAB THA, MAINE FIX KAR DIYA HAI 🔥
 });
 
 // ==========================================
