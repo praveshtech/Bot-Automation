@@ -211,8 +211,6 @@ client.once('ready', async () => {
     }, {
         timezone: "Asia/Kolkata"
     });
-
-// 🔥 YAHAN BRACKET GAYAB THA, MAINE FIX KAR DIYA HAI 🔥
 });
 
 // ==========================================
@@ -290,14 +288,19 @@ client.on('messageCreate', async (message) => {
             for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
 
             // 🔥 TOKYO LIVE MARKET DATA INTEGRATION 🔥
-            let tokyoBuyPrice = 88;
-            let tokyoSellPrice = 88;
+            let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88;
             try {
                 const setDoc = await db.collection('settings').doc('app_data').get();
                 if (setDoc.exists) {
                     const data = setDoc.data();
-                    if (data.liveBuyPrice) tokyoBuyPrice = data.liveBuyPrice;
-                    if (data.liveSellPrice) tokyoSellPrice = data.liveSellPrice;
+                    const legacyBuy = data.liveBuyPrice || 88;
+                    const legacySell = data.liveSellPrice || 88;
+                    
+                    cdmBuyPrice = data.cdmBuyPrice || legacyBuy;
+                    cdmSellPrice = data.cdmSellPrice || legacySell;
+                    ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
+                    ccwSellPrice = data.ccwSellPrice || legacySell;
+                    onlineSellPrice = data.onlineSellPrice || legacySell;
                 }
             } catch (e) { console.log('Error fetching price for Tokyo:', e); }
 
@@ -335,8 +338,8 @@ client.on('messageCreate', async (message) => {
             - Identity: We are a PRIVATE Vault/OTC Exchange. Users deal DIRECTLY with Admins/Platform. There are NO 3rd-party buyers or sellers.
             - Supported Crypto & Networks: We strictly provide liquidity for the following: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20). (If users ask for Bitcoin, Ethereum, or other altcoins, politely inform them we ONLY support these specific USDT and USDC networks).
             - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
-            - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI or CDM.
-            - ccw means Cashless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai 
+            - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI, CCW, or Online/Amazon/Flipkart Vouchers.
+            - ccw means Cashless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai.
             - Fee Structure: 
                 1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
                 2. 'Non-KYC' users = $3 Fee. 
@@ -356,8 +359,11 @@ client.on('messageCreate', async (message) => {
             =========================================
             📈 LIVE MARKET RATES (CRITICAL):
             If a user asks about current rates or prices, you MUST use these exact real-time values:
-            - USDT BUY Rate (User pays INR, gets Crypto): ₹${tokyoBuyPrice}
-            - USDT SELL Rate (User gives Crypto, gets INR): ₹${tokyoSellPrice}
+            - USDT BUY Rate (CDM/IMPS): ₹${cdmBuyPrice}
+            - USDT BUY Rate (CCW): ₹${ccwBuyPrice}
+            - USDT SELL Rate (CDM/IMPS): ₹${cdmSellPrice}
+            - USDT SELL Rate (CCW): ₹${ccwSellPrice}
+            - USDT SELL Rate (Online/Amazon/Flipkart): ₹${onlineSellPrice}
             =========================================
 
             SERVER DIRECTORY:
@@ -771,7 +777,7 @@ client.on('messageCreate', async (message) => {
     }
 
     // ==========================================
-    // 📈 NEW: LIVE MARKET PRICE CONTROLLER
+    // 📈 NEW: MULTI-RATE MARKET PRICE CONTROLLER
     // ==========================================
     if (command === '!pricepanel') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
@@ -779,11 +785,11 @@ client.on('messageCreate', async (message) => {
             const panelEmbed = new EmbedBuilder()
                 .setColor('#f1c40f')
                 .setTitle('📈 Live Market Price Controller')
-                .setDescription('**[ 👑 ADMIN ONLY ]**\n\nClick the button below to securely update the USDT Buy & Sell prices across the entire Professor Network.')
+                .setDescription('**[ 👑 ADMIN ONLY ]**\n\nClick the button below to securely update the USDT Buy & Sell prices across all payment methods (CDM/IMPS, CCW, Online).')
                 .setFooter({ text: 'Tokyo AI - Secure Market Terminal' });
                 
             const btnRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('open_price_modal').setLabel('🔄 Update USDT Price').setStyle(ButtonStyle.Success)
+                new ButtonBuilder().setCustomId('open_price_modal').setLabel('🔄 Update Market Rates').setStyle(ButtonStyle.Success)
             );
             
             await message.channel.send({ embeds: [panelEmbed], components: [btnRow] });
@@ -812,13 +818,12 @@ client.on('messageCreate', async (message) => {
         try {
             const members = await message.guild.members.fetch();
             let successCount = 0;
-            // Bot ka khud ka role position check karna
             const botRolePosition = message.guild.members.me.roles.highest.position;
             
             for (const [id, member] of members) {
-                if (member.user.bot) continue; // Bot ko skip karo
-                if (member.id === message.guild.ownerId) continue; // Owner ko skip karo (Discord allow nahi karta)
-                if (member.roles.highest.position >= botRolePosition) continue; // Jinka role bot se upar hai, unko skip karo
+                if (member.user.bot) continue; 
+                if (member.id === message.guild.ownerId) continue; 
+                if (member.roles.highest.position >= botRolePosition) continue; 
                 
                 const currentName = member.nickname || member.user.username;
                 
@@ -826,7 +831,6 @@ client.on('messageCreate', async (message) => {
                     try {
                         await member.setNickname(`${currentName} 🇮🇳`);
                         successCount++;
-                        // 🔥 THE FIX: 0.5 sec ka delay taaki Discord bot ko block na kare
                         await new Promise(resolve => setTimeout(resolve, 500)); 
                     } catch (e) {
                         console.log(`Skipped ${currentName} due to permission limit.`);
@@ -860,7 +864,6 @@ client.on('messageCreate', async (message) => {
                 
                 const currentName = member.nickname || member.user.username;
                 
-                // Check karega ki emoji ya :flag_in: text hai ya nahi
                 if (currentName.includes('🇮🇳') || currentName.includes(':flag_in:')) {
                     const newName = currentName.replace('🇮🇳', '').replace(':flag_in:', '').trim();
                     try {
@@ -1196,26 +1199,34 @@ client.on('interactionCreate', async interaction => {
             return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
         }
         
-        const modal = new ModalBuilder().setCustomId('submit_new_price').setTitle('Update USDT Price');
+        const modal = new ModalBuilder().setCustomId('submit_new_price').setTitle('Update USDT Market Prices');
         modal.addComponents(
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('buy_price_input').setLabel('🟢 New Buy Price (e.g. 88.50)').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('sell_price_input').setLabel('🔴 New Sell Price (e.g. 87.50)').setStyle(TextInputStyle.Short).setRequired(true))
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_buy').setLabel('CDM/IMPS Buy Price').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_sell').setLabel('CDM/IMPS Sell Price').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_buy').setLabel('CCW Buy Price').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_sell').setLabel('CCW Sell Price').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_sell').setLabel('Online/Amazon/Flipkart Sell').setStyle(TextInputStyle.Short).setRequired(true))
         );
         await interaction.showModal(modal);
     }
 
     if (interaction.isModalSubmit() && interaction.customId === 'submit_new_price') {
-        const buyPrice = parseFloat(interaction.fields.getTextInputValue('buy_price_input'));
-        const sellPrice = parseFloat(interaction.fields.getTextInputValue('sell_price_input'));
+        const cdmBuyPrice = parseFloat(interaction.fields.getTextInputValue('cdm_buy'));
+        const cdmSellPrice = parseFloat(interaction.fields.getTextInputValue('cdm_sell'));
+        const ccwBuyPrice = parseFloat(interaction.fields.getTextInputValue('ccw_buy'));
+        const ccwSellPrice = parseFloat(interaction.fields.getTextInputValue('ccw_sell'));
+        const onlineSellPrice = parseFloat(interaction.fields.getTextInputValue('online_sell'));
 
-        if (isNaN(buyPrice) || isNaN(sellPrice)) {
+        if (isNaN(cdmBuyPrice) || isNaN(cdmSellPrice) || isNaN(ccwBuyPrice) || isNaN(ccwSellPrice) || isNaN(onlineSellPrice)) {
             return interaction.reply({ content: '❌ Invalid Format! Sirf numbers daaliye.', ephemeral: true });
         }
 
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            await db.collection('settings').doc('app_data').set({ liveBuyPrice: buyPrice, liveSellPrice: sellPrice }, { merge: true });
+            await db.collection('settings').doc('app_data').set({ 
+                cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice 
+            }, { merge: true });
 
             const priceChannel = interaction.guild.channels.cache.get('1503666351594799205'); 
             if (priceChannel) {
@@ -1224,18 +1235,19 @@ client.on('interactionCreate', async interaction => {
                     .setTitle('📈 USDT Market Price Update')
                     .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
                     .addFields(
-                        { name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, 
-                        { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }
+                        { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
+                        { name: '💳 CCW (Cashless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${ccwBuyPrice}\n🔴 SELL: ₹ ${ccwSellPrice}\n\`\`\``, inline: false },
+                        { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${onlineSellPrice}\n\`\`\``, inline: false }
                     )
                     .setTimestamp()
-                    .setFooter({ text: 'Tokyo AI - Market Sync', iconURL: client.user.displayAvatarURL() });
+                    .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
 
                 const fetchedMessages = await priceChannel.messages.fetch({ limit: 5 });
                 fetchedMessages.forEach(msg => msg.delete().catch(()=>{}));
 
                 await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });
             }
-            await interaction.editReply({ content: `✅ **Success, Boss!**\nBuy Price: ₹${buyPrice}\nSell Price: ₹${sellPrice}\n\n*Firebase updated and announcement sent!* 🚀` });
+            await interaction.editReply({ content: `✅ **Success, Boss!**\nRates successfully updated in database and announced to Discord! 🚀` });
         } catch (error) {
             console.error("Price Update Error:", error);
             await interaction.editReply({ content: '❌ Error updating price.' });
@@ -1636,14 +1648,16 @@ client.on('interactionCreate', async interaction => {
                     .addOptions([
                         { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS/UPI', emoji: '🏦', default: userState.step3 === 'IMPS/UPI' }, 
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
+                        { label: 'CCW (ICICI, SBI)', description: 'Cashless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
+                        { label: 'Online/Amazon/Flipkart', description: 'Vouchers or Online Payments', value: 'Online', emoji: '🛒', default: userState.step3 === 'Online' }
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
 
                 if (userState.step3) {
-                    components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Bank Details)').setStyle(ButtonStyle.Success)));
+                    components.push(new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('proceed_to_details').setLabel('Next (Enter Details)').setStyle(ButtonStyle.Success)));
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Final Step', iconURL: client.user.displayAvatarURL() })
                         .setColor('#2ecc71')
-                        .setDescription('Click the **Next** button below to securely enter your bank details.')
+                        .setDescription('Click the **Next** button below to securely enter your receiving details.')
                         .addFields({ name: '🏦 Receiving Method', value: `${userState.step3 === 'CCW' ? 'CCW (ICICI, SBI)' : userState.step3}`, inline: true });
                 } else {
                     stepEmbed.setAuthor({ name: '🏦 P2P Trade Setup | Step 3', iconURL: client.user.displayAvatarURL() })
@@ -1730,6 +1744,12 @@ client.on('interactionCreate', async interaction => {
                 );            
             } else if (userState.step3 === 'CCW') {
                 p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_ref_number').setLabel('Phone Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)));
+            } else if (userState.step3 === 'Online') {
+                p2pModal.addComponents(
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_platform').setLabel('Platform (e.g. Amazon, Flipkart)').setStyle(TextInputStyle.Short).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_email_phone').setLabel('Registered Email or Phone').setStyle(TextInputStyle.Short).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_account_name').setLabel('Account Name').setStyle(TextInputStyle.Short).setRequired(true))
+                );
             }
         } else {
             p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_receiving_details').setLabel(`Your ${userState.step3} Wallet Address`).setStyle(TextInputStyle.Short).setRequired(true)));
@@ -1746,6 +1766,7 @@ client.on('interactionCreate', async interaction => {
             if (userState.step3 === 'IMPS/UPI') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('account_name')}\nAccount No: ${interaction.fields.getTextInputValue('account_number')}\nIFSC Code: ${interaction.fields.getTextInputValue('ifsc_code')}`;
             else if (userState.step3 === 'CDM') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('cdm_bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
             else if (userState.step3 === 'CCW') userDetails = `Phone No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
+            else if (userState.step3 === 'Online') userDetails = `Platform: ${interaction.fields.getTextInputValue('online_platform')}\nEmail/Phone: ${interaction.fields.getTextInputValue('online_email_phone')}\nAccount Name: ${interaction.fields.getTextInputValue('online_account_name')}`;
         } else {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
@@ -1784,16 +1805,22 @@ client.on('interactionCreate', async interaction => {
         });
         
         let walletData = {};
-        let liveBuyPrice = 88;
-        let liveSellPrice = 88;
+        let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88;
 
         try {
             const setDoc = await db.collection('settings').doc('app_data').get();
             if (setDoc.exists) {
                 const data = setDoc.data();
                 if (data.wallets) walletData = data.wallets;
-                if (data.liveBuyPrice) liveBuyPrice = Number(data.liveBuyPrice);
-                if (data.liveSellPrice) liveSellPrice = Number(data.liveSellPrice);
+                
+                const legacyBuy = data.liveBuyPrice || 88;
+                const legacySell = data.liveSellPrice || 88;
+                
+                cdmBuyPrice = data.cdmBuyPrice || legacyBuy;
+                cdmSellPrice = data.cdmSellPrice || legacySell;
+                ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
+                ccwSellPrice = data.ccwSellPrice || legacySell;
+                onlineSellPrice = data.onlineSellPrice || legacySell;
             }
         } catch (e) { console.log('Error fetching app_data'); }
 
@@ -1845,11 +1872,18 @@ client.on('interactionCreate', async interaction => {
         let paymentInstructions = "";
 
         if (userState.type === 'Sell') {
-            rateUsed = liveSellPrice;
+            if (userState.step3 === 'CDM' || userState.step3 === 'IMPS/UPI') rateUsed = cdmSellPrice;
+            else if (userState.step3 === 'CCW') rateUsed = ccwSellPrice;
+            else if (userState.step3 === 'Online') rateUsed = onlineSellPrice;
+            else rateUsed = cdmSellPrice;
+            
             totalInr = baseAmount * rateUsed;
             paymentInstructions = `**⚠️ Payment Instructions:**\nThis is the **${userState.step2}** wallet address you selected.\n\nPlease send exactly **$${totalUsdtForCalc} USDT** to this address and upload the payment screenshot here.`;
         } else {
-            rateUsed = liveBuyPrice;
+            if (userState.step2 === 'CDM') rateUsed = cdmBuyPrice;
+            else if (userState.step2 === 'CCW') rateUsed = ccwBuyPrice;
+            else rateUsed = cdmBuyPrice;
+            
             totalInr = totalUsdtForCalc * rateUsed;
             paymentInstructions = `**⚠️ Payment Instructions:**\nPlease pay exactly **₹${totalInr}** (INR) to the admin's account.\n\n👇 **Admin Payment Details Sent Below**\n\nOnce paid, please upload the payment screenshot here.`;
         }

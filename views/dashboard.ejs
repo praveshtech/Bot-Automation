@@ -331,53 +331,60 @@
             </div>
         </section>
 
-        <div id="userDetailsModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeUserModal()"></div>
-            <div class="glass-panel relative z-10 w-full max-w-lg p-6 border-t-4 border-blue-500 transform scale-95 opacity-0 transition-all duration-300" id="userDetailsModalContent">
-                <button onclick="closeUserModal()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-                <div class="flex items-center mb-6 border-b border-slate-700/50 pb-4">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-700 to-blue-900 flex justify-center items-center mr-4 text-2xl font-black text-white shadow-inner border border-blue-600" id="ud-avatar">U</div>
-                    <div><h3 class="text-xl sm:text-2xl font-black text-white tracking-tight" id="ud-name">User Name</h3><p class="text-[10px] sm:text-xs font-bold text-blue-400 uppercase tracking-widest mt-1" id="ud-username">@username</p></div>
-                </div>
-                <div class="space-y-4">
-                    <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 shadow-inner">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Discord ID</p><p class="font-mono text-sm text-slate-300" id="ud-id">123456789</p></div>
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Status</p><p class="font-black text-sm" id="ud-status">Approved</p></div>
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">KYC Level</p><p class="font-bold text-sm text-slate-300" id="ud-type">Advanced (Vault Verified)</p></div>
-                            <div><p class="text-[9px] uppercase tracking-widest text-slate-500 font-bold mb-1">Record Date</p><p class="font-bold text-sm text-slate-300" id="ud-date">N/A</p></div>
-                        </div>
-                    </div>
-                    <div class="bg-[#050b14] p-4 rounded-xl border border-slate-700 text-xs font-medium text-slate-300 shadow-inner">
-                        <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-2 flex items-center"><i class="fa-solid fa-message mr-2"></i> Additional Info</p><span id="ud-info">No additional info provided.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="photoModal" class="fixed inset-0 z-[110] hidden flex items-center justify-center p-4 overflow-y-auto">
-            <div class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity" onclick="closeDocs()"></div>
-            <div class="glass-panel relative z-10 w-full max-w-5xl p-6 border-t-4 border-blue-500 transform transition-all duration-300" id="photoModalContent">
-                <button onclick="closeDocs()" class="absolute top-5 right-5 text-slate-400 hover:text-red-500 transition duration-300 bg-slate-800/50 hover:bg-slate-800 w-8 h-8 rounded-full flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
-                <h3 class="text-xl sm:text-2xl font-black text-white tracking-tight mb-6 flex items-center" id="docModalTitle"><i class="fa-solid fa-folder-open text-blue-500 mr-3"></i> User Documents</h3>
-                
-                <div id="photoContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 justify-center max-h-[70vh] overflow-y-auto custom-scrollbar p-2">
-                    </div>
-            </div>
-        </div>
-
+        <!-- 🔥 NAYA PRICE UPDATE SECTION 🔥 -->
         <section id="price-view" class="hidden-section fade-in">
             <div class="max-w-4xl grid grid-cols-1 gap-8">
                 <div class="glass-panel p-5 sm:p-8 border-t-4 border-green-500 relative overflow-hidden">
                     <div class="relative z-10">
                         <h3 class="text-xl sm:text-2xl font-black uppercase tracking-widest mb-2 text-green-500 text-glow-green"><i class="fa-solid fa-bolt mr-2"></i> Update USDT Market Price</h3>
                         <p class="text-slate-400 text-xs sm:text-sm mb-8 font-medium">Broadcast new P2P trading rates directly to the Discord #📊・usdt-price-update channel.</p>
+                        
                         <form action="/update-price" method="POST" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🟢 Buy Price (₹)</label><input type="number" step="0.01" name="buyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition" placeholder="e.g. 88.50" required></div>
-                                <div><label class="block text-slate-400 text-xs font-bold uppercase mb-3 tracking-widest">🔴 Sell Price (₹)</label><input type="number" step="0.01" name="sellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-xl py-3.5 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 87.20" required></div>
+                            
+                            <!-- 1. CDM / IMPS / UPI -->
+                            <div class="bg-slate-900/40 p-5 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-emerald-400 text-sm font-black uppercase mb-4 tracking-widest border-b border-slate-700 pb-2">🏦 CDM / IMPS / UPI</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">🟢 Buy Rate (₹)</label>
+                                        <input type="number" step="0.01" name="cdmBuyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition" placeholder="e.g. 102.50" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">🔴 Sell Rate (₹)</label>
+                                        <input type="number" step="0.01" name="cdmSellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 97.00" required>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="pt-6 border-t border-slate-800/50 mt-4"><button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)]">Broadcast to Discord 🚀</button></div>
+
+                            <!-- 2. CCW -->
+                            <div class="bg-slate-900/40 p-5 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-blue-400 text-sm font-black uppercase mb-4 tracking-widest border-b border-slate-700 pb-2">💳 CCW (Cashless)</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">🟢 Buy Rate (₹)</label>
+                                        <input type="number" step="0.01" name="ccwBuyPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" placeholder="e.g. 103.00" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">🔴 Sell Rate (₹)</label>
+                                        <input type="number" step="0.01" name="ccwSellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition" placeholder="e.g. 97.00" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. ONLINE / AMAZON / FLIPKART -->
+                            <div class="bg-slate-900/40 p-5 rounded-xl border border-slate-700/50 shadow-inner">
+                                <h4 class="text-purple-400 text-sm font-black uppercase mb-4 tracking-widest border-b border-slate-700 pb-2">🛒 Online / Amazon / Flipkart</h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-slate-400 text-[10px] font-bold uppercase mb-2 tracking-widest">🔴 Sell Rate Only (₹)</label>
+                                        <input type="number" step="0.01" name="onlineSellPrice" class="w-full bg-slate-900/80 border border-slate-700 text-white rounded-lg py-3 px-4 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition" placeholder="e.g. 95.00" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-4 mt-2">
+                                <button type="submit" class="w-full md:w-auto bg-green-600 hover:bg-green-500 text-white font-black uppercase tracking-widest py-3.5 px-10 rounded-xl transition duration-300 shadow-[0_0_20px_rgba(34,197,94,0.3)]">Broadcast to Discord 🚀</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -789,7 +796,6 @@
             document.getElementById('kyc-stats').classList.add('hidden');
             document.getElementById('non-kyc-stats').classList.add('hidden');
             
-            // UI boxes ko switch karne ka logic
             const kycBoxes = document.getElementById('kyc-vol-boxes');
             const nonKycBoxes = document.getElementById('nonkyc-vol-boxes');
             
@@ -801,21 +807,16 @@
             if (tabId === 'kyc-logs') {
                 document.getElementById('btn-kyc-logs').className = 'text-green-400 font-black uppercase tracking-widest border-b-2 border-green-500 pb-2 px-2 transition duration-300';
                 document.getElementById('kyc-stats').classList.remove('hidden');
-                
-                // Show KYC Buy/Sell
                 kycBoxes.classList.remove('hidden'); kycBoxes.classList.add('flex');
                 nonKycBoxes.classList.remove('flex'); nonKycBoxes.classList.add('hidden');
             } else {
                 document.getElementById('btn-non-kyc-logs').className = 'text-orange-400 font-black uppercase tracking-widest border-b-2 border-orange-500 pb-2 px-2 transition duration-300';
                 document.getElementById('non-kyc-stats').classList.remove('hidden');
-                
-                // Show Non-KYC Buy/Sell
                 nonKycBoxes.classList.remove('hidden'); nonKycBoxes.classList.add('flex');
                 kycBoxes.classList.remove('flex'); kycBoxes.classList.add('hidden');
             }
         }
 
-        // --- 🔥 INSTANT LOGS FILTER & CALCULATE LOGIC 🔥 ---
         function clearLogDates() {
             document.getElementById('log-start-date').value = '';
             document.getElementById('log-end-date').value = '';
@@ -841,12 +842,8 @@
                 endTimestamp = ed.getTime();
             }
 
-            let kycTrades = 0, kycVol = 0;
-            let nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0;
-            
-            // Separate Variables
-            let kycBuyVol = 0, kycSellVol = 0;
-            let nonKycBuyVol = 0, nonKycSellVol = 0;
+            let kycTrades = 0, kycVol = 0, kycBuyVol = 0, kycSellVol = 0;
+            let nonKycTrades = 0, nonKycVol = 0, nonKycFee = 0, nonKycBuyVol = 0, nonKycSellVol = 0;
 
             document.querySelectorAll('.kyc-row').forEach(row => {
                 const action = row.getAttribute('data-action');
@@ -858,13 +855,10 @@
 
                 if (matchesAction && matchesDate) {
                     row.style.display = ''; 
-                    kycTrades++;
-                    kycVol += amount;
+                    kycTrades++; kycVol += amount;
                     if (action === 'Buy') kycBuyVol += amount;
                     if (action === 'Sell') kycSellVol += amount;
-                } else {
-                    row.style.display = 'none'; 
-                }
+                } else { row.style.display = 'none'; }
             });
 
             document.querySelectorAll('.nonkyc-row').forEach(row => {
@@ -878,27 +872,20 @@
 
                 if (matchesAction && matchesDate) {
                     row.style.display = ''; 
-                    nonKycTrades++;
-                    nonKycVol += amount;
-                    nonKycFee += fee;
+                    nonKycTrades++; nonKycVol += amount; nonKycFee += fee;
                     if (action === 'Buy') nonKycBuyVol += amount;
                     if (action === 'Sell') nonKycSellVol += amount;
-                } else {
-                    row.style.display = 'none'; 
-                }
+                } else { row.style.display = 'none'; }
             });
 
-            // Standard Stats
             document.getElementById('kyc-stat-trades').innerText = kycTrades;
             document.getElementById('kyc-stat-vol').innerText = '$' + kycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('nonkyc-stat-trades').innerText = nonKycTrades;
             document.getElementById('nonkyc-stat-vol').innerText = '$' + nonKycVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('nonkyc-stat-fee').innerText = '$' + nonKycFee.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
-            // Push values to the specific KYC / Non-KYC boxes
             document.getElementById('log-kyc-buy-vol').innerText = '$' + kycBuyVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('log-kyc-sell-vol').innerText = '$' + kycSellVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
-            
             document.getElementById('log-nonkyc-buy-vol').innerText = '$' + nonKycBuyVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
             document.getElementById('log-nonkyc-sell-vol').innerText = '$' + nonKycSellVol.toLocaleString(undefined, { maximumFractionDigits: 2 });
         }
@@ -906,32 +893,29 @@
         document.addEventListener("DOMContentLoaded", () => {
             filterLogs();
         });
-          
-        // 🔥 CUSTOM DATE MODAL FIX 🔥
-function openCustomVolModal() { 
-    pauseOnModalOpen(); 
-    const modal = document.getElementById('customVolModal'); 
-    const content = document.getElementById('customVolModalContent'); 
-    modal.classList.remove('hidden'); 
-    setTimeout(() => { 
-        content.classList.remove('scale-95', 'opacity-0'); 
-        content.classList.add('scale-100', 'opacity-100'); 
-    }, 10); 
-}
 
-function closeCustomVolModal() { 
-    resumeOnModalClose(); 
-    const modal = document.getElementById('customVolModal'); 
-    const content = document.getElementById('customVolModalContent'); 
-    content.classList.remove('scale-100', 'opacity-100'); 
-    content.classList.add('scale-95', 'opacity-0'); 
-    setTimeout(() => { 
-        modal.classList.add('hidden'); 
-        // Agli baar kholne ke liye result box wapas chhupa do
-        document.getElementById('cv-result-box').classList.add('hidden'); 
-    }, 300); 
-}
+        function openCustomVolModal() { 
+            pauseOnModalOpen(); 
+            const modal = document.getElementById('customVolModal'); 
+            const content = document.getElementById('customVolModalContent'); 
+            modal.classList.remove('hidden'); 
+            setTimeout(() => { 
+                content.classList.remove('scale-95', 'opacity-0'); 
+                content.classList.add('scale-100', 'opacity-100'); 
+            }, 10); 
+        }
 
+        function closeCustomVolModal() { 
+            resumeOnModalClose(); 
+            const modal = document.getElementById('customVolModal'); 
+            const content = document.getElementById('customVolModalContent'); 
+            content.classList.remove('scale-100', 'opacity-100'); 
+            content.classList.add('scale-95', 'opacity-0'); 
+            setTimeout(() => { 
+                modal.classList.add('hidden'); 
+                document.getElementById('cv-result-box').classList.add('hidden'); 
+            }, 300); 
+        }
 
         function calculateCustomVolume() {
             const startVal = document.getElementById('cv-start').value; const endVal = document.getElementById('cv-end').value;
@@ -1008,7 +992,6 @@ function closeCustomVolModal() {
             document.getElementById('photoModal').classList.remove('hidden'); 
         }
 
-        // 🔥 NAYA: UPI Video Player Function
         function openUpiDocs(username, mediaStr) { 
             document.getElementById('docModalTitle').innerHTML = `<i class="fa-solid fa-video text-emerald-500 mr-3"></i> ${username}'s UPI Media`; 
             const container = document.getElementById('photoContainer'); container.innerHTML = ''; 
@@ -1164,6 +1147,7 @@ function closeCustomVolModal() {
             content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0'); setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
+        // 🔥 YAHAN SUPER SMOOTH ANIMATION BHI LAGA DIYA HAI 🔥
         document.addEventListener("DOMContentLoaded", () => {
             document.querySelectorAll('.animate-counter').forEach(counter => {
                 const target = +counter.getAttribute('data-target');
@@ -1174,7 +1158,6 @@ function closeCustomVolModal() {
                     return;
                 }
 
-                // Animation ka total time (1500 = 1.5 Seconds). Ise kam ya zyada kar sakte hain.
                 const duration = 1500; 
                 let startTime = null;
 
@@ -1182,12 +1165,9 @@ function closeCustomVolModal() {
                     if (!startTime) startTime = currentTime;
                     
                     const elapsedTime = currentTime - startTime;
-                    // Time ki progress ko 0 se 1 ke beech set karega
                     let progress = Math.min(elapsedTime / duration, 1);
                     
-                    // 🔥 EASE-OUT QUART LOGIC: Yeh animation ko shuru mein fast aur end mein ekdum smooth banata hai bina kisi lag ke
                     const easeOutProgress = 1 - Math.pow(1 - progress, 4);
-                    
                     const currentVal = Math.floor(easeOutProgress * target);
                     
                     counter.innerText = prefix + currentVal.toLocaleString();
