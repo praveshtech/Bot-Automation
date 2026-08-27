@@ -18,6 +18,7 @@ let aiExtractor = null;
 const handleAutoConnect = require('./autoConnect');
 global.matchSessions = new Map(); // Global varia
 const cron = require('node-cron');
+const handleSwapInteraction = require('./swapModule');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -1042,6 +1043,23 @@ client.on('messageCreate', async (message) => {
         } catch (err) {}
     }
 
+    if (command === '!setupswap') {
+        if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return message.reply({ content: "❌ Action Denied.", ephemeral: true });
+        try {
+            const swapEmbed = new EmbedBuilder()
+                .setColor('#9b59b6') 
+                .setTitle('🔄 Premium C2C Swap Terminal')
+                .setDescription('Welcome to the **Professor Network** Swap Desk.\n\nInstantly exchange any supported crypto asset to another asset securely.\n\n⚡ **Fast Processing**\n🛡️ **100% Secure Escrow**\n💸 **Fixed 5% Network Fee**\n\n*Click the button below to open your private swap room.*')
+                .setFooter({ text: 'Automated by Professor Network', iconURL: client.user.displayAvatarURL() });
+            
+            const buttons = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('start_c2c_swap').setLabel('🔄 Open Ticket For C2C Swap').setStyle(ButtonStyle.Primary)
+            );
+            await message.channel.send({ embeds: [swapEmbed], components: [buttons] });
+            await message.delete().catch(() => {});
+        } catch (err) {}
+    }
+
     if (command === '!openchat') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
@@ -1077,6 +1095,16 @@ client.on('interactionCreate', async interaction => {
             console.error('🚨 Could not send error message to Discord:', replyError);
         }
         return; // Error aane par baki code na chale taaki bot safe rahe
+    }
+
+    // 🔥 NEW: Premium Swap Module Handler
+    try {
+        const isSwapHandled = await handleSwapInteraction(interaction, db, client, admin);
+        if (isSwapHandled) return; 
+    } catch (error) {
+        console.error('🚨 [CRITICAL ERROR] Swap Module:', error);
+        try { await interaction.reply({ content: '❌ Swap system error.', ephemeral: true }); } catch (e) {}
+        return;
     }
     
     
