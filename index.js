@@ -2411,7 +2411,10 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
 });
 
 app.post('/update-price', requireLogin, async (req, res) => {
-    const { buyPrice, sellPrice } = req.body; 
+    // 1. Data aana chahiye 5 fields mein, unko destructure karte hain
+    let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice } = req.body; 
+    
+    // 2. Alert function
     const sendModernAlert = (title, text, icon) => {
         res.send(`
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -2420,10 +2423,22 @@ app.post('/update-price', requireLogin, async (req, res) => {
         `);
     };
 
+    // 3. String se number mein convert karte waqt dhyan rakhein ki NaN/undefined na aaye.
+    // Agar koi field khali aaye, toh fallback (default 0) value set karo.
+    const finalCdmBuy = parseFloat(cdmBuyPrice) || 0;
+    const finalCdmSell = parseFloat(cdmSellPrice) || 0;
+    const finalCcwBuy = parseFloat(ccwBuyPrice) || 0;
+    const finalCcwSell = parseFloat(ccwSellPrice) || 0;
+    const finalOnlineSell = parseFloat(onlineSellPrice) || 0;
+
     try {
+        // 4. Database mein save karein
         await db.collection('settings').doc('app_data').set({ 
-            liveBuyPrice: Number(buyPrice), 
-            liveSellPrice: Number(sellPrice) 
+            cdmBuyPrice: finalCdmBuy, 
+            cdmSellPrice: finalCdmSell,
+            ccwBuyPrice: finalCcwBuy,
+            ccwSellPrice: finalCcwSell,
+            onlineSellPrice: finalOnlineSell 
         }, { merge: true });
 
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
@@ -2431,11 +2446,27 @@ app.post('/update-price', requireLogin, async (req, res) => {
         let priceChannel = guild.channels.cache.get('1503666351594799205'); 
         if (!priceChannel) return sendModernAlert("❌ Error", "Price Update Channel not found.", "error");
 
-        const priceEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 USDT Market Price Update').setDescription('**Professor Network** has updated the real-time P2P exchange rates.').addFields({ name: '🟢 BUY PRICE', value: `\`\`\`yaml\n₹ ${buyPrice}\n\`\`\``, inline: true }, { name: '🔴 SELL PRICE', value: `\`\`\`yaml\n₹ ${sellPrice}\n\`\`\``, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
+        // 5. Discord Embed Update (Is format se ab `undefined` nahi aayega)
+        const priceEmbed = new EmbedBuilder()
+            .setColor('#f1c40f')
+            .setTitle('📈 USDT Market Price Update')
+            .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
+            .addFields(
+                { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 CCW (Cashless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
+
+        const fetchedMessages = await priceChannel.messages.fetch({ limit: 5 });
+        fetchedMessages.forEach(msg => msg.delete().catch(()=>{}));
 
         await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });       
         sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
-    } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
+    } catch (error) { 
+        sendModernAlert("❌ Error", error.message, "error"); 
+    }
 });
 
 app.get('/api/check-updates', requireLogin, (req, res) => { res.json({ timestamp: globalLastUpdate }); });
