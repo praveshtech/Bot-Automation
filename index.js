@@ -341,6 +341,7 @@ client.on('messageCreate', async (message) => {
             - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
             - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI, CCW, or Online/Amazon/Flipkart Vouchers.
             - ccw means Cashless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai.
+            - c2c Swap Desk: Users can swap any supported crypto to another supported crypto instantly. Minimum Limit is $50. Fee is $0 for Vault Verified users.
             - Fee Structure: 
                 1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
                 2. 'Non-KYC' users = $3 Fee. 
