@@ -81,7 +81,7 @@ async function handleSwapInteraction(interaction, db, client, admin) {
                 tradeType: 'Swap', 
                 networkOrMethod: `${giveDetails} ➔ ${receiveDetails}`, 
                 amountUsd: 0, 
-                fee: '5%', 
+                fee: 0, // 🔥 Database mein fee ko properly 0 set kar diya
                 userReceivingDetails: walletAddress, 
                 status: 'Open', 
                 createdAt: admin.firestore.FieldValue.serverTimestamp() 
@@ -90,7 +90,8 @@ async function handleSwapInteraction(interaction, db, client, admin) {
             console.error('Swap Error:', e);
         }
 
-        const cinematicDescription = `Welcome ${interaction.user.toString()} to the **C2C Swap Desk**.\n\n**1. You are Sending:**\n> ${giveDetails}\n\n**2. You want to Receive:**\n> ${receiveDetails}\n\n**3. Your Receiving Address:**\n> \`${walletAddress}\`\n\n**📊 Processing Fee:**\n> Fixed 5% Network Fee applies.\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n*Please wait for an Admin to provide the exact deposit address and confirm the final calculated amount.*`;
+        // 🔥 Ticket ke andar ke text mein fee 0 kar di gayi hai
+        const cinematicDescription = `Welcome ${interaction.user.toString()} to the **C2C Swap Desk**.\n\n**1. You are Sending:**\n> ${giveDetails}\n\n**2. You want to Receive:**\n> ${receiveDetails}\n\n**3. Your Receiving Address:**\n> \`${walletAddress}\`\n\n**📊 Processing Fee:**\n> $0 (Free Swap Promo)\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n*Please wait for an Admin to provide the exact deposit address and confirm the final calculated amount.*`;
 
         const ticketEmbed = new EmbedBuilder()
             .setColor('#9b59b6')

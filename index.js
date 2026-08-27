@@ -1049,7 +1049,8 @@ client.on('messageCreate', async (message) => {
             const swapEmbed = new EmbedBuilder()
                 .setColor('#9b59b6') 
                 .setTitle('🔄 Premium C2C Swap Terminal')
-                .setDescription('Welcome to the **Professor Network** Swap Desk.\n\nInstantly exchange any supported crypto asset to another asset securely.\n\n⚡ **Fast Processing**\n🛡️ **100% Secure Escrow**\n💸 **Fixed 5% Network Fee**\n\n*Click the button below to open your private swap room.*')
+                // 🔥 Fee 0 kar di gayi hai yahan
+                .setDescription('Welcome to the **Professor Network** Swap Desk.\n\nInstantly exchange any supported crypto asset to another asset securely.\n\n⚡ **Fast Processing**\n🛡️ **100% Secure Escrow**\n💸 **$0 Network Fee (Free Swaps)**\n\n*Click the button below to open your private swap room.*')
                 .setFooter({ text: 'Automated by Professor Network', iconURL: client.user.displayAvatarURL() });
             
             const buttons = new ActionRowBuilder().addComponents(
