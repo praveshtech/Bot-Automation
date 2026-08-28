@@ -768,6 +768,66 @@ client.on('messageCreate', async (message) => {
         }
     }
 
+    // ==========================================
+    // ✏️ ADMIN COMMAND: .ea (EDIT FINAL AMOUNT)
+    // ==========================================
+    if (command.startsWith('.ea')) {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        
+        try {
+            const ticketRef = db.collection('p2p_tickets').doc(message.channel.id);
+            const ticketDoc = await ticketRef.get();
+            
+            if (!ticketDoc.exists) return message.reply({ content: "❌ Yeh command sirf valid P2P ticket channel mein chalega.", ephemeral: true });
+            
+            const amountMatch = message.content.match(/\.ea\s*(\d+(\.\d+)?)/i);
+            if (!amountMatch) return message.reply({ content: '❌ Galat format! Use karein: `.ea 650` (jahan 650 naya USD amount hai)', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+
+            const newAmountUsd = parseFloat(amountMatch[1]);
+            const ticketData = ticketDoc.data();
+            
+            if (ticketData.tradeType === 'Swap') {
+                 // Swap Tickets ke liye sirf USD amount update hoga
+                 await ticketRef.update({ amountUsd: newAmountUsd });
+                 const successEmbed = new EmbedBuilder()
+                    .setColor('#3498db')
+                    .setTitle('✏️ Final Swap Amount Updated')
+                    .setDescription(`Is ticket ka final swap amount **$${newAmountUsd}** set kar diya gaya hai.\n\nAb aap safely **✅ Mark Complete** par click kar sakte hain.`)
+                    .setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() });
+                 await message.delete().catch(()=>{});
+                 return message.channel.send({ embeds: [successEmbed] });
+            }
+
+            // Buy/Sell Tickets ke liye Rate ke hisaab se INR bhi update hoga
+            const rateUsed = ticketData.rateUsed || 0;
+            const newTotalInr = newAmountUsd * rateUsed;
+
+            await ticketRef.update({ 
+                amountUsd: newAmountUsd,
+                totalInr: newTotalInr,
+                remainingInr: newTotalInr // Remaining payment logic reset kar denge
+            });
+
+            const successEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setTitle('✏️ Final Deal Amount Updated')
+                .setDescription(`Ticket ka final transaction amount database mein update ho gaya hai!\n\nAb aap safely **✅ Mark Complete** par click kar sakte hain.`)
+                .addFields(
+                    { name: '💵 New USD Amount', value: `**$${newAmountUsd}**`, inline: true },
+                    { name: '🔄 Exchange Rate', value: `₹${rateUsed}`, inline: true },
+                    { name: '🧾 New Total INR', value: `**₹${newTotalInr.toFixed(2)}**`, inline: false }
+                )
+                .setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() });
+
+            await message.delete().catch(()=>{});
+            await message.channel.send({ embeds: [successEmbed] });
+
+        } catch (err) {
+            console.error("Error in .ea command:", err);
+            await message.channel.send("❌ Database update mein error aaya.");
+        }
+    }
+
     if (command === '!p2p') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return message.reply({ content: "❌ Action Denied.", ephemeral: true });
         try {
