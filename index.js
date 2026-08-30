@@ -340,7 +340,7 @@ client.on('messageCreate', async (message) => {
             - Supported Crypto & Networks: We strictly provide liquidity for the following: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20). (If users ask for Bitcoin, Ethereum, or other altcoins, politely inform them we ONLY support these specific USDT and USDC networks).
             - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
             - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI, CCW, or Online/Amazon/Flipkart Vouchers.
-            - ccw means Cashless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai.
+            - ccw means cardless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai.
             - c2c Swap Desk: Users can swap any supported crypto to another supported crypto instantly. Minimum Limit is $50. Fee is $0 for Vault Verified users.
             - Fee Structure: 
                 1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
@@ -1398,7 +1398,7 @@ client.on('interactionCreate', async interaction => {
                     .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
                     .addFields(
                         { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
-                        { name: '💳 CCW (Cashless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${ccwBuyPrice}\n🔴 SELL: ₹ ${ccwSellPrice}\n\`\`\``, inline: false },
+                        { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${ccwBuyPrice}\n🔴 SELL: ₹ ${ccwSellPrice}\n\`\`\``, inline: false },
                         { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${onlineSellPrice}\n\`\`\``, inline: false }
                     )
                     .setTimestamp()
@@ -1810,7 +1810,7 @@ client.on('interactionCreate', async interaction => {
                     .addOptions([
                         { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS/UPI', emoji: '🏦', default: userState.step3 === 'IMPS/UPI' }, 
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
-                        { label: 'CCW (ICICI, SBI)', description: 'Cashless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
+                        { label: 'CCW (ICICI, SBI)', description: 'Cardless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
                         { label: 'Online/Amazon/Flipkart', description: 'Vouchers or Online Payments', value: 'Online', emoji: '🛒', default: userState.step3 === 'Online' }
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
@@ -2615,7 +2615,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
                 { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '💳 CCW (Cashless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
             .setTimestamp()
