@@ -768,16 +768,27 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // ==========================================
-    // 📊 ADMIN COMMAND: .tt (USER TOTAL TRANSACTIONS)
+   // ==========================================
+    // 📊 COMMAND: .tt (USER TOTAL TRANSACTIONS)
     // ==========================================
     if (command.startsWith('.tt')) {
-        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        // Admin permissions check
+        const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.Administrator) || message.member.roles.cache.some(role => role.name === 'Palermo');
         
         const targetMember = message.mentions.members.first();
-        if (!targetMember) return message.reply({ content: '❌ Please mention a user. Example: `.tt @username`', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+        let queryMember = message.member; // Default to the person typing the command
+        
+        // Agar kisi ko tag kiya gaya hai
+        if (targetMember) {
+            // Agar normal user kisi doosre ko tag kare toh block karo
+            if (!isAdmin && targetMember.id !== message.author.id) {
+                return message.reply({ content: '❌ **Access Denied.** You can only check your own stats.', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+            }
+            // Agar Admin hai ya user ne khud ko hi tag kiya hai
+            queryMember = targetMember;
+        }
 
-        const targetId = targetMember.id;
+        const targetId = queryMember.id;
         const loadingMsg = await message.channel.send(`⏳ *Scanning Vault Database for <@${targetId}>...*`);
 
         try {
@@ -805,7 +816,7 @@ client.on('messageCreate', async (message) => {
             // Premium Embed Design
             const statsEmbed = new EmbedBuilder()
                 .setColor('#3498db')
-                .setAuthor({ name: `🏦 Vault Analytics: ${targetMember.user.username}`, iconURL: targetMember.user.displayAvatarURL() })
+                .setAuthor({ name: `🏦 Vault Analytics: ${queryMember.user.username}`, iconURL: queryMember.user.displayAvatarURL() })
                 .setDescription(`Here is the lifetime trading record for <@${targetId}> within the Professor Network.`)
                 .addFields(
                     { name: '💎 Total Volume', value: `**$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}**`, inline: true },
@@ -825,7 +836,6 @@ client.on('messageCreate', async (message) => {
             await loadingMsg.edit("❌ Error retrieving user data from the database.");
         }
     }
-
 
     // ==========================================
     // ✏️ ADMIN COMMAND: .ea (EDIT FINAL AMOUNT)
