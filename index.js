@@ -769,6 +769,65 @@ client.on('messageCreate', async (message) => {
     }
 
     // ==========================================
+    // 📊 ADMIN COMMAND: .tt (USER TOTAL TRANSACTIONS)
+    // ==========================================
+    if (command.startsWith('.tt')) {
+        if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
+        
+        const targetMember = message.mentions.members.first();
+        if (!targetMember) return message.reply({ content: '❌ Please mention a user. Example: `.tt @username`', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+
+        const targetId = targetMember.id;
+        const loadingMsg = await message.channel.send(`⏳ *Scanning Vault Database for <@${targetId}>...*`);
+
+        try {
+            // Fetch User Stats from Database
+            const userStatDoc = await db.collection('user_stats').doc(targetId).get();
+            let totalVolume = 0;
+            let heistPoints = 0;
+            let currentLevel = 'Recruit';
+
+            if (userStatDoc.exists) {
+                const data = userStatDoc.data();
+                totalVolume = data.totalVolume || 0;
+                heistPoints = data.heistPoints || 0;
+                currentLevel = data.level ? data.level.split('—')[1].trim() : 'Recruit';
+            }
+
+            // Fetch Total Completed Trades Count
+            const ticketsSnap = await db.collection('p2p_tickets')
+                .where('discordUserId', '==', targetId)
+                .where('status', '==', 'Completed')
+                .get();
+                
+            const totalTrades = ticketsSnap.size;
+
+            // Premium Embed Design
+            const statsEmbed = new EmbedBuilder()
+                .setColor('#3498db')
+                .setAuthor({ name: `🏦 Vault Analytics: ${targetMember.user.username}`, iconURL: targetMember.user.displayAvatarURL() })
+                .setDescription(`Here is the lifetime trading record for <@${targetId}> within the Professor Network.`)
+                .addFields(
+                    { name: '💎 Total Volume', value: `**$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}**`, inline: true },
+                    { name: '🤝 Total Trades', value: `**${totalTrades}**`, inline: true },
+                    { name: '✨ Heist Points', value: `**${heistPoints} Pts**`, inline: true },
+                    { name: '🏅 Current Rank', value: `\`${currentLevel}\``, inline: false }
+                )
+                .setTimestamp()
+                .setFooter({ text: 'Professor Network - Secure P2P Terminal', iconURL: client.user.displayAvatarURL() });
+
+            await loadingMsg.delete().catch(()=>{});
+            await message.delete().catch(()=>{});
+            await message.channel.send({ embeds: [statsEmbed] });
+
+        } catch (err) {
+            console.error("Error in .tt command:", err);
+            await loadingMsg.edit("❌ Error retrieving user data from the database.");
+        }
+    }
+
+
+    // ==========================================
     // ✏️ ADMIN COMMAND: .ea (EDIT FINAL AMOUNT)
     // ==========================================
     if (command.startsWith('.ea')) {
