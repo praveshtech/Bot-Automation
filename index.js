@@ -1933,16 +1933,25 @@ client.on('interactionCreate', async interaction => {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
 
-        await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
+       await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
         let categoryName = '🎫 TICKETS';
         
-        if (userState.type === 'Buy') {
-            if (userState.step2 === 'CDM') categoryName = '🟢 CDM FOR BUY';
-            else categoryName = '🟢 CCW FOR BUY'; 
-        } else if (userState.type === 'Sell') {
-            if (userState.step3 === 'CDM') categoryName = '🔴 CDM FOR SELL';
-            else categoryName = '🔴 IMPS-UPI FOR SELL'; 
+        // 🔥 NEW VIP LOGIC: Check if user has 'UPI Verified' role 🔥
+        const hasUpiVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'UPI Verified');
+
+        if (hasUpiVerifiedRole) {
+            // VIP category for UPI Verified users
+            categoryName = '🎥 UPI VERIFIED TICKETS';
+        } else {
+            // Normal routing for non-VIP users
+            if (userState.type === 'Buy') {
+                if (userState.step2 === 'CDM') categoryName = '🟢 CDM FOR BUY';
+                else categoryName = '🟢 CCW FOR BUY'; 
+            } else if (userState.type === 'Sell') {
+                if (userState.step3 === 'CDM') categoryName = '🔴 CDM FOR SELL';
+                else categoryName = '🔴 IMPS-UPI FOR SELL'; 
+            }
         }
         
         let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
