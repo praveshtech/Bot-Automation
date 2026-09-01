@@ -1942,7 +1942,7 @@ client.on('interactionCreate', async interaction => {
 
         if (hasUpiVerifiedRole) {
             // VIP category for UPI Verified users
-            categoryName = '🎥 UPI VERIFIED TICKETS';
+            categoryName = '🎥 UPI VERIFIED BUY';
         } else {
             // Normal routing for non-VIP users
             if (userState.type === 'Buy') {
