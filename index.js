@@ -1937,20 +1937,27 @@ client.on('interactionCreate', async interaction => {
 
         let categoryName = '🎫 TICKETS';
         
-        // 🔥 NEW VIP LOGIC: Check if user has 'UPI Verified' role 🔥
+        // 🔥 VIP LOGIC: Check if user has 'UPI Verified' role
         const hasUpiVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'UPI Verified');
 
-        if (hasUpiVerifiedRole) {
-            // VIP category for UPI Verified users
-            categoryName = '🎥 UPI VERIFIED BUY';
-        } else {
-            // Normal routing for non-VIP users
-            if (userState.type === 'Buy') {
-                if (userState.step2 === 'CDM') categoryName = '🟢 CDM FOR BUY';
-                else categoryName = '🟢 CCW FOR BUY'; 
-            } else if (userState.type === 'Sell') {
-                if (userState.step3 === 'CDM') categoryName = '🔴 CDM FOR SELL';
-                else categoryName = '🔴 IMPS-UPI FOR SELL'; 
+        // 🔥 Naya Routing System
+        if (userState.type === 'Buy') {
+            // Buy mein check hoga ki user VIP hai ya normal
+            if (hasUpiVerifiedRole) {
+                categoryName = '🟢 UPI VERIFIED BUY'; 
+            } else if (userState.step2 === 'CDM') {
+                categoryName = '🟢 CDM FOR BUY';
+            } else {
+                categoryName = '🟢 CCW FOR BUY'; 
+            }
+        } else if (userState.type === 'Sell') {
+            // Sell mein Role ignore hoga, seedha method ke hisaab se room banega
+            if (userState.step3 === 'CDM') {
+                categoryName = '🔴 CDM FOR SELL';
+            } else if (userState.step3 === 'CCW') {
+                categoryName = '🔴 CCW FOR SELL';
+            } else {
+                categoryName = '🔴 IMPS-UPI FOR SELL'; 
             }
         }
         
