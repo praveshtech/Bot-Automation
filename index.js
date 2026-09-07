@@ -359,6 +359,7 @@ client.on('messageCreate', async (message) => {
             - When Someone ask you how can i see my hiest points Then tell use .tt @your_username
             - When Someone ask you how can i see my rank Then tell use .tt @your_username
             - When Someone ask you how can i see my total trades Then tell use .tt @your_username
+            - We Support All Bank CDM like SBI, ICICI, HDFC, Axis, Kotak, Yes Bank, IDFC, IndusInd, Federal Bank, Union Bank, Canara Bank, Punjab National Bank, Bank of Baroda, Indian Bank, Central Bank of India, Bank of India, .
             =========================================
 
             =========================================
