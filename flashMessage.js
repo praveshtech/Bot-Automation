@@ -5,7 +5,7 @@ async function sendUpiFlashMessage(ticketChannel) {
         const flashEmbed = new EmbedBuilder()
             .setColor('#f39c12') // Attention grab karne ke liye Orange/Gold color
             .setTitle('⚡ Want to pay via UPI / IMPS?')
-            .setDescription('If you want to make payment through **UPI**, you just need to do this. Please provide the following details in this ticket:\n\n**1.** Aadhaar Card (Front & Back)\n**2.** PAN Card\n**3.** A Short Selfie Video\n**4.** 6 Months Bank Statement\n\n*Once provided, our Admin will verify and share the UPI details instantly.*')
+            .setDescription('If you want to make payment through **UPI**, you just need to do this. Please provide the following details :\n\n**1.** Aadhaar Card (Front & Back)\n**2.** PAN Card\n**3.** A Short Selfie Video\n**4.** 6 Months Bank Statement\n\n*Once provided, our Admin will verify and share the UPI details instantly.*')
             .setFooter({ text: 'Enjoy UPI Transaction For The Lifetime' });
 
         // Message bhejna
