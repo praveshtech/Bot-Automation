@@ -19,6 +19,7 @@ const handleAutoConnect = require('./autoConnect');
 global.matchSessions = new Map(); // Global varia
 const cron = require('node-cron');
 const handleSwapInteraction = require('./swapModule');
+const sendUpiFlashMessage = require('./flashMessage');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -2115,6 +2116,11 @@ const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for
         if (userState.type === 'Sell') {
             // 🔥 Dono Admins ko tag karega
             await ticketChannel.send({ content: `<@1001128047128358923> <@1541859306050162750>` });
+        }
+
+        // 🔥 NAYA UPDATE: CDM aur CCW Buy tickets mein UPI ka Flash Message bhejna
+        if (categoryName === '🟢 CDM FOR BUY' || categoryName === '🟢 CCW FOR BUY') {
+            sendUpiFlashMessage(ticketChannel);
         }
 
         // ==========================================
