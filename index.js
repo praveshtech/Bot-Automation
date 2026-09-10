@@ -264,7 +264,7 @@ client.on('messageCreate', async (message) => {
     // ==========================================
     // 👑 ADMIN & BOSS PROTOCOL CHECK
     // ==========================================
-    const adminDiscordIds = ['1001128047128358923', '1336703883711479896']; 
+    const adminDiscordIds = ['1001128047128358923', '1336703883711479896', '1541859306050162750']; 
     const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
 
     // ==========================================
