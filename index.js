@@ -1647,6 +1647,45 @@ client.on('interactionCreate', async interaction => {
                  await targetMember.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Verification Successful').setDescription('Your UPI Video KYC has been approved!\n\nYou can now use UPI payment methods for trading in Professor Network.')] }).catch(()=>{});
             }
 
+            // 🔥 NAYA UPDATE: TRANSCRIPT GENERATION (APPROVE) 🔥
+            try {
+                let transcriptChannel = interaction.guild.channels.cache.find(c => c.name === 'upi-ticket-transcript');
+                if (!transcriptChannel) {
+                    transcriptChannel = await interaction.guild.channels.create({
+                        name: 'upi-ticket-transcript',
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: [
+                            { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                            { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                        ]
+                    });
+                    const palermoRole = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
+                    if (palermoRole) await transcriptChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
+                }
+
+                const attachment = await discordTranscripts.createTranscript(interaction.channel, {
+                    limit: -1,
+                    fileName: `upi-kyc-approved-${userId}.html`,
+                    name: `UPI KYC Transcript`,
+                    poweredBy: false,
+                    saveImages: true
+                });
+
+                const transcriptEmbed = new EmbedBuilder()
+                    .setColor('#2ecc71')
+                    .setTitle('🎥 UPI KYC Transcript (Approved)')
+                    .addFields(
+                        { name: 'User ID', value: `<@${userId}>`, inline: true },
+                        { name: 'Approved By', value: `<@${interaction.user.id}>`, inline: true }
+                    )
+                    .setTimestamp();
+
+                await transcriptChannel.send({ embeds: [transcriptEmbed], files: [attachment] });
+            } catch (err) {
+                console.error("UPI Transcript Save Error:", err);
+            }
+            // 🔥 NAYA UPDATE END 🔥
+
             await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ UPI KYC Approved')], components: [] });
             await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! Files saved to Firebase securely. Room closing in 5 seconds...`, ephemeral: true });
             setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
@@ -1668,6 +1707,46 @@ client.on('interactionCreate', async interaction => {
         if(targetMember) {
              await targetMember.send({ embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('❌ UPI Verification Failed').setDescription('Your UPI Video KYC has been rejected by Admin.\n\nPlease ensure your video and IDs are clear and try again.')] }).catch(()=>{});
         }
+
+        // 🔥 NAYA UPDATE: TRANSCRIPT GENERATION (REJECT) 🔥
+            try {
+                let transcriptChannel = interaction.guild.channels.cache.find(c => c.name === 'upi-ticket-transcript');
+                if (!transcriptChannel) {
+                    transcriptChannel = await interaction.guild.channels.create({
+                        name: 'upi-ticket-transcript',
+                        type: ChannelType.GuildText,
+                        permissionOverwrites: [
+                            { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
+                            { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
+                        ]
+                    });
+                    const palermoRole = interaction.guild.roles.cache.find(r => r.name === 'Palermo');
+                    if (palermoRole) await transcriptChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
+                }
+
+                const attachment = await discordTranscripts.createTranscript(interaction.channel, {
+                    limit: -1,
+                    fileName: `upi-kyc-rejected-${userId}.html`,
+                    name: `UPI KYC Transcript`,
+                    poweredBy: false,
+                    saveImages: true
+                });
+
+                const transcriptEmbed = new EmbedBuilder()
+                    .setColor('#e74c3c')
+                    .setTitle('❌ UPI KYC Transcript (Rejected)')
+                    .addFields(
+                        { name: 'User ID', value: `<@${userId}>`, inline: true },
+                        { name: 'Rejected By', value: `<@${interaction.user.id}>`, inline: true }
+                    )
+                    .setTimestamp();
+
+                await transcriptChannel.send({ embeds: [transcriptEmbed], files: [attachment] });
+            } catch (err) {
+                console.error("UPI Transcript Save Error:", err);
+            }
+            // 🔥 NAYA UPDATE END 🔥
+
         setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
     }
       
