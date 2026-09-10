@@ -313,8 +313,7 @@
                                         <div class="flex items-center justify-end space-x-3">
                                             <% if(user.upiMediaUrls && user.upiMediaUrls.length > 0) { %>
                                                 <% let mediaStr = user.upiMediaUrls.join(','); %>
-                                                <!-- 🔥 NAYA UPDATE: Added relative z-20 and cursor-pointer for better clickability -->
-                                                <button onclick="event.stopPropagation(); openUpiDocs('<%= user.username || 'User' %>', '<%= mediaStr %>')" class="relative z-20 cursor-pointer bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-play mr-1"></i> View Media</button>
+                                                <button onclick="openUpiDocs('<%= user.username || 'User' %>', '<%= mediaStr %>')" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-play mr-1"></i> View Media</button>
                                             <% } else { %>
                                                 <span class="text-slate-600 text-xs italic font-bold">No Media</span>
                                             <% } %>
@@ -1001,8 +1000,6 @@
                 const urls = mediaStr.split(','); 
                 urls.forEach((url, idx) => {
                     const isVideo = url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('.webm');
-                    // 🔥 NAYA UPDATE: PDF check yahan add kiya gaya hai
-                    const isPdf = url.toLowerCase().includes('.pdf');
                     let mediaElement = '';
                     
                     if (isVideo) {
@@ -1011,16 +1008,6 @@
                                 <source src="${url}" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>`;
-                    } else if (isPdf) {
-                        // 🔥 NAYA UPDATE: PDF UI Design
-                        mediaElement = `
-                            <div class="w-full flex flex-col items-center justify-center h-48 sm:h-64 border border-slate-700 rounded-lg bg-slate-800/80 shadow-inner">
-                                <i class="fa-solid fa-file-pdf text-5xl text-red-500 mb-4 drop-shadow-[0_0_10px_rgba(239,68,68,0.5)]"></i>
-                                <p class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-3">Bank Statement</p>
-                                <a href="${url}" target="_blank" class="text-blue-400 hover:text-white font-bold text-xs uppercase tracking-widest bg-blue-500/20 px-4 py-2 rounded-lg border border-blue-500/30 transition shadow-[0_0_15px_rgba(59,130,246,0.2)]">
-                                    <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> Open PDF Document
-                                </a>
-                            </div>`;
                     } else {
                         mediaElement = `
                             <a href="${url}" target="_blank" title="Click to view full image">
@@ -1030,7 +1017,7 @@
 
                     container.innerHTML += `
                         <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700 shadow-inner w-full flex flex-col items-center">
-                            <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 px-4 rounded w-full">Document ${idx + 1}</h4>
+                            <h4 class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 text-center bg-slate-800/50 py-2 px-4 rounded w-full">Media ${idx + 1}</h4>
                             ${mediaElement}
                         </div>
                     `;
