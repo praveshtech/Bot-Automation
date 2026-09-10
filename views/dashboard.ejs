@@ -313,7 +313,8 @@
                                         <div class="flex items-center justify-end space-x-3">
                                             <% if(user.upiMediaUrls && user.upiMediaUrls.length > 0) { %>
                                                 <% let mediaStr = user.upiMediaUrls.join(','); %>
-                                                <button onclick="openUpiDocs('<%= user.username || 'User' %>', '<%= mediaStr %>')" class="bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-play mr-1"></i> View Media</button>
+                                                <!-- 🔥 NAYA UPDATE: Added relative z-20 and cursor-pointer for better clickability -->
+                                                <button onclick="event.stopPropagation(); openUpiDocs('<%= user.username || 'User' %>', '<%= mediaStr %>')" class="relative z-20 cursor-pointer bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 px-3 py-2 rounded-lg text-xs font-bold uppercase transition duration-300 shadow-[0_0_10px_rgba(16,185,129,0.1)]"><i class="fa-solid fa-play mr-1"></i> View Media</button>
                                             <% } else { %>
                                                 <span class="text-slate-600 text-xs italic font-bold">No Media</span>
                                             <% } %>
