@@ -20,6 +20,7 @@ global.matchSessions = new Map(); // Global varia
 const cron = require('node-cron');
 const handleSwapInteraction = require('./swapModule');
 const sendUpiFlashMessage = require('./flashMessage');
+const setupAntiImpersonation = require('./antiImpersonation');
 
 // ==========================================
 // 1. FIREBASE SETUP
@@ -2974,4 +2975,8 @@ process.on('uncaughtExceptionMonitor', (err, origin) => {
     console.log('❌ [ANTI-CRASH] Uncaught Exception Monitor:', err, 'Origin:', origin);
 });
 
+// 🔥 Start Scammer Auto-Ban System
+setupAntiImpersonation(client);
+
 client.login(process.env.DISCORD_TOKEN);
+
