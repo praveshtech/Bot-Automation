@@ -1893,6 +1893,7 @@ client.on('interactionCreate', async interaction => {
                         { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS/UPI', emoji: '🏦', default: userState.step3 === 'IMPS/UPI' }, 
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                         { label: 'CCW (ICICI, SBI)', description: 'Cardless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
+                        { label: 'Payment Gateway', description: 'Gateway UPI/IMPS', value: 'Gateway', emoji: '🌐', default: userState.step3 === 'Gateway' },
                         { label: 'Online/Amazon/Flipkart', description: 'Vouchers or Online Payments', value: 'Online', emoji: '🛒', default: userState.step3 === 'Online' }
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
@@ -1994,6 +1995,12 @@ client.on('interactionCreate', async interaction => {
                     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_email_phone').setLabel('Registered Email or Phone').setStyle(TextInputStyle.Short).setRequired(true)),
                     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_account_name').setLabel('Account Name').setStyle(TextInputStyle.Short).setRequired(true))
                 );
+            } else if (userState.step3 === 'Gateway') {
+                // 🔥 NAYA: Payment Gateway Inputs
+                p2pModal.addComponents(
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('gateway_upi').setLabel('Your UPI ID / Number').setStyle(TextInputStyle.Short).setRequired(true)),
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('gateway_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true))
+                );
             }
         } else {
             p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_receiving_details').setLabel(`Your ${userState.step3} Wallet Address`).setStyle(TextInputStyle.Short).setRequired(true)));
@@ -2011,6 +2018,7 @@ client.on('interactionCreate', async interaction => {
             else if (userState.step3 === 'CDM') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('cdm_bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
             else if (userState.step3 === 'CCW') userDetails = `Phone No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
             else if (userState.step3 === 'Online') userDetails = `Platform: ${interaction.fields.getTextInputValue('online_platform')}\nEmail/Phone: ${interaction.fields.getTextInputValue('online_email_phone')}\nAccount Name: ${interaction.fields.getTextInputValue('online_account_name')}`;
+            else if (userState.step3 === 'Gateway') userDetails = `UPI ID: ${interaction.fields.getTextInputValue('gateway_upi')}\nAccount Holder Name: ${interaction.fields.getTextInputValue('gateway_name')}`;
         } else {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
@@ -2033,11 +2041,12 @@ client.on('interactionCreate', async interaction => {
                 categoryName = '🟢 CCW FOR BUY'; 
             }
         } else if (userState.type === 'Sell') {
-            // Sell mein Role ignore hoga, seedha method ke hisaab se room banega
             if (userState.step3 === 'CDM') {
                 categoryName = '🔴 CDM FOR SELL';
             } else if (userState.step3 === 'CCW') {
                 categoryName = '🔴 CCW FOR SELL';
+            } else if (userState.step3 === 'Gateway') {
+                categoryName = '🔴 GATEWAY FOR SELL';
             } else {
                 categoryName = '🔴 IMPS-UPI FOR SELL'; 
             }
@@ -2081,6 +2090,7 @@ client.on('interactionCreate', async interaction => {
                 ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
                 ccwSellPrice = data.ccwSellPrice || legacySell;
                 onlineSellPrice = data.onlineSellPrice || legacySell;
+                pgSellPrice = data.pgSellPrice || legacySell; // 🔥 NAYA PRICE
             }
         } catch (e) { console.log('Error fetching app_data'); }
 
@@ -2135,6 +2145,7 @@ client.on('interactionCreate', async interaction => {
             if (userState.step3 === 'CDM' || userState.step3 === 'IMPS/UPI') rateUsed = cdmSellPrice;
             else if (userState.step3 === 'CCW') rateUsed = ccwSellPrice;
             else if (userState.step3 === 'Online') rateUsed = onlineSellPrice;
+            else if (userState.step3 === 'Gateway') rateUsed = pgSellPrice;
             else rateUsed = cdmSellPrice;
             
             totalInr = baseAmount * rateUsed;
@@ -2142,6 +2153,7 @@ client.on('interactionCreate', async interaction => {
         } else {
             if (userState.step2 === 'CDM') rateUsed = cdmBuyPrice;
             else if (userState.step2 === 'CCW') rateUsed = ccwBuyPrice;
+            else if (userState.step2 === 'Gateway') rateUsed = pgBuyPrice;
             else rateUsed = cdmBuyPrice;
             
             totalInr = totalUsdtForCalc * rateUsed;
@@ -2678,8 +2690,7 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
 
 app.post('/update-price', requireLogin, async (req, res) => {
     // 1. Data aana chahiye 5 fields mein, unko destructure karte hain
-    let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice } = req.body; 
-    
+let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgSellPrice } = req.body;    
     // 2. Alert function
     const sendModernAlert = (title, text, icon) => {
         res.send(`
@@ -2696,6 +2707,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
     const finalCcwBuy = parseFloat(ccwBuyPrice) || 0;
     const finalCcwSell = parseFloat(ccwSellPrice) || 0;
     const finalOnlineSell = parseFloat(onlineSellPrice) || 0;
+    const finalPgSell = parseFloat(pgSellPrice) || 0;
 
     try {
         // 4. Database mein save karein
@@ -2704,7 +2716,8 @@ app.post('/update-price', requireLogin, async (req, res) => {
             cdmSellPrice: finalCdmSell,
             ccwBuyPrice: finalCcwBuy,
             ccwSellPrice: finalCcwSell,
-            onlineSellPrice: finalOnlineSell 
+            onlineSellPrice: finalOnlineSell,
+            pgSellPrice: finalPgSell
         }, { merge: true });
 
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
@@ -2720,7 +2733,8 @@ app.post('/update-price', requireLogin, async (req, res) => {
             .addFields(
                 { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
+                { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 PG (Payment Gateway)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false }
             )
             .setTimestamp()
             .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
