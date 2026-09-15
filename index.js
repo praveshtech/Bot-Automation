@@ -2153,7 +2153,7 @@ client.on('interactionCreate', async interaction => {
         } else {
             if (userState.step2 === 'CDM') rateUsed = cdmBuyPrice;
             else if (userState.step2 === 'CCW') rateUsed = ccwBuyPrice;
-            else if (userState.step2 === 'Gateway') rateUsed = pgBuyPrice;
+            
             else rateUsed = cdmBuyPrice;
             
             totalInr = totalUsdtForCalc * rateUsed;
