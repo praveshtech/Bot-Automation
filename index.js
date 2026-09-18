@@ -1996,10 +1996,11 @@ client.on('interactionCreate', async interaction => {
                     new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_account_name').setLabel('Account Name').setStyle(TextInputStyle.Short).setRequired(true))
                 );
             } else if (userState.step3 === 'Gateway') {
-                // 🔥 NAYA: Payment Gateway Inputs
                 p2pModal.addComponents(
-                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('gateway_upi').setLabel('Your UPI ID / Number').setStyle(TextInputStyle.Short).setRequired(true)),
-                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('gateway_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true))
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), 
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), 
+                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setStyle(TextInputStyle.Short).setRequired(true))
                 );
             }
         } else {
@@ -2018,7 +2019,7 @@ client.on('interactionCreate', async interaction => {
             else if (userState.step3 === 'CDM') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('cdm_bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('cdm_account_name')}\nAccount No: ${interaction.fields.getTextInputValue('cdm_account_number')}\nMobile No: ${interaction.fields.getTextInputValue('cdm_mobile_number')}`;
             else if (userState.step3 === 'CCW') userDetails = `Phone No: ${interaction.fields.getTextInputValue('ccw_ref_number')}\nHolder Name: ${interaction.fields.getTextInputValue('ccw_account_name')}`;
             else if (userState.step3 === 'Online') userDetails = `Platform: ${interaction.fields.getTextInputValue('online_platform')}\nEmail/Phone: ${interaction.fields.getTextInputValue('online_email_phone')}\nAccount Name: ${interaction.fields.getTextInputValue('online_account_name')}`;
-            else if (userState.step3 === 'Gateway') userDetails = `UPI ID: ${interaction.fields.getTextInputValue('gateway_upi')}\nAccount Holder Name: ${interaction.fields.getTextInputValue('gateway_name')}`;
+            else if (userState.step3 === 'Gateway') userDetails = `Bank Name: ${interaction.fields.getTextInputValue('bank_name')}\nHolder Name: ${interaction.fields.getTextInputValue('account_name')}\nAccount No: ${interaction.fields.getTextInputValue('account_number')}\nIFSC Code: ${interaction.fields.getTextInputValue('ifsc_code')}`;
         } else {
             userDetails = interaction.fields.getTextInputValue('user_receiving_details');
         }
@@ -2731,10 +2732,10 @@ let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgS
             .setTitle('📈 USDT Market Price Update')
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
+                { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '💳 PG (Payment Gateway)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false }
+                { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
             .setTimestamp()
             .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
