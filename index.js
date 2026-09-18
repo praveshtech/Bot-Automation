@@ -92,8 +92,10 @@ client.once('ready', async () => {
         const now = Date.now();
 
         client.guilds.cache.forEach(async guild => {
+            // 🔥 NAYA UPDATE: Transcript channel ko ignore karega 🔥
             const kycChannels = guild.channels.cache.filter(c => 
-                (c.name.startsWith('kyc-') && c.name !== 'kyc-requests') || c.name.startsWith('upi-')
+                (c.name.startsWith('kyc-') && c.name !== 'kyc-requests') || 
+                (c.name.startsWith('upi-') && c.name !== 'upi-ticket-transcript')
             );
 
             for (const [id, channel] of kycChannels) {
@@ -1997,10 +1999,8 @@ client.on('interactionCreate', async interaction => {
                 );
             } else if (userState.step3 === 'Gateway') {
                 // 🔥 NAYA: Payment Gateway Inputs
-                p2pModal.addComponents(
-                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('gateway_upi').setLabel('Your UPI ID / Number').setStyle(TextInputStyle.Short).setRequired(true)),
-                    new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('gateway_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true))
-                );
+                p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('bank_name').setLabel('Bank Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_name').setLabel('Account Holder Name').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('account_number').setLabel('Account Number').setStyle(TextInputStyle.Short).setRequired(true)), new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ifsc_code').setLabel('IFSC Code').setStyle(TextInputStyle.Short).setRequired(true)));
+
             }
         } else {
             p2pModal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('user_receiving_details').setLabel(`Your ${userState.step3} Wallet Address`).setStyle(TextInputStyle.Short).setRequired(true)));
@@ -2732,9 +2732,9 @@ let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgS
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
                 { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 Payment Gateway Sell(IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '💳 PG (Payment Gateway)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false }
             )
             .setTimestamp()
             .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
