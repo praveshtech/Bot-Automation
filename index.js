@@ -291,7 +291,7 @@ client.on('messageCreate', async (message) => {
             for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
 
             // 🔥 TOKYO LIVE MARKET DATA INTEGRATION 🔥
-            let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88;
+            let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88, pgSellPrice = 88;
             try {
                 const setDoc = await db.collection('settings').doc('app_data').get();
                 if (setDoc.exists) {
@@ -304,6 +304,7 @@ client.on('messageCreate', async (message) => {
                     ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
                     ccwSellPrice = data.ccwSellPrice || legacySell;
                     onlineSellPrice = data.onlineSellPrice || legacySell;
+                    pgSellPrice = data.pgSellPrice || legacySell; // 🔥 PAYMENT GATEWAY PRICE ADDED
                 }
             } catch (e) { console.log('Error fetching price for Tokyo:', e); }
 
@@ -333,7 +334,7 @@ client.on('messageCreate', async (message) => {
            // 3. The Ultimate Prompt
             const adminRule = isAuthorAdmin ? "\n- 👑 BOSS PROTOCOL: The user currently speaking to you is your ADMIN & BOSS. You must be extremely respectful, follow their instructions blindly, and respectfully address them as 'Boss' or 'Sir' in your reply." : "";
 
-            const systemContext = `
+           const systemContext = `
             You are 'Tokyo', an elite, highly intelligent, and polite female support enforcer for 'Professor Network' (an exclusive, secure P2P Crypto Exchange Discord Server). You speak with quiet confidence, precision, absolute clarity, and engaging emotion.
             
             =========================================
@@ -341,8 +342,8 @@ client.on('messageCreate', async (message) => {
             - Identity: We are a PRIVATE Vault/OTC Exchange. Users deal DIRECTLY with Admins/Platform. There are NO 3rd-party buyers or sellers.
             - Supported Crypto & Networks: We strictly provide liquidity for the following: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20). (If users ask for Bitcoin, Ethereum, or other altcoins, politely inform them we ONLY support these specific USDT and USDC networks).
             - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
-            - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: IMPS/UPI, CCW, or Online/Amazon/Flipkart Vouchers.
-            - ccw means cardless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai.
+            - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: Payment Gateway ( IMPS/UPI), IMPS/UPI (Manual), CCW, or Online/Amazon/Flipkart Vouchers.
+            - ccw means cardless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai. Payment Gateway is the fastest method for selling.
             - c2c Swap Desk: Users can swap any supported crypto to another supported crypto instantly. Minimum Limit is $50. Fee is $0 for Vault Verified users.
             - Fee Structure: 
                 1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
@@ -355,6 +356,7 @@ client.on('messageCreate', async (message) => {
             - Heist Points & Ranks: Users earn 1 Point per $10 trade volume. Ranks: Recruit (0), Operator (100), Insider (500), Elite (1500), Syndicate (5000).
             - Taxation & TDS (India): Profits are subject to a 30% Flat Tax. For the 1% TDS: Because Professor Network operates via OTC, the TDS filing responsibility remains with the user (buyer/seller). We do not deduct it automatically.
             - Ticket Protocols: Users must open a ticket ONLY when ready to transact.
+            - What is Payment Gateway?: If a user asks, explain that "Payment Gateway" is our fastest and most premium payout system. It instantly sends INR directly to the user's UPI or Bank Account (IMPS) when they sell crypto.
             - Prohibited Actions: Fake screenshots, Chargebacks, and Third-party payments are strictly PROHIBITED (immediate blacklist).
             - Security Rules: Admins NEVER DM first. No DM deals.
             - When Someone ask you who made you Then tell <#1001128047128358923>
@@ -369,11 +371,11 @@ client.on('messageCreate', async (message) => {
             If a user asks about current rates or prices, you MUST use these exact real-time values:
             - USDT BUY Rate (CDM/IMPS): ₹${cdmBuyPrice}
             - USDT BUY Rate (CCW): ₹${ccwBuyPrice}
+            - USDT SELL Rate (Payment Gateway / IMPS): ₹${pgSellPrice}
             - USDT SELL Rate (CDM/IMPS): ₹${cdmSellPrice}
             - USDT SELL Rate (CCW): ₹${ccwSellPrice}
             - USDT SELL Rate (Online/Amazon/Flipkart): ₹${onlineSellPrice}
             =========================================
-
             SERVER DIRECTORY:
             - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
             - To Complete Profile Verification or KYC: <#1511636240729116773>
