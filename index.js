@@ -369,10 +369,10 @@ client.on('messageCreate', async (message) => {
             =========================================
             📈 LIVE MARKET RATES (CRITICAL):
             If a user asks about current rates or prices, you MUST use these exact real-time values:
-            - USDT BUY Rate (CDM/IMPS): ₹${cdmBuyPrice}
+            - USDT BUY Rate (CDM): ₹${cdmBuyPrice}
             - USDT BUY Rate (CCW): ₹${ccwBuyPrice}
             - USDT SELL Rate (Payment Gateway / IMPS): ₹${pgSellPrice}
-            - USDT SELL Rate (CDM/IMPS): ₹${cdmSellPrice}
+            - USDT SELL Rate (CDM): ₹${cdmSellPrice}
             - USDT SELL Rate (CCW): ₹${ccwSellPrice}
             - USDT SELL Rate (Online/Amazon/Flipkart): ₹${onlineSellPrice}
             =========================================
@@ -1368,8 +1368,8 @@ client.on('interactionCreate', async interaction => {
         
         const modal = new ModalBuilder().setCustomId('submit_new_price').setTitle('Update USDT Market Prices');
         modal.addComponents(
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_buy').setLabel('CDM/IMPS Buy Price').setStyle(TextInputStyle.Short).setRequired(true)),
-            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_sell').setLabel('CDM/IMPS Sell Price').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_buy').setLabel('CDM Buy Price').setStyle(TextInputStyle.Short).setRequired(true)),
+            new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('cdm_sell').setLabel('CDM Sell Price').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_buy').setLabel('CCW Buy Price').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('ccw_sell').setLabel('CCW Sell Price').setStyle(TextInputStyle.Short).setRequired(true)),
             new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('online_sell').setLabel('Online/Amazon/Flipkart Sell').setStyle(TextInputStyle.Short).setRequired(true))
@@ -1402,7 +1402,8 @@ client.on('interactionCreate', async interaction => {
                     .setTitle('📈 USDT Market Price Update')
                     .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
                     .addFields(
-                        { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
+                        { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
+                        { name: '🏦 CDM', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
                         { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${ccwBuyPrice}\n🔴 SELL: ₹ ${ccwSellPrice}\n\`\`\``, inline: false },
                         { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${onlineSellPrice}\n\`\`\``, inline: false }
                     )
@@ -1892,10 +1893,9 @@ client.on('interactionCreate', async interaction => {
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                        //{ label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS/UPI', emoji: '🏦', default: userState.step3 === 'IMPS/UPI' }, 
+                        { label: 'Payment Gateway', description: 'Automated IMPS Payout', value: 'Gateway', emoji: '🌐', default: userState.step3 === 'Gateway' },
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                         { label: 'CCW (ICICI, SBI)', description: 'Cardless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
-                        { label: 'Payment Gateway', description: 'Gateway UPI/IMPS', value: 'Gateway', emoji: '🌐', default: userState.step3 === 'Gateway' },
                         { label: 'Online/Amazon/Flipkart', description: 'Vouchers or Online Payments', value: 'Online', emoji: '🛒', default: userState.step3 === 'Online' }
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
@@ -2735,7 +2735,7 @@ let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgS
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
                 { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏦 CDM', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
