@@ -111,6 +111,39 @@ client.once('ready', async () => {
         });
     }, 60 * 60 * 1000);
 
+    // 🔥 PERMANENT FLASH DEAL CHECKER (Survives Bot Restart) 🔥
+    setInterval(async () => {
+        try {
+            const setDoc = await db.collection('settings').doc('app_data').get();
+            if (!setDoc.exists) return;
+            const data = setDoc.data();
+
+            // Agar flash deal active hai aur uska time khatam ho gaya hai
+            if (data.flash_active && data.flash_expiry && Date.now() >= data.flash_expiry) {
+                const method = data.flash_method;
+                const originalPrice = data.original_prices ? data.original_prices[method] : 88;
+
+                // Revert Price aur DB se Flash data clear karo
+                await db.collection('settings').doc('app_data').set({
+                    [method]: originalPrice,
+                    flash_active: admin.firestore.FieldValue.delete(),
+                    flash_method: admin.firestore.FieldValue.delete(),
+                    flash_expiry: admin.firestore.FieldValue.delete(),
+                    original_prices: admin.firestore.FieldValue.delete()
+                }, { merge: true });
+
+                client.guilds.cache.forEach(async guild => {
+                    await updateMarketPriceChannel(guild);
+                    let p2pChat = guild.channels.cache.find(c => c.name.includes('p2p-chat'));
+                    if (p2pChat) {
+                        const endEmbed = new EmbedBuilder().setColor('#95a5a6').setTitle('⏰ Flash Deal Ended').setDescription(`The flash deal has expired. Market price has automatically reverted to \`₹${originalPrice}\`.`).setFooter({ text: 'Professor Network', iconURL: client.user.displayAvatarURL() });
+                        await p2pChat.send({ embeds: [endEmbed] });
+                    }
+                });
+            }
+        } catch (err) { console.error("Flash auto-revert error:", err); }
+    }, 60 * 1000); // Har 1 minute mein check karega
+
     // Inactive KYC/UPI Ticket Auto-Delete System
     setInterval(() => {
         const TWELVE_HOURS = 12 * 60 * 60 * 1000;
@@ -1391,18 +1424,14 @@ client.on('interactionCreate', async interaction => {
         if (interaction.commandName === 'fcl') {
             await interaction.deferReply({ ephemeral: true });
             try {
-                // 1. Database se check karo ki koi flash deal active hai kya
                 const setDoc = await db.collection('settings').doc('app_data').get();
                 if (!setDoc.exists) return interaction.editReply({ content: '❌ No active market data found.' });
-                
                 const data = setDoc.data();
                 
-                // Hum check karte hain ki database mein original_prices save ki hain kya
-                if (!data.original_prices) {
-                    return interaction.editReply({ content: '❌ Koi Flash Deal abhi active nahi hai (Ya uski original price save nahi hui thi).' });
+                if (!data.flash_active || !data.original_prices) {
+                    return interaction.editReply({ content: '❌ No active flash deal found.' });
                 }
 
-                // 2. Original Prices wapas set karo
                 await db.collection('settings').doc('app_data').set({
                     cdmBuyPrice: data.original_prices.cdmBuyPrice || data.cdmBuyPrice,
                     cdmSellPrice: data.original_prices.cdmSellPrice || data.cdmSellPrice,
@@ -1410,13 +1439,14 @@ client.on('interactionCreate', async interaction => {
                     ccwSellPrice: data.original_prices.ccwSellPrice || data.ccwSellPrice,
                     onlineSellPrice: data.original_prices.onlineSellPrice || data.onlineSellPrice,
                     pgSellPrice: data.original_prices.pgSellPrice || data.pgSellPrice,
-                    original_prices: admin.firestore.FieldValue.delete() // Original price tracking hata do
+                    original_prices: admin.firestore.FieldValue.delete(),
+                    flash_active: admin.firestore.FieldValue.delete(),
+                    flash_method: admin.firestore.FieldValue.delete(),
+                    flash_expiry: admin.firestore.FieldValue.delete()
                 }, { merge: true });
 
-                // 3. Price Channel turant update karo
                 await updateMarketPriceChannel(interaction.guild);
 
-                // 4. Discord par announcement bhejo
                 const endEmbed = new EmbedBuilder()
                     .setColor('#e74c3c')
                     .setTitle('🚨 Flash Deal Terminated 🚨')
@@ -1424,7 +1454,7 @@ client.on('interactionCreate', async interaction => {
                     .setFooter({ text: 'Professor Network - Market Security', iconURL: client.user.displayAvatarURL() });
 
                 await interaction.channel.send({ content: '@everyone', embeds: [endEmbed] });
-                await interaction.editReply({ content: '✅ Flash deal successfully cancelled .' });
+                await interaction.editReply({ content: '✅ Flash deal successfully cancelled and prices restored to normal rates.' });
 
             } catch (err) {
                 console.error("Cancel Flash Error:", err);
@@ -1614,31 +1644,25 @@ client.on('interactionCreate', async interaction => {
         await interaction.deferReply({ ephemeral: true });
 
         try {
-            // 1. Purani price fetch karo (app_data se)
             const setDoc = await db.collection('settings').doc('app_data').get();
-            let originalPrice = 88; // default
-            if (setDoc.exists && setDoc.data()[method]) {
-                originalPrice = setDoc.data()[method];
-            }
+            let originalPrice = 88;
+            if (setDoc.exists && setDoc.data()[method]) originalPrice = setDoc.data()[method];
 
-            // 2. Nayi Flash Price database me set karo
-            await db.collection('settings').doc('app_data').set({ [method]: flashPrice }, { merge: true });
+            const endTimeStampMs = Date.now() + (minutes * 60 * 1000); // Expiry time in milliseconds
+            const endTimeStamp = Math.floor(endTimeStampMs / 1000); // For discord embed
+
+            // 🔥 DATABASE MEIN EXPIRY TIME SAVE KAR RAHE HAIN (SURVIVES RESTART)
+            await db.collection('settings').doc('app_data').set({ 
+                [method]: flashPrice,
+                original_prices: { [method]: originalPrice },
+                flash_active: true,
+                flash_method: method,
+                flash_expiry: endTimeStampMs
+            }, { merge: true });
             
-            // 3. USDT Price Channel turant update karo (Helper function se)
             await updateMarketPriceChannel(interaction.guild);
 
-            // 4. Flash Deal Announcement bhejo
-            const endTimeStamp = Math.floor(Date.now() / 1000) + (minutes * 60);
-            
-            // Name mapping taaki message me achha dikhe
-            const methodNames = { 
-                'pgSellPrice': 'Payment gateway sell (IMPS)', 
-                'cdmBuyPrice': 'CDM For Buy', 
-                'cdmSellPrice': 'CDM For Sell', 
-                'ccwBuyPrice': 'CCW For Buy', 
-                'ccwSellPrice': 'CCW For Sell', 
-                'onlineSellPrice': 'Online/Amazon/Flipkart' 
-            };
+            const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
             const displayMethod = methodNames[method];
 
             const flashEmbed = new EmbedBuilder()
@@ -1648,23 +1672,7 @@ client.on('interactionCreate', async interaction => {
                 .setFooter({ text: 'Professor Network - Flash Deals', iconURL: client.user.displayAvatarURL() });
 
             await interaction.channel.send({ content: '@everyone ⚡ **NEW FLASH DEAL ACTIVE!**', embeds: [flashEmbed] });
-            await interaction.editReply({ content: `✅ Flash Deal Active! Price changed to ₹${flashPrice}. It will revert to ₹${originalPrice} after ${minutes} minutes.` });
-
-            // 5. AUTO-REVERT LOGIC (Time khatam hone par wapas old price DB me dalna aur channel update karna)
-            setTimeout(async () => {
-                try {
-                    await db.collection('settings').doc('app_data').set({ [method]: originalPrice }, { merge: true });
-                    await updateMarketPriceChannel(interaction.guild);
-                    
-                    const endEmbed = new EmbedBuilder()
-                        .setColor('#95a5a6')
-                        .setTitle('⏰ Flash Deal Ended')
-                        .setDescription(`The flash deal for **${displayMethod}** has expired. The price has automatically reverted to \`₹${originalPrice}\`.`)
-                        .setFooter({ text: 'Professor Network', iconURL: client.user.displayAvatarURL() });
-
-                    await interaction.channel.send({ embeds: [endEmbed] });
-                } catch (err) { console.error("Auto-revert failed:", err); }
-            }, minutes * 60 * 1000);
+            await interaction.editReply({ content: `✅ Flash Deal Active! Price changed to ₹${flashPrice}. System will auto-revert it after ${minutes} minutes even if bot restarts.` });
 
         } catch (err) {
             console.error(err);
@@ -3168,6 +3176,8 @@ client.on('ready', () => {
         client.guilds.cache.forEach(guild => updateServerStats(guild));
     }, 10 * 60 * 1000); 
 });
+
+
 
 client.on('guildMemberAdd', async (member) => {
     const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
