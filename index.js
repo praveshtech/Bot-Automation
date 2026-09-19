@@ -73,7 +73,8 @@ client.once('ready', async () => {
             { name: 'unmatch', description: 'Unmatch this ticket and return to original category' },
             { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
             { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
-            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' }, 
+            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' },
+            { name: 'fcl', description: 'Flash Clear: Cancel active flash deal and revert prices' }, // 🔥 NAYA COMMAND 
 
             // 🔥 NAYA SLASH COMMAND WITH DROPDOWN 🔥
             { 
@@ -1384,6 +1385,52 @@ client.on('interactionCreate', async interaction => {
 
                 if (parentCat.children.cache.size === 0) await parentCat.delete().catch(()=>{});
             } catch (err) { interaction.editReply({ content: "❌ Error unmatching ticket." }); }
+        }
+
+
+        if (interaction.commandName === 'fcl') {
+            await interaction.deferReply({ ephemeral: true });
+            try {
+                // 1. Database se check karo ki koi flash deal active hai kya
+                const setDoc = await db.collection('settings').doc('app_data').get();
+                if (!setDoc.exists) return interaction.editReply({ content: '❌ No active market data found.' });
+                
+                const data = setDoc.data();
+                
+                // Hum check karte hain ki database mein original_prices save ki hain kya
+                if (!data.original_prices) {
+                    return interaction.editReply({ content: '❌ Koi Flash Deal abhi active nahi hai (Ya uski original price save nahi hui thi).' });
+                }
+
+                // 2. Original Prices wapas set karo
+                await db.collection('settings').doc('app_data').set({
+                    cdmBuyPrice: data.original_prices.cdmBuyPrice || data.cdmBuyPrice,
+                    cdmSellPrice: data.original_prices.cdmSellPrice || data.cdmSellPrice,
+                    ccwBuyPrice: data.original_prices.ccwBuyPrice || data.ccwBuyPrice,
+                    ccwSellPrice: data.original_prices.ccwSellPrice || data.ccwSellPrice,
+                    onlineSellPrice: data.original_prices.onlineSellPrice || data.onlineSellPrice,
+                    pgSellPrice: data.original_prices.pgSellPrice || data.pgSellPrice,
+                    original_prices: admin.firestore.FieldValue.delete() // Original price tracking hata do
+                }, { merge: true });
+
+                // 3. Price Channel turant update karo
+                await updateMarketPriceChannel(interaction.guild);
+
+                // 4. Discord par announcement bhejo
+                const endEmbed = new EmbedBuilder()
+                    .setColor('#e74c3c')
+                    .setTitle('🚨 Flash Deal Terminated 🚨')
+                    .setDescription('The active flash deal has been **manually cancelled** by Admin.\nMarket prices have been restored to their normal rates.')
+                    .setFooter({ text: 'Professor Network - Market Security', iconURL: client.user.displayAvatarURL() });
+
+                await interaction.channel.send({ content: '@everyone', embeds: [endEmbed] });
+                await interaction.editReply({ content: '✅ Flash deal successfully cancelled .' });
+
+            } catch (err) {
+                console.error("Cancel Flash Error:", err);
+                await interaction.editReply({ content: '❌ System Error.' });
+            }
+            return;
         }
 
         // 🔥 FLASH COMMAND AB SAHI JAGAH PAR HAI 🔥
