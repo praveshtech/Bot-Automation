@@ -2058,8 +2058,19 @@ client.on('interactionCreate', async interaction => {
         }
         
         if (interaction.customId === 'dropdown_step2' || interaction.customId === 'dropdown_step3') {
-            if (interaction.customId === 'dropdown_step2') { userState.step2 = interaction.values[0]; userState.step3 = null; } 
-            else { userState.step3 = interaction.values[0]; }
+            if (interaction.customId === 'dropdown_step2') { 
+                userState.step2 = interaction.values[0]; 
+                userState.step3 = null; 
+            } else { 
+                // 🔥 IMPS/UPI $300 MAX LIMIT LOGIC 🔥
+                if (userState.type === 'Sell' && interaction.values[0] === 'IMPS/UPI' && Number(userState.amount) > 300) {
+                    return interaction.reply({ 
+                        content: '❌ **Amount Limit Alert:** Manual IMPS/UPI method only supports up to **$300**.\n\n👉 Please select the **Payment Gateway** method from the dropdown to process this larger amount instantly!', 
+                        ephemeral: true 
+                    });
+                }
+                userState.step3 = interaction.values[0]; 
+            }
             userSelections.set(interaction.user.id, userState);
             
             const typeDropdown = new StringSelectMenuBuilder().setCustomId('dropdown_type').addOptions([
