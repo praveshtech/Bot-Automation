@@ -74,7 +74,31 @@ client.once('ready', async () => {
             { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
             { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
             { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' } 
+
+            // 🔥 NAYA SLASH COMMAND WITH DROPDOWN 🔥
+            { 
+                name: 'flash', 
+                description: '⚡ Publish a Flash Deal and Auto-Update Market Price',
+                options: [
+                    {
+                        name: 'method',
+                        description: 'Select the payment method to update',
+                        type: 3, // String type
+                        required: true,
+                        choices: [
+                            { name: 'Payment gateway sell (IMPS)', value: 'pgSellPrice' },
+                            { name: 'CDM For Buy', value: 'cdmBuyPrice' },
+                            { name: 'CDM For Sell', value: 'cdmSellPrice' },
+                            { name: 'CCW For Buy', value: 'ccwBuyPrice' },
+                            { name: 'CCW For Sell', value: 'ccwSellPrice' },
+                            { name: 'Online/Amazon/Flipkart', value: 'onlineSellPrice' }
+                        ]
+                    }
+                ]
+            }
+
         ]);
+
         console.log(`✅ Slash Commands Registered Successfully!`);
     } catch (err) { console.error("Slash Command Registration Error:", err); }
 
@@ -1211,6 +1235,43 @@ client.on('messageCreate', async (message) => {
     }
 });
 
+// 🔥 FLASH DEAL AUTO-REVERT & CHANNEL UPDATE HELPER 🔥
+async function updateMarketPriceChannel(guild) {
+    try {
+        const setDoc = await db.collection('settings').doc('app_data').get();
+        if (!setDoc.exists) return;
+        const data = setDoc.data();
+
+        const finalCdmBuy = parseFloat(data.cdmBuyPrice) || 0;
+        const finalCdmSell = parseFloat(data.cdmSellPrice) || 0;
+        const finalCcwBuy = parseFloat(data.ccwBuyPrice) || 0;
+        const finalCcwSell = parseFloat(data.ccwSellPrice) || 0;
+        const finalOnlineSell = parseFloat(data.onlineSellPrice) || 0;
+        const finalPgSell = parseFloat(data.pgSellPrice) || 0;
+
+        const priceChannel = guild.channels.cache.get('1503666351594799205'); 
+        if (!priceChannel) return;
+
+        const priceEmbed = new EmbedBuilder()
+            .setColor('#f1c40f')
+            .setTitle('📈 USDT Market Price Update')
+            .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
+            .addFields(
+                { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
+            )
+            .setTimestamp()
+            .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
+
+        const fetchedMessages = await priceChannel.messages.fetch({ limit: 5 });
+        fetchedMessages.forEach(msg => msg.delete().catch(()=>{}));
+        await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });
+    } catch (err) { console.error("Price Update Error:", err); }
+}
+
+
 // ==========================================
 // 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
 // ==========================================
@@ -1324,7 +1385,22 @@ client.on('interactionCreate', async interaction => {
                 if (parentCat.children.cache.size === 0) await parentCat.delete().catch(()=>{});
             } catch (err) { interaction.editReply({ content: "❌ Error unmatching ticket." }); }
         }
-        return; 
+
+        // 🔥 FLASH COMMAND AB SAHI JAGAH PAR HAI 🔥
+        if (interaction.commandName === 'flash') {
+            const method = interaction.options.getString('method');
+            const modal = new ModalBuilder().setCustomId(`flash_modal_${method}`).setTitle('⚡ Create Flash Deal');
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_price').setLabel("Flash Rate (e.g. 101)").setStyle(TextInputStyle.Short).setRequired(true)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_msg').setLabel("Extra Info (e.g. Minimum 500$)").setStyle(TextInputStyle.Paragraph).setRequired(false)),
+                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_minutes').setLabel("Valid for how many Minutes? (e.g. 60)").setStyle(TextInputStyle.Short).setRequired(true))
+            );
+
+            return interaction.showModal(modal);
+        }
+
+        return; // Block ko properly yahan end karenge
     }
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
@@ -1475,6 +1551,80 @@ client.on('interactionCreate', async interaction => {
         const pollMessage = await pollChannel.send({ content: '@everyone', embeds: [pollEmbed] });
         for (let i = 0; i < options.length; i++) { await pollMessage.react(emojis[i]); }
     }
+
+
+    // ==========================================
+    // ⚡ FLASH DEAL MODAL SUBMIT & AUTO-UPDATE
+    // ==========================================
+    if (interaction.isModalSubmit() && interaction.customId.startsWith('flash_modal_')) {
+        const method = interaction.customId.replace('flash_modal_', '');
+        const flashPrice = parseFloat(interaction.fields.getTextInputValue('flash_price'));
+        const extraMsg = interaction.fields.getTextInputValue('flash_msg') || "Grab the deal fast!";
+        const minutes = parseInt(interaction.fields.getTextInputValue('flash_minutes'));
+
+        if (isNaN(flashPrice) || isNaN(minutes)) return interaction.reply({ content: '❌ Invalid Input!', ephemeral: true });
+
+        await interaction.deferReply({ ephemeral: true });
+
+        try {
+            // 1. Purani price fetch karo (app_data se)
+            const setDoc = await db.collection('settings').doc('app_data').get();
+            let originalPrice = 88; // default
+            if (setDoc.exists && setDoc.data()[method]) {
+                originalPrice = setDoc.data()[method];
+            }
+
+            // 2. Nayi Flash Price database me set karo
+            await db.collection('settings').doc('app_data').set({ [method]: flashPrice }, { merge: true });
+            
+            // 3. USDT Price Channel turant update karo (Helper function se)
+            await updateMarketPriceChannel(interaction.guild);
+
+            // 4. Flash Deal Announcement bhejo
+            const endTimeStamp = Math.floor(Date.now() / 1000) + (minutes * 60);
+            
+            // Name mapping taaki message me achha dikhe
+            const methodNames = { 
+                'pgSellPrice': 'Payment gateway sell (IMPS)', 
+                'cdmBuyPrice': 'CDM For Buy', 
+                'cdmSellPrice': 'CDM For Sell', 
+                'ccwBuyPrice': 'CCW For Buy', 
+                'ccwSellPrice': 'CCW For Sell', 
+                'onlineSellPrice': 'Online/Amazon/Flipkart' 
+            };
+            const displayMethod = methodNames[method];
+
+            const flashEmbed = new EmbedBuilder()
+                .setColor('#ff0000')
+                .setTitle(`🚨 MEGA FLASH DEAL: ${displayMethod} 🚨`)
+                .setDescription(`**New Rate:** \`₹${flashPrice}\`\n**Info:** ${extraMsg}\n\n━━━━━━━━━━━━━━━━━━━━\n⏰ **Offer Ends:** <t:${endTimeStamp}:t>\n⏳ **Time Left:** <t:${endTimeStamp}:R>\n━━━━━━━━━━━━━━━━━━━━`)
+                .setFooter({ text: 'Professor Network - Flash Deals', iconURL: client.user.displayAvatarURL() });
+
+            await interaction.channel.send({ content: '@everyone ⚡ **NEW FLASH DEAL ACTIVE!**', embeds: [flashEmbed] });
+            await interaction.editReply({ content: `✅ Flash Deal Active! Price changed to ₹${flashPrice}. It will revert to ₹${originalPrice} after ${minutes} minutes.` });
+
+            // 5. AUTO-REVERT LOGIC (Time khatam hone par wapas old price DB me dalna aur channel update karna)
+            setTimeout(async () => {
+                try {
+                    await db.collection('settings').doc('app_data').set({ [method]: originalPrice }, { merge: true });
+                    await updateMarketPriceChannel(interaction.guild);
+                    
+                    const endEmbed = new EmbedBuilder()
+                        .setColor('#95a5a6')
+                        .setTitle('⏰ Flash Deal Ended')
+                        .setDescription(`The flash deal for **${displayMethod}** has expired. The price has automatically reverted to \`₹${originalPrice}\`.`)
+                        .setFooter({ text: 'Professor Network', iconURL: client.user.displayAvatarURL() });
+
+                    await interaction.channel.send({ embeds: [endEmbed] });
+                } catch (err) { console.error("Auto-revert failed:", err); }
+            }, minutes * 60 * 1000);
+
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply({ content: '❌ System Error.' });
+        }
+    }
+
 
     if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
         const expectedUserId = interaction.customId.replace('confirm_feedback_', '');
