@@ -73,7 +73,7 @@ client.once('ready', async () => {
             { name: 'unmatch', description: 'Unmatch this ticket and return to original category' },
             { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
             { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
-            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' } 
+            { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' }, 
 
             // 🔥 NAYA SLASH COMMAND WITH DROPDOWN 🔥
             { 
