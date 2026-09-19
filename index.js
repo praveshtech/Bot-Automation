@@ -1556,7 +1556,7 @@ client.on('interactionCreate', async interaction => {
                     .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
                     .addFields(
                         { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
-                        { name: '🏦 CDM', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
+                        { name: '🏦 CDM/IMPS', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
                         { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${ccwBuyPrice}\n🔴 SELL: ₹ ${ccwSellPrice}\n\`\`\``, inline: false },
                         { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${onlineSellPrice}\n\`\`\``, inline: false }
                     )
@@ -2098,9 +2098,11 @@ client.on('interactionCreate', async interaction => {
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                        { label: 'Payment Gateway', description: 'Automated IMPS Payout', value: 'Gateway', emoji: '🌐', default: userState.step3 === 'Gateway' },
+                         
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                         { label: 'CCW (ICICI, SBI)', description: 'Cardless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
+                        { label: 'Payment Gateway', description: 'Gateway UPI/IMPS', value: 'Gateway', emoji: '🌐', default: userState.step3 === 'Gateway' },
+                        { label: 'IMPS/UPI', description: `Estimated Time ${estTimes['imps/UPI']}`, value: 'IMPS/UPI', emoji: '🏦', default: userState.step3 === 'IMPS/UPI' },
                         { label: 'Online/Amazon/Flipkart', description: 'Vouchers or Online Payments', value: 'Online', emoji: '🛒', default: userState.step3 === 'Online' }
                     ]);
                 components.push(new ActionRowBuilder().addComponents(step3Dropdown));
