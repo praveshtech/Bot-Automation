@@ -1292,7 +1292,7 @@ async function updateMarketPriceChannel(guild) {
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
                 { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🏦 CDM / IMPS / UPI', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏦 CDM', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
