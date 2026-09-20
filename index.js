@@ -76,7 +76,7 @@ client.once('ready', async () => {
             { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' },
             { name: 'fcl', description: 'Flash Clear: Cancel active flash deal and revert prices' }, // 🔥 NAYA COMMAND 
 
-            // 🔥 NAYA SLASH COMMAND WITH DROPDOWN 🔥
+            // 🔥 NAYA SLASH COMMAND WITH 2 MODES 🔥
             { 
                 name: 'flash', 
                 description: '⚡ Publish a Flash Deal and Auto-Update Market Price',
@@ -84,7 +84,7 @@ client.once('ready', async () => {
                     {
                         name: 'method',
                         description: 'Select the payment method to update',
-                        type: 3, // String type
+                        type: 3, 
                         required: true,
                         choices: [
                             { name: 'Payment gateway sell (IMPS)', value: 'pgSellPrice' },
@@ -93,6 +93,16 @@ client.once('ready', async () => {
                             { name: 'CCW For Buy', value: 'ccwBuyPrice' },
                             { name: 'CCW For Sell', value: 'ccwSellPrice' },
                             { name: 'Online/Amazon/Flipkart', value: 'onlineSellPrice' }
+                        ]
+                    },
+                    {
+                        name: 'mode',
+                        description: 'Select Flash Deal Mode (Time Limit OR Max Tickets)',
+                        type: 3,
+                        required: true,
+                        choices: [
+                            { name: '⏳ Time Limit (e.g. 60 Mins)', value: 'TIME_MODE' },
+                            { name: '🎟️ Max Tickets (e.g. 5 Tickets)', value: 'TICKET_MODE' }
                         ]
                     }
                 ]
@@ -129,6 +139,8 @@ client.once('ready', async () => {
                     flash_active: admin.firestore.FieldValue.delete(),
                     flash_method: admin.firestore.FieldValue.delete(),
                     flash_expiry: admin.firestore.FieldValue.delete(),
+                    flash_tickets_allowed: admin.firestore.FieldValue.delete(), // 🔥 YAHAN ADD HUA
+                    flash_tickets_used: admin.firestore.FieldValue.delete(),    // 🔥 YAHAN ADD HUA
                     original_prices: admin.firestore.FieldValue.delete()
                 }, { merge: true });
 
@@ -421,6 +433,7 @@ client.on('messageCreate', async (message) => {
             - When Someone ask you how can i see my hiest points Then tell use .tt @your_username
             - When Someone ask you how can i see my rank Then tell use .tt @your_username
             - When Someone ask you how can i see my total trades Then tell use .tt @your_username
+            - when using the Manual IMPS/UPI method, amounts are limited to **$300**.  👉 Please select the **Payment Gateway** method from the dropdown to process this larger amount instantly!
             - We Support All Bank CDM like SBI, ICICI, HDFC, Axis, Kotak, Yes Bank, IDFC, IndusInd, Federal Bank, Union Bank, Canara Bank, Punjab National Bank, Bank of Baroda, Indian Bank, Central Bank of India, Bank of India, .
             =========================================
 
@@ -1442,7 +1455,9 @@ client.on('interactionCreate', async interaction => {
                     original_prices: admin.firestore.FieldValue.delete(),
                     flash_active: admin.firestore.FieldValue.delete(),
                     flash_method: admin.firestore.FieldValue.delete(),
-                    flash_expiry: admin.firestore.FieldValue.delete()
+                    flash_expiry: admin.firestore.FieldValue.delete(),
+                    flash_tickets_allowed: admin.firestore.FieldValue.delete(), // 🔥 YAHAN ADD HUA
+                    flash_tickets_used: admin.firestore.FieldValue.delete()     // 🔥 YAHAN ADD HUA
                 }, { merge: true });
 
                 await updateMarketPriceChannel(interaction.guild);
@@ -1463,16 +1478,26 @@ client.on('interactionCreate', async interaction => {
             return;
         }
 
-        // 🔥 FLASH COMMAND AB SAHI JAGAH PAR HAI 🔥
         if (interaction.commandName === 'flash') {
             const method = interaction.options.getString('method');
-            const modal = new ModalBuilder().setCustomId(`flash_modal_${method}`).setTitle('⚡ Create Flash Deal');
+            const mode = interaction.options.getString('mode'); // Naya option
+            
+            // Custom ID mein mode bhi bhej rahe hain taaki submit hone par pata chale
+            const modal = new ModalBuilder().setCustomId(`flash_modal_${method}_${mode}`).setTitle('⚡ Create Flash Deal');
 
-            modal.addComponents(
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_price').setLabel("Flash Rate (e.g. 101)").setStyle(TextInputStyle.Short).setRequired(true)),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_msg').setLabel("Extra Info (e.g. Minimum 500$)").setStyle(TextInputStyle.Paragraph).setRequired(false)),
-                new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_minutes').setLabel("Valid for how many Minutes? (e.g. 60)").setStyle(TextInputStyle.Short).setRequired(true))
-            );
+            const priceInput = new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_price').setLabel("Flash Rate (e.g. 101)").setStyle(TextInputStyle.Short).setRequired(true));
+            const msgInput = new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_msg').setLabel("Extra Info (Optional)").setStyle(TextInputStyle.Paragraph).setRequired(false));
+
+            modal.addComponents(priceInput);
+
+            // Mode ke hisaab se teesra input change hoga
+            if (mode === 'TIME_MODE') {
+                modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_minutes').setLabel("Valid for how many Minutes? (e.g. 60)").setStyle(TextInputStyle.Short).setRequired(true)));
+            } else {
+                modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_tickets').setLabel("Max Tickets Limit? (e.g. 5)").setStyle(TextInputStyle.Short).setRequired(true)));
+            }
+            
+            modal.addComponents(msgInput);
 
             return interaction.showModal(modal);
         }
@@ -1634,12 +1659,26 @@ client.on('interactionCreate', async interaction => {
     // ⚡ FLASH DEAL MODAL SUBMIT & AUTO-UPDATE
     // ==========================================
     if (interaction.isModalSubmit() && interaction.customId.startsWith('flash_modal_')) {
-        const method = interaction.customId.replace('flash_modal_', '');
+        // ID se mode aur method nikalna
+        const idParts = interaction.customId.replace('flash_modal_', '').split('_');
+        const method = idParts[0];
+        const mode = `${idParts[1]}_${idParts[2]}`; // TIME_MODE ya TICKET_MODE
+
         const flashPrice = parseFloat(interaction.fields.getTextInputValue('flash_price'));
         const extraMsg = interaction.fields.getTextInputValue('flash_msg') || "Grab the deal fast!";
-        const minutes = parseInt(interaction.fields.getTextInputValue('flash_minutes'));
+        
+        let minutes = 0;
+        let ticketsLimit = 0;
 
-        if (isNaN(flashPrice) || isNaN(minutes)) return interaction.reply({ content: '❌ Invalid Input!', ephemeral: true });
+        if (mode === 'TIME_MODE') {
+            minutes = parseInt(interaction.fields.getTextInputValue('flash_minutes'));
+            if (isNaN(minutes)) return interaction.reply({ content: '❌ Invalid Minutes!', ephemeral: true });
+        } else {
+            ticketsLimit = parseInt(interaction.fields.getTextInputValue('flash_tickets'));
+            if (isNaN(ticketsLimit) || ticketsLimit <= 0) return interaction.reply({ content: '❌ Invalid Ticket Limit!', ephemeral: true });
+        }
+
+        if (isNaN(flashPrice)) return interaction.reply({ content: '❌ Invalid Price!', ephemeral: true });
 
         await interaction.deferReply({ ephemeral: true });
 
@@ -1648,18 +1687,30 @@ client.on('interactionCreate', async interaction => {
             let originalPrice = 88;
             if (setDoc.exists && setDoc.data()[method]) originalPrice = setDoc.data()[method];
 
-            const endTimeStampMs = Date.now() + (minutes * 60 * 1000); // Expiry time in milliseconds
-            const endTimeStamp = Math.floor(endTimeStampMs / 1000); // For discord embed
-
-            // 🔥 DATABASE MEIN EXPIRY TIME SAVE KAR RAHE HAIN (SURVIVES RESTART)
-            await db.collection('settings').doc('app_data').set({ 
+            let dbUpdateData = {
                 [method]: flashPrice,
                 original_prices: { [method]: originalPrice },
                 flash_active: true,
                 flash_method: method,
-                flash_expiry: endTimeStampMs
-            }, { merge: true });
-            
+                flash_mode: mode
+            };
+
+            let embedDesc = `**New Rate:** \`₹${flashPrice}\`\n**Info:** ${extraMsg}\n\n━━━━━━━━━━━━━━━━━━━━\n`;
+
+            if (mode === 'TIME_MODE') {
+                const endTimeStampMs = Date.now() + (minutes * 60 * 1000); 
+                const endTimeStamp = Math.floor(endTimeStampMs / 1000); 
+                dbUpdateData.flash_expiry = endTimeStampMs;
+                embedDesc += `⏰ **Offer Ends:** <t:${endTimeStamp}:t>\n⏳ **Time Left:** <t:${endTimeStamp}:R>\n`;
+            } else {
+                dbUpdateData.flash_tickets_allowed = ticketsLimit;
+                dbUpdateData.flash_tickets_used = 0;
+                embedDesc += `🎟️ **Ticket Limit:** Only **${ticketsLimit}** Tickets allowed at this price!\n`;
+            }
+            embedDesc += `━━━━━━━━━━━━━━━━━━━━`;
+
+            // Database save
+            await db.collection('settings').doc('app_data').set(dbUpdateData, { merge: true });
             await updateMarketPriceChannel(interaction.guild);
 
             const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
@@ -1668,11 +1719,11 @@ client.on('interactionCreate', async interaction => {
             const flashEmbed = new EmbedBuilder()
                 .setColor('#ff0000')
                 .setTitle(`🚨 MEGA FLASH DEAL: ${displayMethod} 🚨`)
-                .setDescription(`**New Rate:** \`₹${flashPrice}\`\n**Info:** ${extraMsg}\n\n━━━━━━━━━━━━━━━━━━━━\n⏰ **Offer Ends:** <t:${endTimeStamp}:t>\n⏳ **Time Left:** <t:${endTimeStamp}:R>\n━━━━━━━━━━━━━━━━━━━━`)
+                .setDescription(embedDesc)
                 .setFooter({ text: 'Professor Network - Flash Deals', iconURL: client.user.displayAvatarURL() });
 
             await interaction.channel.send({ content: '@everyone ⚡ **NEW FLASH DEAL ACTIVE!**', embeds: [flashEmbed] });
-            await interaction.editReply({ content: `✅ Flash Deal Active! Price changed to ₹${flashPrice}. System will auto-revert it after ${minutes} minutes even if bot restarts.` });
+            await interaction.editReply({ content: `✅ Flash Deal Active! Mode: ${mode === 'TIME_MODE' ? 'Time Based' : 'Ticket Based'}.` });
 
         } catch (err) {
             console.error(err);
@@ -2400,7 +2451,85 @@ client.on('interactionCreate', async interaction => {
             globalLastUpdate = Date.now(); 
         } catch (error) { console.error("Firebase Error: ", error); }
 
-const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. Core Amount**\n> $${baseAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**📊 Exchange Rate & Fees:**\n> Live Rate: ₹${rateUsed}/USDT\n> ${feeLabel}\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n${userState.type === 'Sell' ? `**You Need To Send: $${totalUsdtForCalc} USDT**\n**You Will Receive: ₹${totalInr} INR**` : `**You Need To Pay: ₹${totalInr} INR**\n**You Will Receive: $${baseAmount} USDT**`}`;
+
+        // 🔥 NAYA CODE YAHAN PASTE KAREIN 🔥
+        try {
+            let activeMethodName = '';
+            if (userState.type === 'Sell') {
+                if (userState.step3 === 'CDM' || userState.step3 === 'IMPS/UPI') activeMethodName = 'cdmSellPrice';
+                else if (userState.step3 === 'CCW') activeMethodName = 'ccwSellPrice';
+                else if (userState.step3 === 'Online') activeMethodName = 'onlineSellPrice';
+                else if (userState.step3 === 'Gateway') activeMethodName = 'pgSellPrice';
+                else activeMethodName = 'cdmSellPrice';
+            } else {
+                if (userState.step2 === 'CDM') activeMethodName = 'cdmBuyPrice';
+                else if (userState.step2 === 'CCW') activeMethodName = 'ccwBuyPrice';
+                else activeMethodName = 'cdmBuyPrice';
+            }
+
+            const setDoc = await db.collection('settings').doc('app_data').get();
+            if (setDoc.exists) {
+                const data = setDoc.data();
+                if (data.flash_active && data.flash_method === activeMethodName && data.flash_tickets_allowed > 0) {
+                    const newUsed = (data.flash_tickets_used || 0) + 1;
+                    
+                    // 🔥 NAYA: Specific Flash Deal Channel ID set ki gayi hai 🔥
+                    let flashChannel = interaction.guild.channels.cache.get('1550671388644483122');
+
+                    if (newUsed >= data.flash_tickets_allowed) {
+                        // LIMIT REACHED - AUTO REVERT KAREGA
+                        const method = data.flash_method;
+                        const originalPrice = data.original_prices ? data.original_prices[method] : 88;
+                        
+                        await db.collection('settings').doc('app_data').set({
+                            [method]: originalPrice,
+                            flash_active: admin.firestore.FieldValue.delete(),
+                            flash_method: admin.firestore.FieldValue.delete(),
+                            flash_expiry: admin.firestore.FieldValue.delete(),
+                            flash_tickets_allowed: admin.firestore.FieldValue.delete(),
+                            flash_tickets_used: admin.firestore.FieldValue.delete(),
+                            original_prices: admin.firestore.FieldValue.delete()
+                        }, { merge: true });
+
+                        await updateMarketPriceChannel(interaction.guild);
+
+                        if (flashChannel) {
+                            const endEmbed = new EmbedBuilder()
+                                .setColor('#95a5a6')
+                                .setTitle('🎟️ Flash Deal Sold Out!')
+                                .setDescription(`The flash deal limit of **${data.flash_tickets_allowed} tickets** has been reached!\nMarket price has automatically reverted to \`₹${originalPrice}\`.`)
+                                .setFooter({ text: 'Professor Network', iconURL: client.user.displayAvatarURL() });
+                            await flashChannel.send({ content: '@everyone', embeds: [endEmbed] }); // 🔥 Everyone Tag
+                        }
+                    } else {
+                        // AGAR LIMIT ABHI BAAKI HAI TOH SIRF COUNTER BADA DEGA AUR FOMO ALERT BHEJEGA
+                        await db.collection('settings').doc('app_data').update({ flash_tickets_used: newUsed });
+                        
+                        // 🔥 FOMO ALERT MESSAGE 🔥
+                        if (flashChannel) {
+                            const ticketsLeft = data.flash_tickets_allowed - newUsed;
+                            
+                            const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
+                            const displayMethod = methodNames[data.flash_method];
+
+                            let alertColor = '#f39c12'; // Yellow-Orange for warning
+                            if (ticketsLeft === 1) alertColor = '#e74c3c'; // Red for last ticket
+                            
+                            const fomoEmbed = new EmbedBuilder()
+                                .setColor(alertColor)
+                                .setTitle('⚡ Deal Claim Update!')
+                                .setDescription(`A ticket has just been claimed for **${displayMethod}**!\n\n🔥 Hurry up! Only **${ticketsLeft} tickets left** at the flash price!`)
+                                .setFooter({ text: 'Professor Network - Fast Trades' });
+
+                            await flashChannel.send({ content: '@everyone', embeds: [fomoEmbed] });
+                        }
+                    }
+                }
+            }
+        } catch (e) { console.error("Flash limit error:", e); }
+        // 🔥 NAYA CODE KHATAM 🔥
+
+        const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. Core Amount**\n> $${baseAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**📊 Exchange Rate & Fees:**\n> Live Rate: ₹${rateUsed}/USDT\n> ${feeLabel}\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n${userState.type === 'Sell' ? `**You Need To Send: $${totalUsdtForCalc} USDT**\n**You Will Receive: ₹${totalInr} INR**` : `**You Need To Pay: ₹${totalInr} INR**\n**You Will Receive: $${baseAmount} USDT**`}`;
         const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
         const paymentEmbed = new EmbedBuilder().setColor('#5865F2').setDescription(paymentInstructions);
         const actionButtonRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('complete_p2p_ticket').setLabel('✅ Mark Complete (Admin)').setStyle(ButtonStyle.Success), new ButtonBuilder().setCustomId('cancel_p2p_ticket').setLabel('❌ Cancel Trade').setStyle(ButtonStyle.Danger));
