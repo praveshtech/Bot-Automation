@@ -75,6 +75,7 @@ client.once('ready', async () => {
             { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
             { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' },
             { name: 'fcl', description: 'Flash Clear: Cancel active flash deal and revert prices' }, // 🔥 NAYA COMMAND 
+            { name: 'audit', description: '📊 Send complete daily Vault Ledger PDF to your DM' }, // 🔥 NAYA COMMAND
 
             // 🔥 NAYA SLASH COMMAND WITH 2 MODES 🔥
             { 
@@ -1500,6 +1501,118 @@ client.on('interactionCreate', async interaction => {
             modal.addComponents(msgInput);
 
             return interaction.showModal(modal);
+        }
+
+        if (interaction.commandName === 'audit') {
+            await interaction.deferReply({ ephemeral: true });
+
+            if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
+                return interaction.editReply({ content: '❌ Access Denied.' });
+            }
+
+            try {
+                const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
+                
+                if (snapshot.empty) {
+                    return interaction.editReply({ content: '❌ No completed trades found.' });
+                }
+
+                const PDFDocument = require('pdfkit');
+                const doc = new PDFDocument({ margin: 40 });
+                let buffers = [];
+
+                doc.on('data', buffers.push.bind(buffers));
+                doc.on('end', async () => {
+                    const pdfBuffer = Buffer.concat(buffers);
+                    const pdfAttachment = new AttachmentBuilder(pdfBuffer, { name: `Vault_Daily_Audit_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf` });
+
+                    try {
+                        const bossUser = await client.users.fetch('1001128047128358923'); 
+                        
+                        const auditEmbed = new EmbedBuilder()
+                            .setColor('#2ecc71')
+                            .setTitle('📊 Vault Master Audit PDF')
+                            .setDescription(`Here is your full transaction ledger.\nTotal Records: **${snapshot.size}**`)
+                            .setTimestamp()
+                            .setFooter({ text: 'Professor Network Security' });
+
+                        await bossUser.send({ embeds: [auditEmbed], files: [pdfAttachment] });
+                        await interaction.editReply({ content: `✅ Master Audit PDF has been silently sent to your DM (<@1001128047128358923>).` });
+                    } catch (dmErr) {
+                        console.error("Could not send DM to Boss:", dmErr);
+                        await interaction.editReply({ content: '❌ PDF ban gayi par DM nahi jaa paya. Kya aapka DM off hai?' });
+                    }
+                });
+
+                // --- PDF DESIGN SHURU ---
+                doc.fontSize(24).fillColor('#2c3e50').text('PROFESSOR NETWORK', { align: 'center' });
+                doc.fontSize(16).fillColor('#34495e').text('MASTER VAULT AUDIT LEDGER', { align: 'center' });
+                doc.moveDown(1);
+                
+                doc.fontSize(12).fillColor('#000000').text(`Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
+                doc.text(`Total Completed Trades: ${snapshot.size}`);
+                doc.moveDown(1.5);
+
+                let totalUsdtIn = 0;
+                let totalUsdtOut = 0;
+                let totalInrIn = 0;
+                let totalInrOut = 0;
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const ticketId = docSnap.id.replace('ticket-', '').toUpperCase();
+                    
+                    if (data.tradeType === 'Sell') {
+                        totalUsdtIn += data.amountUsd || 0;
+                        totalInrOut += data.totalInr || 0;
+                    } else if (data.tradeType === 'Buy') {
+                        totalUsdtOut += data.amountUsd || 0;
+                        totalInrIn += data.totalInr || 0;
+                    }
+
+                    doc.fontSize(14).fillColor('#2980b9').text(`TICKET: #${ticketId}`, { underline: true });
+                    doc.moveDown(0.2);
+                    doc.fontSize(11).fillColor('#000000');
+                    
+                    doc.text(`User: ${data.username || 'Unknown'} (${data.discordUserId || 'N/A'})`);
+                    doc.text(`Action: ${data.tradeType.toUpperCase()} USDT`);
+                    
+                    if (data.tradeType === 'Sell') {
+                        doc.fillColor('#e74c3c').text(`Vault Sent (INR): Rs. ${data.totalInr}`);
+                        doc.fillColor('#2ecc71').text(`Vault Received (USDT): $${data.amountUsd}`);
+                        doc.fillColor('#000000');
+                        doc.text(`User Banking Details:`);
+                        doc.fontSize(10).fillColor('#7f8c8d').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
+                    } else {
+                        doc.fillColor('#2ecc71').text(`Vault Received (INR): Rs. ${data.totalInr}`);
+                        doc.fillColor('#e74c3c').text(`Vault Sent (USDT): $${data.amountUsd}`);
+                        doc.fillColor('#000000');
+                        doc.text(`User Wallet Details:`);
+                        doc.fontSize(10).fillColor('#7f8c8d').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
+                    }
+                    doc.moveDown(1.5);
+                });
+
+                // Summary Section at the bottom of PDF
+                doc.addPage();
+                doc.fontSize(18).fillColor('#2c3e50').text('VAULT SUMMARY', { align: 'center', underline: true });
+                doc.moveDown();
+                
+                doc.fontSize(14).fillColor('#2ecc71').text(`TOTAL RECEIVED (IN)`);
+                doc.fontSize(12).fillColor('#000000').text(`USDT: $${totalUsdtIn.toFixed(2)}`);
+                doc.text(`INR: Rs. ${totalInrIn.toFixed(2)}`);
+                doc.moveDown();
+
+                doc.fontSize(14).fillColor('#e74c3c').text(`TOTAL DISBURSED (OUT)`);
+                doc.fontSize(12).fillColor('#000000').text(`USDT: $${totalUsdtOut.toFixed(2)}`);
+                doc.text(`INR: Rs. ${totalInrOut.toFixed(2)}`);
+
+                doc.end();
+
+            } catch (err) {
+                console.error("Audit Generation Error:", err);
+                await interaction.editReply({ content: '❌ Error generating PDF report.' });
+            }
         }
 
         return; // Block ko properly yahan end karenge
