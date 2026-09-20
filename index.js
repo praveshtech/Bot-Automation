@@ -65,19 +65,17 @@ client.once('ready', async () => {
         console.log("🧠 Local AI Memory Engine Loaded!");
     }).catch(err => console.error("Memory Engine Error:", err));
 
-    // 🔥 SLASH COMMANDS REGISTRATION
+    // 🔥 SLASH COMMANDS REGISTRATION (INSTANT SYNC) 🔥
     try {
-        await client.application.commands.set([
+        const commandsArray = [
             { name: 'complete', description: 'Shift ticket to completed category for night settlement' },
             { name: 'match', description: 'Match this ticket with another (Escrow)', options: [{ name: 'target', type: 3, description: 'Type category name (e.g., MATCH 01). Leave empty to create new.', required: false }] },
             { name: 'unmatch', description: 'Unmatch this ticket and return to original category' },
             { name: 'ac', description: 'Auto-Connect: Find matching buyers for a specific amount' },
             { name: 're', description: 'Re-flash: Resend the last match details to all buyers' },
             { name: 'cl', description: 'Clear: Delete all active flash messages for this ticket' },
-            { name: 'fcl', description: 'Flash Clear: Cancel active flash deal and revert prices' }, // 🔥 NAYA COMMAND 
-            { name: 'audit', description: '📊 Send complete daily Vault Ledger PDF to your DM' }, // 🔥 NAYA COMMAND
-
-            // 🔥 NAYA SLASH COMMAND WITH 2 MODES 🔥
+            { name: 'fcl', description: 'Flash Clear: Cancel active flash deal and revert prices' },
+            { name: 'audit', description: '📊 Send complete daily Vault Ledger PDF to your DM' },
             { 
                 name: 'flash', 
                 description: '⚡ Publish a Flash Deal and Auto-Update Market Price',
@@ -108,10 +106,17 @@ client.once('ready', async () => {
                     }
                 ]
             }
+        ];
 
-        ]);
-
-        console.log(`✅ Slash Commands Registered Successfully!`);
+        // 🔥 GUILD ID SE INSTANT SYNC HOGA 🔥
+        const guild = client.guilds.cache.get('1450915791338737757');
+        if (guild) {
+            await guild.commands.set(commandsArray);
+            console.log(`✅ Guild Commands Registered INSTANTLY!`);
+        } else {
+            await client.application.commands.set(commandsArray);
+            console.log(`✅ Global Commands Registered!`);
+        }
     } catch (err) { console.error("Slash Command Registration Error:", err); }
 
     // Leaderboard Interval
