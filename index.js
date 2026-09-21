@@ -1639,6 +1639,7 @@ client.on('interactionCreate', async interaction => {
             }
             return;
         }
+    }
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         await interaction.deferUpdate(); 
