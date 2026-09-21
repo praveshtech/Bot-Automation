@@ -1528,12 +1528,48 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ Queue khali hai! Completed Buy/Sell category mein koi ticket parked nahi hai.' });
                 }
 
-                // 🔥 2. Un Parked Channels ka data database se nikalna 🔥
+                // 🔥 2. Data & Transcripts Fetch Karna aur Totals Calculate karna 🔥
                 const parkedTicketsData = [];
+                let totalUsdtIn = 0;
+                let totalUsdtOut = 0;
+                let totalInrIn = 0;
+                let totalInrOut = 0;
+
                 for (const channel of parkedChannels) {
                     const ticketDoc = await db.collection('p2p_tickets').doc(channel.id).get();
                     if (ticketDoc.exists) {
-                        parkedTicketsData.push({ id: channel.id, name: channel.name, ...ticketDoc.data() });
+                        const data = ticketDoc.data();
+                        
+                        // Calculation
+                        if (data.tradeType === 'Sell') {
+                            totalUsdtIn += data.amountUsd || 0;
+                            totalInrOut += data.totalInr || 0;
+                        } else if (data.tradeType === 'Buy') {
+                            totalUsdtOut += data.amountUsd || 0;
+                            totalInrIn += data.totalInr || 0;
+                        }
+
+                        // Transcript Fetch (Last 15 Messages)
+                        let transcriptLines = [];
+                        try {
+                            const messages = await channel.messages.fetch({ limit: 15 });
+                            Array.from(messages.values()).reverse().forEach(m => {
+                                if (m.content) {
+                                    // Remove newlines to keep PDF clean
+                                    const cleanText = m.cleanContent.replace(/\n/g, ' ').substring(0, 100);
+                                    transcriptLines.push(`${m.author.username}: ${cleanText}`);
+                                }
+                            });
+                        } catch (err) {
+                            transcriptLines.push("[Could not load messages]");
+                        }
+
+                        parkedTicketsData.push({ 
+                            id: channel.id, 
+                            name: channel.name, 
+                            transcript: transcriptLines,
+                            ...data 
+                        });
                     }
                 }
 
@@ -1541,7 +1577,7 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ Categories mein tickets hain, par unka database record nahi mila.' });
                 }
 
-                // 🔥 3. PDF Generate Karna 🔥
+                // 🔥 3. PDF Generate Karna (New Premium Format) 🔥
                 const PDFDocument = require('pdfkit');
                 const doc = new PDFDocument({ margin: 40 });
                 let buffers = [];
@@ -1549,7 +1585,7 @@ client.on('interactionCreate', async interaction => {
                 doc.on('data', buffers.push.bind(buffers));
                 doc.on('end', async () => {
                     const pdfBuffer = Buffer.concat(buffers);
-                    const pdfAttachment = new AttachmentBuilder(pdfBuffer, { name: `Night_Audit_Queue_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf` });
+                    const pdfAttachment = new AttachmentBuilder(pdfBuffer, { name: `Night_Audit_Queue_Formatted_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf` });
 
                     try {
                         const bossUser = await client.users.fetch('1001128047128358923'); 
@@ -1557,79 +1593,103 @@ client.on('interactionCreate', async interaction => {
                         const auditEmbed = new EmbedBuilder()
                             .setColor('#2ecc71')
                             .setTitle('📊 Pending Settlement Audit PDF')
-                            .setDescription(`10:00 AM se pehle ki parked tickets ka data.\nTotal Parked Tickets: **${parkedTicketsData.length}**`)
+                            .setDescription(`10:00 AM se pehle ki parked tickets aur chat transcripts ka data.\nTotal Parked Tickets: **${parkedTicketsData.length}**`)
                             .setTimestamp()
                             .setFooter({ text: 'Professor Network Security' });
 
                         await bossUser.send({ embeds: [auditEmbed], files: [pdfAttachment] });
-                        await interaction.editReply({ content: `✅ Parked tickets (Pre-10 AM) ka Audit PDF aapke DM mein bhej diya gaya hai (<@1001128047128358923>).` });
+                        await interaction.editReply({ content: `✅ Detailed Formatted PDF (with transcripts) aapke DM mein bhej diya gaya hai (<@1001128047128358923>).` });
                     } catch (dmErr) {
                         console.error("Could not send DM to Boss:", dmErr);
                         await interaction.editReply({ content: '❌ PDF ban gayi par DM nahi gaya. Apka DM open rakhein.' });
                     }
                 });
 
-                // --- PDF DESIGN SHURU ---
-                doc.fontSize(24).fillColor('#2c3e50').text('PROFESSOR NETWORK', { align: 'center' });
-                doc.fontSize(16).fillColor('#34495e').text('PENDING SETTLEMENT QUEUE (PRE-10 AM)', { align: 'center' });
+                // ==========================================
+                // 🎨 PDF DESIGNING PART (AS PER IMAGE)
+                // ==========================================
+                doc.fontSize(22).fillColor('#1e293b').text('PROFESSOR NETWORK', { align: 'center' });
+                doc.moveDown(0.2);
+                doc.fontSize(11).fillColor('#475569').text(`PENDING SETTLEMENT QUEUE (PRE-10 AM) | Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} | Total Parked Tickets: ${parkedTicketsData.length}`, { align: 'center' });
+                doc.moveDown(1.5);
+                
+                // --- TOP SUMMARY BOX ---
+                let startY = doc.y;
+                
+                // TOTAL TO COLLECT (IN)
+                doc.fontSize(12).fillColor('#000000').text('TOTAL TO COLLECT (IN)', 40, startY);
+                doc.fontSize(10).fillColor('#64748b').text('USDT', 40, startY + 20);
+                doc.text('INR', 140, startY + 20);
+                doc.fontSize(12).fillColor('#16a34a').text(`$${totalUsdtIn.toFixed(2)}`, 40, startY + 35); // Green
+                doc.fillColor('#000000').text(`Rs. ${totalInrIn.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 140, startY + 35);
+                
+                // TOTAL TO PAY (OUT)
+                doc.fontSize(12).fillColor('#000000').text('TOTAL TO PAY (OUT)', 300, startY);
+                doc.fontSize(10).fillColor('#64748b').text('USDT', 300, startY + 20);
+                doc.text('INR', 400, startY + 20);
+                doc.fontSize(12).fillColor('#dc2626').text(`$${totalUsdtOut.toFixed(2)}`, 300, startY + 35); // Red
+                doc.fillColor('#000000').text(`Rs. ${totalInrOut.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 400, startY + 35);
+
+                doc.y = startY + 70; // Set cursor below summary
                 doc.moveDown(1);
                 
-                doc.fontSize(12).fillColor('#000000').text(`Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
-                doc.text(`Total Parked Tickets: ${parkedTicketsData.length}`);
-                doc.moveDown(1.5);
+                doc.fontSize(16).fillColor('#1e293b').text('Queue Details', 40, doc.y, { underline: true });
+                doc.moveDown(1);
 
-                let totalUsdtIn = 0;
-                let totalUsdtOut = 0;
-                let totalInrIn = 0;
-                let totalInrOut = 0;
-
+                // --- TICKETS LOOP ---
                 parkedTicketsData.forEach(data => {
+                    // Page margin check to prevent awkward cuts
+                    if (doc.y > 650) doc.addPage();
+
                     const ticketId = data.name.replace('ticket-', '').toUpperCase();
                     
-                    if (data.tradeType === 'Sell') {
-                        totalUsdtIn += data.amountUsd || 0;
-                        totalInrOut += data.totalInr || 0;
-                    } else if (data.tradeType === 'Buy') {
-                        totalUsdtOut += data.amountUsd || 0;
-                        totalInrIn += data.totalInr || 0;
-                    }
+                    // Line Separator
+                    doc.lineWidth(0.5).strokeColor('#cbd5e1').moveTo(40, doc.y).lineTo(550, doc.y).stroke();
+                    doc.moveDown(0.5);
 
-                    doc.fontSize(14).fillColor('#2980b9').text(`TICKET: #${ticketId}`, { underline: true });
-                    doc.moveDown(0.2);
-                    doc.fontSize(11).fillColor('#000000');
-                    
-                    doc.text(`User: ${data.username || 'Unknown'} (${data.discordUserId || 'N/A'})`);
-                    doc.text(`Action: ${data.tradeType ? data.tradeType.toUpperCase() : 'UNKNOWN'} USDT`);
-                    
-                    if (data.tradeType === 'Sell') {
-                        doc.fillColor('#e74c3c').text(`Vault To Pay (INR): Rs. ${data.totalInr || 0}`);
-                        doc.fillColor('#2ecc71').text(`Vault Collected (USDT): $${data.amountUsd || 0}`);
-                        doc.fillColor('#000000');
-                        doc.text(`User Banking Details:`);
-                        doc.fontSize(10).fillColor('#7f8c8d').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
+                    // Row 1: TICKET # & ACTION
+                    doc.fontSize(12).fillColor('#2563eb').text(`TICKET: #${ticketId}`, 40, doc.y, { continued: true });
+                    doc.fillColor('#000000').text(`    |    ${data.tradeType ? data.tradeType.toUpperCase() : 'UNKNOWN'} USDT`);
+                    doc.moveDown(0.5);
+
+                    // Row 2: VAULT COLLECTED & PAY (Structured Columns)
+                    let currentY = doc.y;
+                    if (data.tradeType === 'Buy') {
+                        doc.fontSize(9).fillColor('#64748b').text('VAULT COLLECTED (INR)', 40, currentY);
+                        doc.text('|   VAULT TO PAY (USDT)', 220, currentY);
+                        doc.fontSize(11).fillColor('#000000').text(`Rs. ${data.totalInr || 0}`, 40, currentY + 15);
+                        doc.fillColor('#dc2626').text(`$${data.amountUsd || 0}`, 230, currentY + 15);
                     } else {
-                        doc.fillColor('#2ecc71').text(`Vault Collected (INR): Rs. ${data.totalInr || 0}`);
-                        doc.fillColor('#e74c3c').text(`Vault To Pay (USDT): $${data.amountUsd || 0}`);
-                        doc.fillColor('#000000');
-                        doc.text(`User Wallet Details:`);
-                        doc.fontSize(10).fillColor('#7f8c8d').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
+                        doc.fontSize(9).fillColor('#64748b').text('VAULT TO PAY (INR)', 40, currentY);
+                        doc.text('|   VAULT COLLECTED (USDT)', 220, currentY);
+                        doc.fontSize(11).fillColor('#dc2626').text(`Rs. ${data.totalInr || 0}`, 40, currentY + 15);
+                        doc.fillColor('#16a34a').text(`$${data.amountUsd || 0}`, 230, currentY + 15);
                     }
-                    doc.moveDown(1.5);
+                    
+                    doc.y = currentY + 40; // Push cursor down
+
+                    // Row 3: USER & DETAILS
+                    doc.fontSize(10).fillColor('#334155').text(`USER: ${data.username || 'Unknown'} (${data.discordUserId || 'N/A'})`);
+                    doc.moveDown(0.2);
+                    doc.fontSize(9).fillColor('#64748b').text(data.tradeType === 'Sell' ? 'USER BANKING DETAILS' : 'USER WALLET DETAILS');
+                    doc.fontSize(10).fillColor('#000000').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
+                    doc.moveDown(0.5);
+
+                    // Row 4: CHAT TRANSCRIPT
+                    doc.fontSize(9).fillColor('#64748b').text('CHAT TRANSCRIPT:', { underline: true });
+                    doc.moveDown(0.2);
+                    doc.fontSize(9).fillColor('#475569');
+                    
+                    if (data.transcript && data.transcript.length > 0) {
+                        data.transcript.forEach(line => {
+                            doc.text(line);
+                        });
+                    } else {
+                        doc.text("No messages recorded.");
+                    }
+
+                    doc.moveDown(1);
                 });
-
-                // Summary Section at the bottom of PDF
-                doc.addPage();
-                doc.fontSize(18).fillColor('#2c3e50').text('QUEUE SUMMARY (TO BE SETTLED)', { align: 'center', underline: true });
-                doc.moveDown();
-                
-                doc.fontSize(14).fillColor('#2ecc71').text(`TOTAL TO COLLECT (IN)`);
-                doc.fontSize(12).fillColor('#000000').text(`USDT: $${totalUsdtIn.toFixed(2)}`);
-                doc.text(`INR: Rs. ${totalInrIn.toFixed(2)}`);
-                doc.moveDown();
-
-                doc.fontSize(14).fillColor('#e74c3c').text(`TOTAL TO PAY (OUT)`);
-                doc.fontSize(12).fillColor('#000000').text(`USDT: $${totalUsdtOut.toFixed(2)}`);
-                doc.text(`INR: Rs. ${totalInrOut.toFixed(2)}`);
 
                 doc.end();
 
