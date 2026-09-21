@@ -1516,12 +1516,32 @@ client.on('interactionCreate', async interaction => {
             }
 
             try {
-                const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
-                
-                if (snapshot.empty) {
-                    return interaction.editReply({ content: '❌ No completed trades found.' });
+                // 🔥 1. Server se Completed Categories Dhoondhna 🔥
+                const completedBuyCat = interaction.guild.channels.cache.find(c => c.name === '🟢 COMPLETED BUY' && c.type === ChannelType.GuildCategory);
+                const completedSellCat = interaction.guild.channels.cache.find(c => c.name === '🔴 COMPLETED SELL' && c.type === ChannelType.GuildCategory);
+
+                const parkedChannels = [];
+                if (completedBuyCat) parkedChannels.push(...completedBuyCat.children.cache.values());
+                if (completedSellCat) parkedChannels.push(...completedSellCat.children.cache.values());
+
+                if (parkedChannels.length === 0) {
+                    return interaction.editReply({ content: '❌ Queue khali hai! Completed Buy/Sell category mein koi ticket parked nahi hai.' });
                 }
 
+                // 🔥 2. Un Parked Channels ka data database se nikalna 🔥
+                const parkedTicketsData = [];
+                for (const channel of parkedChannels) {
+                    const ticketDoc = await db.collection('p2p_tickets').doc(channel.id).get();
+                    if (ticketDoc.exists) {
+                        parkedTicketsData.push({ id: channel.id, name: channel.name, ...ticketDoc.data() });
+                    }
+                }
+
+                if (parkedTicketsData.length === 0) {
+                    return interaction.editReply({ content: '❌ Categories mein tickets hain, par unka database record nahi mila.' });
+                }
+
+                // 🔥 3. PDF Generate Karna 🔥
                 const PDFDocument = require('pdfkit');
                 const doc = new PDFDocument({ margin: 40 });
                 let buffers = [];
@@ -1529,33 +1549,33 @@ client.on('interactionCreate', async interaction => {
                 doc.on('data', buffers.push.bind(buffers));
                 doc.on('end', async () => {
                     const pdfBuffer = Buffer.concat(buffers);
-                    const pdfAttachment = new AttachmentBuilder(pdfBuffer, { name: `Vault_Daily_Audit_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf` });
+                    const pdfAttachment = new AttachmentBuilder(pdfBuffer, { name: `Night_Audit_Queue_${new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}.pdf` });
 
                     try {
                         const bossUser = await client.users.fetch('1001128047128358923'); 
                         
                         const auditEmbed = new EmbedBuilder()
                             .setColor('#2ecc71')
-                            .setTitle('📊 Vault Master Audit PDF')
-                            .setDescription(`Here is your full transaction ledger.\nTotal Records: **${snapshot.size}**`)
+                            .setTitle('📊 Pending Settlement Audit PDF')
+                            .setDescription(`10:00 AM se pehle ki parked tickets ka data.\nTotal Parked Tickets: **${parkedTicketsData.length}**`)
                             .setTimestamp()
                             .setFooter({ text: 'Professor Network Security' });
 
                         await bossUser.send({ embeds: [auditEmbed], files: [pdfAttachment] });
-                        await interaction.editReply({ content: `✅ Master Audit PDF has been silently sent to your DM (<@1001128047128358923>).` });
+                        await interaction.editReply({ content: `✅ Parked tickets (Pre-10 AM) ka Audit PDF aapke DM mein bhej diya gaya hai (<@1001128047128358923>).` });
                     } catch (dmErr) {
                         console.error("Could not send DM to Boss:", dmErr);
-                        await interaction.editReply({ content: '❌ PDF ban gayi par DM nahi jaa paya. Kya aapka DM off hai?' });
+                        await interaction.editReply({ content: '❌ PDF ban gayi par DM nahi gaya. Apka DM open rakhein.' });
                     }
                 });
 
                 // --- PDF DESIGN SHURU ---
                 doc.fontSize(24).fillColor('#2c3e50').text('PROFESSOR NETWORK', { align: 'center' });
-                doc.fontSize(16).fillColor('#34495e').text('MASTER VAULT AUDIT LEDGER', { align: 'center' });
+                doc.fontSize(16).fillColor('#34495e').text('PENDING SETTLEMENT QUEUE (PRE-10 AM)', { align: 'center' });
                 doc.moveDown(1);
                 
                 doc.fontSize(12).fillColor('#000000').text(`Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`);
-                doc.text(`Total Completed Trades: ${snapshot.size}`);
+                doc.text(`Total Parked Tickets: ${parkedTicketsData.length}`);
                 doc.moveDown(1.5);
 
                 let totalUsdtIn = 0;
@@ -1563,9 +1583,8 @@ client.on('interactionCreate', async interaction => {
                 let totalInrIn = 0;
                 let totalInrOut = 0;
 
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const ticketId = docSnap.id.replace('ticket-', '').toUpperCase();
+                parkedTicketsData.forEach(data => {
+                    const ticketId = data.name.replace('ticket-', '').toUpperCase();
                     
                     if (data.tradeType === 'Sell') {
                         totalUsdtIn += data.amountUsd || 0;
@@ -1580,17 +1599,17 @@ client.on('interactionCreate', async interaction => {
                     doc.fontSize(11).fillColor('#000000');
                     
                     doc.text(`User: ${data.username || 'Unknown'} (${data.discordUserId || 'N/A'})`);
-                    doc.text(`Action: ${data.tradeType.toUpperCase()} USDT`);
+                    doc.text(`Action: ${data.tradeType ? data.tradeType.toUpperCase() : 'UNKNOWN'} USDT`);
                     
                     if (data.tradeType === 'Sell') {
-                        doc.fillColor('#e74c3c').text(`Vault Sent (INR): Rs. ${data.totalInr}`);
-                        doc.fillColor('#2ecc71').text(`Vault Received (USDT): $${data.amountUsd}`);
+                        doc.fillColor('#e74c3c').text(`Vault To Pay (INR): Rs. ${data.totalInr || 0}`);
+                        doc.fillColor('#2ecc71').text(`Vault Collected (USDT): $${data.amountUsd || 0}`);
                         doc.fillColor('#000000');
                         doc.text(`User Banking Details:`);
                         doc.fontSize(10).fillColor('#7f8c8d').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
                     } else {
-                        doc.fillColor('#2ecc71').text(`Vault Received (INR): Rs. ${data.totalInr}`);
-                        doc.fillColor('#e74c3c').text(`Vault Sent (USDT): $${data.amountUsd}`);
+                        doc.fillColor('#2ecc71').text(`Vault Collected (INR): Rs. ${data.totalInr || 0}`);
+                        doc.fillColor('#e74c3c').text(`Vault To Pay (USDT): $${data.amountUsd || 0}`);
                         doc.fillColor('#000000');
                         doc.text(`User Wallet Details:`);
                         doc.fontSize(10).fillColor('#7f8c8d').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
@@ -1600,15 +1619,15 @@ client.on('interactionCreate', async interaction => {
 
                 // Summary Section at the bottom of PDF
                 doc.addPage();
-                doc.fontSize(18).fillColor('#2c3e50').text('VAULT SUMMARY', { align: 'center', underline: true });
+                doc.fontSize(18).fillColor('#2c3e50').text('QUEUE SUMMARY (TO BE SETTLED)', { align: 'center', underline: true });
                 doc.moveDown();
                 
-                doc.fontSize(14).fillColor('#2ecc71').text(`TOTAL RECEIVED (IN)`);
+                doc.fontSize(14).fillColor('#2ecc71').text(`TOTAL TO COLLECT (IN)`);
                 doc.fontSize(12).fillColor('#000000').text(`USDT: $${totalUsdtIn.toFixed(2)}`);
                 doc.text(`INR: Rs. ${totalInrIn.toFixed(2)}`);
                 doc.moveDown();
 
-                doc.fontSize(14).fillColor('#e74c3c').text(`TOTAL DISBURSED (OUT)`);
+                doc.fontSize(14).fillColor('#e74c3c').text(`TOTAL TO PAY (OUT)`);
                 doc.fontSize(12).fillColor('#000000').text(`USDT: $${totalUsdtOut.toFixed(2)}`);
                 doc.text(`INR: Rs. ${totalInrOut.toFixed(2)}`);
 
@@ -1618,10 +1637,8 @@ client.on('interactionCreate', async interaction => {
                 console.error("Audit Generation Error:", err);
                 await interaction.editReply({ content: '❌ Error generating PDF report.' });
             }
+            return;
         }
-
-        return; // Block ko properly yahan end karenge
-    }
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         await interaction.deferUpdate(); 
