@@ -86,7 +86,7 @@ client.once('ready', async () => {
                         type: 3, 
                         required: true,
                         choices: [
-                            { name: 'Payment gateway sell (IMPS)', value: 'pgSellPrice' },
+                        
                             { name: 'Manual IMPS/UPI Sell', value: 'impsSellPrice' }, // 🔥 ADDED THIS FOR IMPS
                             { name: 'CDM For Buy', value: 'cdmBuyPrice' },
                             { name: 'CDM For Sell', value: 'cdmSellPrice' },
