@@ -86,7 +86,7 @@ client.once('ready', async () => {
                         type: 3, 
                         required: true,
                         choices: [
-                        
+                            { name: 'Payment gateway sell (IMPS)', value: 'pgSellPrice' },
                             { name: 'Manual IMPS/UPI Sell', value: 'impsSellPrice' }, // 🔥 ADDED THIS FOR IMPS
                             { name: 'CDM For Buy', value: 'cdmBuyPrice' },
                             { name: 'CDM For Sell', value: 'cdmSellPrice' },
@@ -1213,6 +1213,8 @@ async function updateMarketPriceChannel(guild) {
         const finalCcwSell = parseFloat(data.ccwSellPrice) || 0;
         const finalOnlineSell = parseFloat(data.onlineSellPrice) || 0;
         const finalPgSell = parseFloat(data.pgSellPrice) || 0;
+        
+        // 🔥 NAYA: Manual IMPS/UPI Price Fetch
         const finalImpsSell = parseFloat(data.impsSellPrice) || parseFloat(data.cdmSellPrice) || 0;
 
         const priceChannel = guild.channels.cache.get('1503666351594799205'); 
