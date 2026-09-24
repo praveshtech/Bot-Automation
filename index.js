@@ -16,7 +16,7 @@ const startPaymentTrackers = require('./paymentTracker');
 const Canvas = require('canvas');
 let aiExtractor = null; 
 const handleAutoConnect = require('./autoConnect');
-global.matchSessions = new Map(); // Global variables
+global.matchSessions = new Map();
 const cron = require('node-cron');
 const handleSwapInteraction = require('./swapModule');
 const sendUpiFlashMessage = require('./flashMessage');
@@ -109,7 +109,6 @@ client.once('ready', async () => {
             }
         ];
 
-        // 🔥 GUILD ID SE INSTANT SYNC HOGA 🔥
         const guild = client.guilds.cache.get('1450915791338737757');
         if (guild) {
             await guild.commands.set(commandsArray);
@@ -128,26 +127,24 @@ client.once('ready', async () => {
         });
     }, 60 * 60 * 1000);
 
-    // 🔥 PERMANENT FLASH DEAL CHECKER (Survives Bot Restart) 🔥
+    // 🔥 PERMANENT FLASH DEAL CHECKER 🔥
     setInterval(async () => {
         try {
             const setDoc = await db.collection('settings').doc('app_data').get();
             if (!setDoc.exists) return;
             const data = setDoc.data();
 
-            // Agar flash deal active hai aur uska time khatam ho gaya hai
             if (data.flash_active && data.flash_expiry && Date.now() >= data.flash_expiry) {
                 const method = data.flash_method;
                 const originalPrice = data.original_prices ? data.original_prices[method] : 88;
 
-                // Revert Price aur DB se Flash data clear karo
                 await db.collection('settings').doc('app_data').set({
                     [method]: originalPrice,
                     flash_active: admin.firestore.FieldValue.delete(),
                     flash_method: admin.firestore.FieldValue.delete(),
                     flash_expiry: admin.firestore.FieldValue.delete(),
-                    flash_tickets_allowed: admin.firestore.FieldValue.delete(), 
-                    flash_tickets_used: admin.firestore.FieldValue.delete(),    
+                    flash_tickets_allowed: admin.firestore.FieldValue.delete(),
+                    flash_tickets_used: admin.firestore.FieldValue.delete(),
                     original_prices: admin.firestore.FieldValue.delete()
                 }, { merge: true });
 
@@ -161,7 +158,7 @@ client.once('ready', async () => {
                 });
             }
         } catch (err) { console.error("Flash auto-revert error:", err); }
-    }, 60 * 1000); // Har 1 minute mein check karega
+    }, 60 * 1000); 
 
     // Inactive KYC/UPI Ticket Auto-Delete System
     setInterval(() => {
@@ -195,7 +192,6 @@ client.once('ready', async () => {
         console.log("⏰ 10:00 AM Alert: Executing Auto-Close for Completed Tickets...");
 
         client.guilds.cache.forEach(async guild => {
-            // Sirf in 2 categories ko target karenge
             const completedBuyCat = guild.channels.cache.find(c => c.name === '🟢 COMPLETED BUY' && c.type === ChannelType.GuildCategory);
             const completedSellCat = guild.channels.cache.find(c => c.name === '🔴 COMPLETED SELL' && c.type === ChannelType.GuildCategory);
 
@@ -221,7 +217,6 @@ client.once('ready', async () => {
                     const ticketData = ticketDoc.data();
                     const closedBy = 'Auto-System (10 AM)';
 
-                    // 1. User ko DM aur Role dena
                     const member = await guild.members.fetch(ticketData.discordUserId).catch(() => null);
                     if (member) {
                         let feedRole = guild.roles.cache.find(r => r.name === 'transaction done');
@@ -251,22 +246,18 @@ client.once('ready', async () => {
                         await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
                     }
 
-                    // 2. Transaction Log mein update
                     let logChannel = guild.channels.cache.find(c => c.name === 'transaction-logs');
                     if (logChannel) {
                         const vaultEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle(`🏦 Vault Record: Transaction Completed`).addFields({ name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, { name: '🔒 Handled By', value: closedBy, inline: true }, { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, { name: 'Status', value: `\`Completed\``, inline: true }).setTimestamp().setFooter({ text: `Ticket ID: ${channel.id}` });
                         await logChannel.send({ embeds: [vaultEmbed] });
                     }
 
-                    // 3. Database Update
                     await db.collection('p2p_tickets').doc(channel.id).update({ status: 'Completed', closedBy: closedBy, closedAt: admin.firestore.FieldValue.serverTimestamp() });
                     globalLastUpdate = Date.now(); 
 
-                    // 4. Leaderboard & Heist Points update
                     updateWeeklyLeaderboard(guild); 
                     await updateUserHeistPoints(ticketData.discordUserId, guild, ticketData.username);
 
-                    // 5. Delete Bank Details Log
                     try {
                         const bankDetailsChannel = guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
                         if (bankDetailsChannel) {
@@ -276,10 +267,7 @@ client.once('ready', async () => {
                         }
                     } catch (err) {}
 
-                    // 6. Final Ticket Channel Delete
                     await channel.delete().catch(console.error);
-
-                    // API Rate Limit se bachne ke liye 2 seconds ka chhota sa gap
                     await new Promise(resolve => setTimeout(resolve, 2000)); 
 
                 } catch (error) {
@@ -301,9 +289,6 @@ let p2pMessageCount = 0;
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
-    // =========================================
-    // 🚨 TOKYO BAN & UNBAN PROTOCOL (ADMIN ONLY) 🚨
-    // =========================================
     const isBossOrAdmin = message.member?.permissions.has('BanMembers') || message.member?.permissions.has('Administrator');
     const targetMember = message.mentions.members.first();
     const lowerContent = message.content.toLowerCase();
@@ -327,15 +312,9 @@ client.on('messageCreate', async (message) => {
         } catch (error) { return message.reply("Boss, I couldn't unban them. Either the ID is incorrect, or they aren't banned in the first place! 😅"); }
     }
 
-    // ==========================================
-    // 👑 ADMIN & BOSS PROTOCOL CHECK
-    // ==========================================
     const adminDiscordIds = ['1001128047128358923', '1336703883711479896', '1541859306050162750']; 
     const isAuthorAdmin = adminDiscordIds.includes(message.author.id);
 
-    // ==========================================
-    // 🤖 TOKYO AI ENGINE (ADVANCED RAG SYSTEM)
-    // ==========================================
     const isBotCalled = message.mentions.has(client.user) || message.content.toLowerCase().includes('tokyo');
     const isAllowedChannel = message.channel.name.includes('p2p-chat') || message.channel.name.includes('tokyo-training');
 
@@ -354,7 +333,6 @@ client.on('messageCreate', async (message) => {
             let faqKnowledge = "";
             for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
 
-            // 🔥 TOKYO LIVE MARKET DATA INTEGRATION 🔥
             let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88, pgSellPrice = 88, impsSellPrice = 88;
             try {
                 const setDoc = await db.collection('settings').doc('app_data').get();
@@ -628,71 +606,31 @@ client.on('messageCreate', async (message) => {
                 const bankDetailsChannel = message.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
                 if (bankDetailsChannel) {
                     const fetchedLogs = await bankDetailsChannel.messages.fetch({ limit: 100 });
-                    const logToDelete = fetchedLogs.find(m => 
-                        m.embeds.length > 0 && 
-                        m.embeds[0].fields && 
-                        m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(message.channel.id))
-                    );
+                    const logToDelete = fetchedLogs.find(m => m.embeds.length > 0 && m.embeds[0].fields && m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(message.channel.id)));
                     if (logToDelete) await logToDelete.delete();
                 }
-            } catch (err) { console.error("Bank detail log delete error:", err); }
+            } catch (err) {}
 
             const targetCategoryName = ticketData.tradeType === 'Buy' ? '🟢 COMPLETED BUY' : '🔴 COMPLETED SELL';
             let targetCategory = message.guild.channels.cache.find(c => c.name === targetCategoryName && c.type === ChannelType.GuildCategory);
-            
-            if (!targetCategory) {
-                targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
-            }
-            
+            if (!targetCategory) targetCategory = await message.guild.channels.create({ name: targetCategoryName, type: ChannelType.GuildCategory });
             await message.channel.setParent(targetCategory.id, { lockPermissions: false });
 
-            const completeEmbed = new EmbedBuilder()
-                .setColor('#2ecc71')
-                .setTitle('✅ Ticket Completed & Shifted')
-                .setDescription(`Ticket moved to **${targetCategoryName}** and bank details cleared securely.`);
-            
+            const completeEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Ticket Completed & Shifted').setDescription(`Ticket moved to **${targetCategoryName}** and bank details cleared securely.`);
             const shiftMsg = await message.channel.send({ embeds: [completeEmbed] });
             setTimeout(() => shiftMsg.delete().catch(()=>{}), 5000);
 
             try {
                 let publicLogChannel = message.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
-                if (!publicLogChannel) publicLogChannel = await message.guild.channels.create({ 
-                    name: '✅・completed-transactions', 
-                    type: ChannelType.GuildText, 
-                    permissionOverwrites: [
-                        { id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, 
-                        { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
-                    ] 
-                });
-                
+                if (!publicLogChannel) publicLogChannel = await message.guild.channels.create({ name: '✅・completed-transactions', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }] });
                 const tradeDirection = ticketData.tradeType === 'Buy' ? 'INR ➔ USDT' : 'USDT ➔ INR';
                 const assetName = (ticketData.networkOrMethod || '').includes('USDC') ? 'USDC' : 'USDT';
                 const displayTicketId = message.channel.name.replace('ticket-', '#').toUpperCase();
 
-                const premiumLogEmbed = new EmbedBuilder()
-                    .setColor('#2ecc71')
-                    .setAuthor({ name: '🏦 Secure Trade Completed', iconURL: client.user.displayAvatarURL() })
-                    .addFields(
-                        { name: '🔄 Trade Type', value: `\`${tradeDirection}\``, inline: true },
-                        { name: '💎 Volume', value: `**$${ticketData.amountUsd}**`, inline: true },
-                        { name: '🎫 Ticket', value: `\`${displayTicketId}\``, inline: true },
-                        
-                        { name: '🪙 Asset', value: `\`${assetName}\``, inline: true },
-                        { name: '🛡️ Exchanger', value: `<@${message.author.id}>`, inline: true }, 
-                        { name: '🤝 Client', value: `*(Secured)*`, inline: true }
-                    )
-                    .setFooter({ text: `Professor Network • Trusted P2P Terminal`, iconURL: client.user.displayAvatarURL() })
-                    .setTimestamp();
-
+                const premiumLogEmbed = new EmbedBuilder().setColor('#2ecc71').setAuthor({ name: '🏦 Secure Trade Completed', iconURL: client.user.displayAvatarURL() }).addFields({ name: '🔄 Trade Type', value: `\`${tradeDirection}\``, inline: true }, { name: '💎 Volume', value: `**$${ticketData.amountUsd}**`, inline: true }, { name: '🎫 Ticket', value: `\`${displayTicketId}\``, inline: true }, { name: '🪙 Asset', value: `\`${assetName}\``, inline: true }, { name: '🛡️ Exchanger', value: `<@${message.author.id}>`, inline: true }, { name: '🤝 Client', value: `*(Secured)*`, inline: true }).setFooter({ text: `Professor Network • Trusted P2P Terminal`, iconURL: client.user.displayAvatarURL() }).setTimestamp();
                 await publicLogChannel.send({ embeds: [premiumLogEmbed] });
-            } catch (logErr) {
-                console.error("Public Log Error in .fb:", logErr);
-            }
-
-        } catch (error) {
-            console.error("Critical error in .fb command:", error);
-            await message.channel.send("❌ Internal Server Error during the .fb process.");
-        }
+            } catch (logErr) {}
+        } catch (error) { await message.channel.send("❌ Internal Server Error during the .fb process."); }
     }
 
     if (command.startsWith('.am')) {
@@ -719,10 +657,7 @@ client.on('messageCreate', async (message) => {
             const amEmbed = new EmbedBuilder().setColor('#3498db').setTitle('🧮 Partial Payment Tracker').setDescription(`Payment calculation updated for **${ticketData.username || 'User'}**`).addFields({ name: '💰 Previous Balance', value: `₹${currentRemaining.toFixed(2)}`, inline: true }, { name: '➖ Amount Paid Now', value: `₹${paidAmount.toFixed(2)}`, inline: true }, { name: '🧾 Remaining Balance', value: `**₹${newRemaining.toFixed(2)}**`, inline: false }).setFooter({ text: 'Professor Network - Vault Analytics', iconURL: client.user.displayAvatarURL() });
             await message.delete().catch(() => {}); 
             await message.channel.send({ embeds: [amEmbed] });
-        } catch (err) {
-            console.error("Error in .am command:", err);
-            await message.channel.send("❌ Database update mein error aaya.");
-        }
+        } catch (err) {}
     }
 
     if (command.startsWith('.tt')) {
@@ -731,9 +666,7 @@ client.on('messageCreate', async (message) => {
         let queryMember = message.member; 
         
         if (targetMember) {
-            if (!isAdmin && targetMember.id !== message.author.id) {
-                return message.reply({ content: '❌ **Access Denied.** You can only check your own stats.', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
-            }
+            if (!isAdmin && targetMember.id !== message.author.id) return message.reply({ content: '❌ **Access Denied.** You can only check your own stats.', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
             queryMember = targetMember;
         }
 
@@ -742,10 +675,7 @@ client.on('messageCreate', async (message) => {
 
         try {
             const userStatDoc = await db.collection('user_stats').doc(targetId).get();
-            let totalVolume = 0;
-            let heistPoints = 0;
-            let currentLevel = 'Recruit';
-
+            let totalVolume = 0, heistPoints = 0, currentLevel = 'Recruit';
             if (userStatDoc.exists) {
                 const data = userStatDoc.data();
                 totalVolume = data.totalVolume || 0;
@@ -753,43 +683,20 @@ client.on('messageCreate', async (message) => {
                 currentLevel = data.level ? data.level.split('—')[1].trim() : 'Recruit';
             }
 
-            const ticketsSnap = await db.collection('p2p_tickets')
-                .where('discordUserId', '==', targetId)
-                .where('status', '==', 'Completed')
-                .get();
-                
+            const ticketsSnap = await db.collection('p2p_tickets').where('discordUserId', '==', targetId).where('status', '==', 'Completed').get();
             const totalTrades = ticketsSnap.size;
 
-            const statsEmbed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setAuthor({ name: `🏦 Vault Analytics: ${queryMember.user.username}`, iconURL: queryMember.user.displayAvatarURL() })
-                .setDescription(`Here is the lifetime trading record for <@${targetId}> within the Professor Network.`)
-                .addFields(
-                    { name: '💎 Total Volume', value: `**$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}**`, inline: true },
-                    { name: '🤝 Total Trades', value: `**${totalTrades}**`, inline: true },
-                    { name: '✨ Heist Points', value: `**${heistPoints} Pts**`, inline: true },
-                    { name: '🏅 Current Rank', value: `\`${currentLevel}\``, inline: false }
-                )
-                .setTimestamp()
-                .setFooter({ text: 'Professor Network - Secure P2P Terminal', iconURL: client.user.displayAvatarURL() });
+            const statsEmbed = new EmbedBuilder().setColor('#3498db').setAuthor({ name: `🏦 Vault Analytics: ${queryMember.user.username}`, iconURL: queryMember.user.displayAvatarURL() }).setDescription(`Here is the lifetime trading record for <@${targetId}> within the Professor Network.`).addFields({ name: '💎 Total Volume', value: `**$${totalVolume.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}**`, inline: true }, { name: '🤝 Total Trades', value: `**${totalTrades}**`, inline: true }, { name: '✨ Heist Points', value: `**${heistPoints} Pts**`, inline: true }, { name: '🏅 Current Rank', value: `\`${currentLevel}\``, inline: false }).setTimestamp().setFooter({ text: 'Professor Network - Secure P2P Terminal', iconURL: client.user.displayAvatarURL() });
 
-            await loadingMsg.delete().catch(()=>{});
-            await message.delete().catch(()=>{});
-            await message.channel.send({ embeds: [statsEmbed] });
-
-        } catch (err) {
-            console.error("Error in .tt command:", err);
-            await loadingMsg.edit("❌ Error retrieving user data from the database.");
-        }
+            await loadingMsg.delete().catch(()=>{}); await message.delete().catch(()=>{}); await message.channel.send({ embeds: [statsEmbed] });
+        } catch (err) { await loadingMsg.edit("❌ Error retrieving user data from the database."); }
     }
 
     if (command.startsWith('.ea')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-        
         try {
             const ticketRef = db.collection('p2p_tickets').doc(message.channel.id);
             const ticketDoc = await ticketRef.get();
-            
             if (!ticketDoc.exists) return message.reply({ content: "❌ Yeh command sirf valid P2P ticket channel mein chalega.", ephemeral: true });
             
             const amountMatch = message.content.match(/\.ea\s*(\d+(\.\d+)?)/i);
@@ -800,42 +707,19 @@ client.on('messageCreate', async (message) => {
             
             if (ticketData.tradeType === 'Swap') {
                  await ticketRef.update({ amountUsd: newAmountUsd });
-                 const successEmbed = new EmbedBuilder()
-                    .setColor('#3498db')
-                    .setTitle('✏️ Final Swap Amount Updated')
-                    .setDescription(`Is ticket ka final swap amount **$${newAmountUsd}** set kar diya gaya hai.\n\nAb aap safely **✅ Mark Complete** par click kar sakte hain.`)
-                    .setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() });
-                 await message.delete().catch(()=>{});
-                 return message.channel.send({ embeds: [successEmbed] });
+                 const successEmbed = new EmbedBuilder().setColor('#3498db').setTitle('✏️ Final Swap Amount Updated').setDescription(`Is ticket ka final swap amount **$${newAmountUsd}** set kar diya gaya hai.\n\nAb aap safely **✅ Mark Complete** par click kar sakte hain.`).setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() });
+                 await message.delete().catch(()=>{}); return message.channel.send({ embeds: [successEmbed] });
             }
 
             const rateUsed = ticketData.rateUsed || 0;
             const newTotalInr = newAmountUsd * rateUsed;
 
-            await ticketRef.update({ 
-                amountUsd: newAmountUsd,
-                totalInr: newTotalInr,
-                remainingInr: newTotalInr 
-            });
+            await ticketRef.update({ amountUsd: newAmountUsd, totalInr: newTotalInr, remainingInr: newTotalInr });
 
-            const successEmbed = new EmbedBuilder()
-                .setColor('#3498db')
-                .setTitle('✏️ Final Deal Amount Updated')
-                .setDescription(`Ticket ka final transaction amount database mein update ho gaya hai!\n\nAb aap safely **✅ Mark Complete** par click kar sakte hain.`)
-                .addFields(
-                    { name: '💵 New USD Amount', value: `**$${newAmountUsd}**`, inline: true },
-                    { name: '🔄 Exchange Rate', value: `₹${rateUsed}`, inline: true },
-                    { name: '🧾 New Total INR', value: `**₹${newTotalInr.toFixed(2)}**`, inline: false }
-                )
-                .setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() });
+            const successEmbed = new EmbedBuilder().setColor('#3498db').setTitle('✏️ Final Deal Amount Updated').setDescription(`Ticket ka final transaction amount database mein update ho gaya hai!\n\nAb aap safely **✅ Mark Complete** par click kar sakte hain.`).addFields({ name: '💵 New USD Amount', value: `**$${newAmountUsd}**`, inline: true }, { name: '🔄 Exchange Rate', value: `₹${rateUsed}`, inline: true }, { name: '🧾 New Total INR', value: `**₹${newTotalInr.toFixed(2)}**`, inline: false }).setFooter({ text: 'Professor Network - Vault System', iconURL: client.user.displayAvatarURL() });
 
-            await message.delete().catch(()=>{});
-            await message.channel.send({ embeds: [successEmbed] });
-
-        } catch (err) {
-            console.error("Error in .ea command:", err);
-            await message.channel.send("❌ Database update mein error aaya.");
-        }
+            await message.delete().catch(()=>{}); await message.channel.send({ embeds: [successEmbed] });
+        } catch (err) {}
     }
 
     if (command === '!p2p') {
@@ -851,21 +735,11 @@ client.on('messageCreate', async (message) => {
     if (command === '!pricepanel') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
-            const panelEmbed = new EmbedBuilder()
-                .setColor('#f1c40f')
-                .setTitle('📈 Live Market Price Controller')
-                .setDescription('**[ 👑 ADMIN ONLY ]**\n\nClick the button below to securely update the USDT Buy & Sell prices across all payment methods (CDM/IMPS, CCW, Online).')
-                .setFooter({ text: 'Tokyo AI - Secure Market Terminal' });
-                
-            const btnRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('open_price_modal').setLabel('🔄 Update Market Rates').setStyle(ButtonStyle.Success)
-            );
-            
+            const panelEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('📈 Live Market Price Controller').setDescription('**[ 👑 ADMIN ONLY ]**\n\nClick the button below to securely update the USDT Buy & Sell prices across all payment methods (CDM/IMPS, CCW, Online).').setFooter({ text: 'Tokyo AI - Secure Market Terminal' });
+            const btnRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('open_price_modal').setLabel('🔄 Update Market Rates').setStyle(ButtonStyle.Success));
             await message.channel.send({ embeds: [panelEmbed], components: [btnRow] });
             await message.delete().catch(()=>{});
-        } catch (err) {
-            console.error(err);
-        }
+        } catch (err) {}
     }
 
     if (message.content === '!flash') {
@@ -880,69 +754,39 @@ client.on('messageCreate', async (message) => {
     if (command === '!addflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... This may take a few minutes due to Discord limits. Please wait!*");
-        
         try {
             const members = await message.guild.members.fetch();
             let successCount = 0;
             const botRolePosition = message.guild.members.me.roles.highest.position;
-            
             for (const [id, member] of members) {
-                if (member.user.bot) continue; 
-                if (member.id === message.guild.ownerId) continue; 
-                if (member.roles.highest.position >= botRolePosition) continue; 
-                
+                if (member.user.bot || member.id === message.guild.ownerId || member.roles.highest.position >= botRolePosition) continue; 
                 const currentName = member.nickname || member.user.username;
-                
                 if (!currentName.includes('🇮🇳')) {
-                    try {
-                        await member.setNickname(`${currentName} 🇮🇳`);
-                        successCount++;
-                        await new Promise(resolve => setTimeout(resolve, 500)); 
-                    } catch (e) {
-                        console.log(`Skipped ${currentName} due to permission limit.`);
-                    }
+                    try { await member.setNickname(`${currentName} 🇮🇳`); successCount++; await new Promise(resolve => setTimeout(resolve, 500)); } catch (e) {}
                 }
             }
             await loadingMsg.edit(`✅ **Success, Boss!** Added 🇮🇳 flag to \`${successCount}\` members securely.`);
-        } catch (err) {
-            console.error(err);
-            await loadingMsg.edit("❌ **Critical Error.** Check console.");
-        }
+        } catch (err) { await loadingMsg.edit("❌ **Critical Error.** Check console."); }
         return;
     }
 
     if (command === '!removeflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing all flags (Emojis & text codes)!*");
-        
         try {
             const members = await message.guild.members.fetch();
             let successCount = 0;
             const botRolePosition = message.guild.members.me.roles.highest.position;
-            
             for (const [id, member] of members) {
-                if (member.user.bot) continue; 
-                if (id === message.guild.ownerId) continue; 
-                if (member.roles.highest.position >= botRolePosition) continue; 
-                
+                if (member.user.bot || id === message.guild.ownerId || member.roles.highest.position >= botRolePosition) continue; 
                 const currentName = member.nickname || member.user.username;
-                
                 if (currentName.includes('🇮🇳') || currentName.includes(':flag_in:')) {
                     const newName = currentName.replace('🇮🇳', '').replace(':flag_in:', '').trim();
-                    try {
-                        await member.setNickname(newName);
-                        successCount++;
-                        await new Promise(resolve => setTimeout(resolve, 500)); 
-                    } catch (e) {
-                        console.log(`Skipped ${currentName}.`);
-                    }
+                    try { await member.setNickname(newName); successCount++; await new Promise(resolve => setTimeout(resolve, 500)); } catch (e) {}
                 }
             }
             await loadingMsg.edit(`✅ **Success, Boss!** Removed flags from \`${successCount}\` members and cleaned up their names.`);
-        } catch (err) {
-            console.error(err);
-            await loadingMsg.edit("❌ **Critical Error.** Check console.");
-        }
+        } catch (err) { await loadingMsg.edit("❌ **Critical Error.** Check console."); }
         return;
     }
 
@@ -956,43 +800,26 @@ client.on('messageCreate', async (message) => {
     
     if (command === '!exportchats') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
-
         const loadingMsg = await message.channel.send("⏳ **AI Training Protocol Initiated:** Fetching chat history... this might take a minute.");
         let allMessages = [];
         let lastId;
-
         try {
             for (let i = 0; i < 10; i++) { 
                 const options = { limit: 100 };
                 if (lastId) options.before = lastId;
-
                 const fetched = await message.channel.messages.fetch(options);
                 if (fetched.size === 0) break;
-
                 fetched.forEach(msg => {
                     if (!msg.author.bot && msg.content && !msg.content.startsWith('!') && !msg.content.startsWith('.')) {
-                        allMessages.push({
-                            author: msg.author.username,
-                            message: msg.cleanContent,
-                            time: new Date(msg.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
-                        });
+                        allMessages.push({ author: msg.author.username, message: msg.cleanContent, time: new Date(msg.createdTimestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) });
                     }
                 });
                 lastId = fetched.last().id;
             }
-
-            const fs = require('fs');
-            fs.writeFileSync('chat_export.json', JSON.stringify(allMessages, null, 2));
-
-            const { AttachmentBuilder } = require('discord.js');
-            const file = new AttachmentBuilder('chat_export.json');
-
-            await loadingMsg.delete().catch(()=>{});
-            await message.channel.send({ content: `✅ **Data Extraction Complete!**\nSuccessfully exported \`${allMessages.length}\` real user messages. Download the JSON file below to prepare for Vector Database Training.`, files: [file] });
-        } catch (error) {
-            console.error("Export error:", error);
-            await loadingMsg.edit("❌ Error exporting chats. Check terminal for details.");
-        }
+            const fs = require('fs'); fs.writeFileSync('chat_export.json', JSON.stringify(allMessages, null, 2));
+            const { AttachmentBuilder } = require('discord.js'); const file = new AttachmentBuilder('chat_export.json');
+            await loadingMsg.delete().catch(()=>{}); await message.channel.send({ content: `✅ **Data Extraction Complete!**\nSuccessfully exported \`${allMessages.length}\` real user messages. Download the JSON file below to prepare for Vector Database Training.`, files: [file] });
+        } catch (error) { await loadingMsg.edit("❌ Error exporting chats. Check terminal for details."); }
         return;
     }
 
@@ -1020,14 +847,12 @@ client.on('messageCreate', async (message) => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         const targetUser = message.mentions.members.first();
         if (!targetUser) return message.reply({ content: '❌ Please mention a user. Example: `!grantupi @username`', ephemeral: true });
-
         try {
             let upiRole = message.guild.roles.cache.find(r => r.name === 'UPI Eligible');
             if (!upiRole) { upiRole = await message.guild.roles.create({ name: 'UPI Eligible', color: '#3498db', reason: 'Role for Exclusive UPI P2P Access' }); }
             await targetUser.roles.add(upiRole);
             const successEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Access Granted').setDescription(`Successfully granted **UPI KYC Access** to ${targetUser.toString()}.\nThey can now see the exclusive UPI channel.`);
-            await message.reply({ embeds: [successEmbed] });
-            await message.delete().catch(() => {}); 
+            await message.reply({ embeds: [successEmbed] }); await message.delete().catch(() => {}); 
         } catch (err) {}
     }
 
@@ -1035,17 +860,13 @@ client.on('messageCreate', async (message) => {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         const targetUser = message.mentions.members.first();
         if (!targetUser) return message.reply({ content: '❌ Please mention a user. Example: `!revokeupi @username`', ephemeral: true });
-
         try {
             const upiRole = message.guild.roles.cache.find(r => r.name === 'UPI Eligible');
             if (upiRole && targetUser.roles.cache.has(upiRole.id)) {
                 await targetUser.roles.remove(upiRole);
                 const revokeEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🔒 UPI Access Revoked').setDescription(`Successfully removed **UPI KYC Access** from ${targetUser.toString()}.`);
-                await message.reply({ embeds: [revokeEmbed] });
-                await message.delete().catch(() => {});
-            } else {
-                await message.reply({ content: `⚠️ ${targetUser.user.username} doesn't have the UPI Eligible role.`, ephemeral: true });
-            }
+                await message.reply({ embeds: [revokeEmbed] }); await message.delete().catch(() => {});
+            } else { await message.reply({ content: `⚠️ ${targetUser.user.username} doesn't have the UPI Eligible role.`, ephemeral: true }); }
         } catch (err) {}
     }
 
@@ -1054,8 +875,7 @@ client.on('messageCreate', async (message) => {
         try {
             const upiEmbed = new EmbedBuilder().setColor('#3498db').setTitle('🎥 Exclusive UPI Video KYC').setDescription(`Welcome to the Exclusive UPI Verification Desk!\n\nTo unlock exclusive **UPI Payment Methods**, please submit the following:\n\n**1. A Short Video:**\nHold your National ID (Aadhaar/PAN) near your face and clearly say: *"My name is [Your Name] and I am trading on Professor Network."*\n\n**2. Clear Photos:**\nFront & Back of your National ID.\n\n*Click the button below to create your private secure room.*`);
             const upiBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_upi_video_kyc').setLabel('Start UPI Video KYC').setStyle(ButtonStyle.Primary).setEmoji('🎥'));
-            await message.channel.send({ embeds: [upiEmbed], components: [upiBtn] });
-            await message.delete().catch(()=>{});
+            await message.channel.send({ embeds: [upiEmbed], components: [upiBtn] }); await message.delete().catch(()=>{});
         } catch (err) {}
     }
 
@@ -1064,8 +884,7 @@ client.on('messageCreate', async (message) => {
         try {
             const dashEmbed = new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 THE VAULT | EXECUTIVE DASHBOARD').setDescription('**[ 🔴 SYSTEM STATUS: STANDBY ]**\n\nClick the **Sync Network Data** button below to securely fetch the latest real-time analytics from the central database.').setFooter({ text: 'Professor Network - Secure Terminal' });
             const refreshBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('refresh_dashboard').setLabel('🔄 Sync Network Data').setStyle(ButtonStyle.Primary));
-            await message.channel.send({ embeds: [dashEmbed], components: [refreshBtn] });
-            await message.delete().catch(()=>{});
+            await message.channel.send({ embeds: [dashEmbed], components: [refreshBtn] }); await message.delete().catch(()=>{});
         } catch (err) {}
     }
 
@@ -1077,8 +896,7 @@ client.on('messageCreate', async (message) => {
                 leaderboardChannel = message.guild.channels.cache.find(c => c.name === '📈・weekly-recap' || c.name === 'weekly-recap');
                 if (!leaderboardChannel) { leaderboardChannel = await message.guild.channels.create({ name: '📈・weekly-recap', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] }); }
             }
-            await message.reply({ content: `✅ Weekly Recap setup in ${leaderboardChannel}.`, ephemeral: true });
-            await message.delete().catch(()=>{});
+            await message.reply({ content: `✅ Weekly Recap setup in ${leaderboardChannel}.`, ephemeral: true }); await message.delete().catch(()=>{});
             updateWeeklyLeaderboard(message.guild);
         } catch (err) {}
     }
@@ -1088,8 +906,7 @@ client.on('messageCreate', async (message) => {
         try {
             let heistChannel = message.guild.channels.cache.find(c => c.name === '✨・heist-points' || c.name === 'heist-leaderboard');
             if (!heistChannel) { heistChannel = await message.guild.channels.create({ name: '✨・heist-points', type: ChannelType.GuildText, permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.SendMessages], allow: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.SendMessages] }] }); }
-            await message.reply({ content: `✅ Heist Points Leaderboard setup in ${heistChannel}.`, ephemeral: true });
-            await message.delete().catch(()=>{});
+            await message.reply({ content: `✅ Heist Points Leaderboard setup in ${heistChannel}.`, ephemeral: true }); await message.delete().catch(()=>{});
             updateHeistLeaderboard(message.guild);
         } catch (err) {}
     }
@@ -1180,6 +997,30 @@ async function updateMarketPriceChannel(guild) {
 // ==========================================
 client.on('interactionCreate', async interaction => {
 
+    try {
+        const isAcHandled = await handleAutoConnect(interaction, db);
+        if (isAcHandled) return; 
+    } catch (error) {
+        console.error('🚨 [CRITICAL ERROR] Auto-Connect Module:', error);
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: '❌ Auto-Connect system mein ek technical error aayi hai. Console logs check karein.' });
+            } else {
+                await interaction.reply({ content: '❌ Auto-Connect system mein ek technical error aayi hai. Console logs check karein.', ephemeral: true });
+            }
+        } catch (replyError) {}
+        return; 
+    }
+
+    try {
+        const isSwapHandled = await handleSwapInteraction(interaction, db, client, admin);
+        if (isSwapHandled) return; 
+    } catch (error) {
+        console.error('🚨 [CRITICAL ERROR] Swap Module:', error);
+        try { await interaction.reply({ content: '❌ Swap system error.', ephemeral: true }); } catch (e) {}
+        return;
+    }
+    
     if (interaction.isChatInputCommand()) {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
             return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
@@ -1331,6 +1172,7 @@ client.on('interactionCreate', async interaction => {
             }
 
             try {
+                // 🔥 1. Server se Completed Categories Dhoondhna 🔥
                 const completedBuyCat = interaction.guild.channels.cache.find(c => c.name === '🟢 COMPLETED BUY' && c.type === ChannelType.GuildCategory);
                 const completedSellCat = interaction.guild.channels.cache.find(c => c.name === '🔴 COMPLETED SELL' && c.type === ChannelType.GuildCategory);
 
@@ -1342,6 +1184,7 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ Queue khali hai! Completed Buy/Sell category mein koi ticket parked nahi hai.' });
                 }
 
+                // 🔥 2. Data & Transcripts Fetch Karna aur Totals Calculate karna 🔥
                 const parkedTicketsData = [];
                 let totalUsdtIn = 0;
                 let totalUsdtOut = 0;
@@ -1353,6 +1196,7 @@ client.on('interactionCreate', async interaction => {
                     if (ticketDoc.exists) {
                         const data = ticketDoc.data();
                         
+                        // Calculation
                         if (data.tradeType === 'Sell') {
                             totalUsdtIn += data.amountUsd || 0;
                             totalInrOut += data.totalInr || 0;
@@ -1361,6 +1205,7 @@ client.on('interactionCreate', async interaction => {
                             totalInrIn += data.totalInr || 0;
                         }
 
+                        // Transcript Fetch (Last 15 Messages)
                         let transcriptLines = [];
                         try {
                             const messages = await channel.messages.fetch({ limit: 15 });
@@ -1387,6 +1232,7 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ Categories mein tickets hain, par unka database record nahi mila.' });
                 }
 
+                // 🔥 3. PDF Generate Karna (New Premium Format) 🔥
                 const PDFDocument = require('pdfkit');
                 const doc = new PDFDocument({ margin: 40 });
                 let buffers = [];
@@ -1414,43 +1260,54 @@ client.on('interactionCreate', async interaction => {
                     }
                 });
 
+                // ==========================================
+                // 🎨 PDF DESIGNING PART (AS PER IMAGE)
+                // ==========================================
                 doc.fontSize(22).fillColor('#1e293b').text('PROFESSOR NETWORK', { align: 'center' });
                 doc.moveDown(0.2);
                 doc.fontSize(11).fillColor('#475569').text(`PENDING SETTLEMENT QUEUE (PRE-10 AM) | Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} | Total Parked Tickets: ${parkedTicketsData.length}`, { align: 'center' });
                 doc.moveDown(1.5);
                 
+                // --- TOP SUMMARY BOX ---
                 let startY = doc.y;
                 
+                // TOTAL TO COLLECT (IN)
                 doc.fontSize(12).fillColor('#000000').text('TOTAL TO COLLECT (IN)', 40, startY);
                 doc.fontSize(10).fillColor('#64748b').text('USDT', 40, startY + 20);
                 doc.text('INR', 140, startY + 20);
-                doc.fontSize(12).fillColor('#16a34a').text(`$${totalUsdtIn.toFixed(2)}`, 40, startY + 35); 
+                doc.fontSize(12).fillColor('#16a34a').text(`$${totalUsdtIn.toFixed(2)}`, 40, startY + 35); // Green
                 doc.fillColor('#000000').text(`Rs. ${totalInrIn.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 140, startY + 35);
                 
+                // TOTAL TO PAY (OUT)
                 doc.fontSize(12).fillColor('#000000').text('TOTAL TO PAY (OUT)', 300, startY);
                 doc.fontSize(10).fillColor('#64748b').text('USDT', 300, startY + 20);
                 doc.text('INR', 400, startY + 20);
-                doc.fontSize(12).fillColor('#dc2626').text(`$${totalUsdtOut.toFixed(2)}`, 300, startY + 35); 
+                doc.fontSize(12).fillColor('#dc2626').text(`$${totalUsdtOut.toFixed(2)}`, 300, startY + 35); // Red
                 doc.fillColor('#000000').text(`Rs. ${totalInrOut.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 400, startY + 35);
 
-                doc.y = startY + 70; 
+                doc.y = startY + 70; // Set cursor below summary
                 doc.moveDown(1);
                 
                 doc.fontSize(16).fillColor('#1e293b').text('Queue Details', 40, doc.y, { underline: true });
                 doc.moveDown(1);
 
+                // --- TICKETS LOOP ---
                 parkedTicketsData.forEach(data => {
+                    // Page margin check to prevent awkward cuts
                     if (doc.y > 650) doc.addPage();
 
                     const ticketId = data.name.replace('ticket-', '').toUpperCase();
                     
+                    // Line Separator
                     doc.lineWidth(0.5).strokeColor('#cbd5e1').moveTo(40, doc.y).lineTo(550, doc.y).stroke();
                     doc.moveDown(0.5);
 
+                    // Row 1: TICKET # & ACTION
                     doc.fontSize(12).fillColor('#2563eb').text(`TICKET: #${ticketId}`, 40, doc.y, { continued: true });
                     doc.fillColor('#000000').text(`    |    ${data.tradeType ? data.tradeType.toUpperCase() : 'UNKNOWN'} USDT`);
                     doc.moveDown(0.5);
 
+                    // Row 2: VAULT COLLECTED & PAY (Structured Columns)
                     let currentY = doc.y;
                     if (data.tradeType === 'Buy') {
                         doc.fontSize(9).fillColor('#64748b').text('VAULT COLLECTED (INR)', 40, currentY);
@@ -1464,14 +1321,16 @@ client.on('interactionCreate', async interaction => {
                         doc.fillColor('#16a34a').text(`$${data.amountUsd || 0}`, 230, currentY + 15);
                     }
                     
-                    doc.y = currentY + 40; 
+                    doc.y = currentY + 40; // Push cursor down
 
+                    // Row 3: USER & DETAILS
                     doc.fontSize(10).fillColor('#334155').text(`USER: ${data.username || 'Unknown'} (${data.discordUserId || 'N/A'})`);
                     doc.moveDown(0.2);
                     doc.fontSize(9).fillColor('#64748b').text(data.tradeType === 'Sell' ? 'USER BANKING DETAILS' : 'USER WALLET DETAILS');
                     doc.fontSize(10).fillColor('#000000').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
                     doc.moveDown(0.5);
 
+                    // Row 4: CHAT TRANSCRIPT
                     doc.fontSize(9).fillColor('#64748b').text('CHAT TRANSCRIPT:', { underline: true });
                     doc.moveDown(0.2);
                     doc.fontSize(9).fillColor('#475569');
@@ -1495,7 +1354,6 @@ client.on('interactionCreate', async interaction => {
             }
             return;
         }
-    }
 
     if (interaction.isButton() && interaction.customId === 'refresh_dashboard') {
         await interaction.deferUpdate(); 
@@ -1508,7 +1366,6 @@ client.on('interactionCreate', async interaction => {
 
             snapshot.forEach(doc => {
                 const data = doc.data();
-                
                 const amount = data.amountUsd || 0;
                 const userTag = data.discordUserId ? `<@${data.discordUserId}>` : `@${data.username || 'Unknown'}`;
                 userVolumes[userTag] = (userVolumes[userTag] || 0) + amount;
@@ -2260,6 +2117,7 @@ client.on('interactionCreate', async interaction => {
        await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
         let categoryName = '🎫 TICKETS';
+        
         const hasUpiVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'UPI Verified');
 
         if (userState.type === 'Buy') {
@@ -2283,6 +2141,7 @@ client.on('interactionCreate', async interaction => {
         }
         
         let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
+        
         if (!targetCategory) {
             targetCategory = await interaction.guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory });
         }
@@ -2318,10 +2177,10 @@ client.on('interactionCreate', async interaction => {
                 ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
                 ccwSellPrice = data.ccwSellPrice || legacySell;
                 onlineSellPrice = data.onlineSellPrice || legacySell;
-                pgSellPrice = data.pgSellPrice || legacySell; 
-                impsSellPrice = data.impsSellPrice || data.cdmSellPrice || legacySell;
+                pgSellPrice = data.pgSellPrice || legacySell;
+                impsSellPrice = data.impsSellPrice || data.cdmSellPrice || legacySell; 
             }
-        } catch (e) {}
+        } catch (e) { console.log('Error fetching app_data'); }
 
         if(!walletData['TRC20']) {
             walletData = {
@@ -2597,16 +2456,40 @@ client.on('interactionCreate', async interaction => {
                     let feedRole = interaction.guild.roles.cache.find(r => r.name === 'transaction done');
                     if (feedRole) await member.roles.add(feedRole).catch(() => {});
 
-                    const receiptEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Transaction Completed').setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed.\n\nThank you for trading with Professor Network. 🏦`).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-                    const receiptBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'));
+                    const receiptEmbed = new EmbedBuilder()
+                        .setColor('#2ecc71')
+                        .setTitle('✅ Transaction Completed')
+                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed.\n\nThank you for trading with Professor Network. 🏦`)
+                        .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+
+                    const receiptBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
+                    );
+                    
                     await member.send({ embeds: [receiptEmbed], components: [receiptBtn] }).catch(()=>{});
 
-                    const feedbackEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('⭐ Rate Your Experience').setDescription(`We hope you had a smooth trade!\n\nPlease click the button below to give your valuable feedback in <#1495117550709903591>.`).setFooter({ text: 'Professor Network • Reviews' });
-                    const feedbackBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('⭐ Give Feedback Here').setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`));
+                    const feedbackEmbed = new EmbedBuilder()
+                        .setColor('#f1c40f')
+                        .setTitle('⭐ Rate Your Experience')
+                        .setDescription(`We hope you had a smooth trade!\n\nPlease click the button below to give your valuable feedback in <#1495117550709903591>.`)
+                        .setFooter({ text: 'Professor Network • Reviews' });
+
+                    const feedbackBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setLabel('⭐ Give Feedback Here').setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
+                    );
+
                     await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
                 } else {
-                    const cancelEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('❌ Transaction Cancelled').setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.`).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-                    const cancelBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'));
+                    const cancelEmbed = new EmbedBuilder()
+                        .setColor('#e74c3c')
+                        .setTitle('❌ Transaction Cancelled')
+                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please contact <@1336703883711479896>.`)
+                        .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+
+                    const cancelBtn = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
+                    );
+
                     await member.send({ embeds: [cancelEmbed], components: [cancelBtn] }).catch(()=>{});
                 }
             }
@@ -2860,6 +2743,20 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
+// 🔥 NAYA API: TRADE DELETE KARNE KE LIYE 🔥
+app.post('/api/delete-trade', requireLogin, async (req, res) => {
+    try {
+        const { ticketId } = req.body;
+        if (!ticketId) return res.json({ success: false, error: "Ticket ID Missing" });
+        
+        await db.collection('p2p_tickets').doc(ticketId).delete();
+        globalLastUpdate = Date.now(); 
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 app.post('/update-price', requireLogin, async (req, res) => {
     let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgSellPrice, impsSellPrice } = req.body;    
     
@@ -2906,21 +2803,6 @@ app.post('/update-price', requireLogin, async (req, res) => {
     } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
-// 🔥 NAYA API: TRADE DELETE KARNE KE LIYE 🔥
-app.post('/api/delete-trade', requireLogin, async (req, res) => {
-    try {
-        const { ticketId } = req.body;
-        if (!ticketId) return res.json({ success: false, error: "Ticket ID Missing" });
-        
-        await db.collection('p2p_tickets').doc(ticketId).delete();
-        globalLastUpdate = Date.now(); 
-        res.json({ success: true });
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
-
-
 app.get('/api/check-updates', requireLogin, (req, res) => { res.json({ timestamp: globalLastUpdate }); });
 
 app.get('/', requireLogin, async (req, res) => {
@@ -2947,7 +2829,7 @@ app.get('/', requireLogin, async (req, res) => {
 
         snapshot.forEach(doc => {
             const data = doc.data();
-            data.id = doc.id;
+            data.id = doc.id; // Added for delete feature
             const amount = data.amountUsd || 0;
             allCompleted.push(data);
             if (data.tradeType === 'Buy') buyVol += amount;
