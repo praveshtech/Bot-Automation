@@ -1213,8 +1213,6 @@ async function updateMarketPriceChannel(guild) {
         const finalCcwSell = parseFloat(data.ccwSellPrice) || 0;
         const finalOnlineSell = parseFloat(data.onlineSellPrice) || 0;
         const finalPgSell = parseFloat(data.pgSellPrice) || 0;
-        
-        // 🔥 NAYA: Manual IMPS/UPI Price Fetch
         const finalImpsSell = parseFloat(data.impsSellPrice) || parseFloat(data.cdmSellPrice) || 0;
 
         const priceChannel = guild.channels.cache.get('1503666351594799205'); 
@@ -1227,8 +1225,8 @@ async function updateMarketPriceChannel(guild) {
             .addFields(
                 { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🏦 Manual IMPS / UPI', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalImpsSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🏧 CDM (Cash Deposit)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏧 CDM (Cash Deposit)', value: `\`\`\`yaml\n🟢 BUY : ₹ \({finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹\){finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ \({finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹\){finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
             .setTimestamp()
@@ -2969,7 +2967,7 @@ app.post('/update-price', requireLogin, async (req, res) => {
     let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgSellPrice, impsSellPrice } = req.body;    
     
     const sendModernAlert = (title, text, icon) => {
-        res.send(`<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style><body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK'}).then(() => { window.location.href = "/"; });</script></body>`);
+        res.send(``);
     };
 
     const finalCdmBuy = parseFloat(cdmBuyPrice) || 0;
@@ -2997,8 +2995,8 @@ app.post('/update-price', requireLogin, async (req, res) => {
             .addFields(
                 { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🏦 Manual IMPS / UPI', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalImpsSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🏧 CDM (Cash Deposit)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏧 CDM (Cash Deposit)', value: `\`\`\`yaml\n🟢 BUY : ₹ \({finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹\){finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ \({finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹\){finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
             .setTimestamp()
