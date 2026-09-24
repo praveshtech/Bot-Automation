@@ -16,7 +16,7 @@ const startPaymentTrackers = require('./paymentTracker');
 const Canvas = require('canvas');
 let aiExtractor = null; 
 const handleAutoConnect = require('./autoConnect');
-global.matchSessions = new Map(); // Global varia
+global.matchSessions = new Map(); // Global variables
 const cron = require('node-cron');
 const handleSwapInteraction = require('./swapModule');
 const sendUpiFlashMessage = require('./flashMessage');
@@ -87,6 +87,7 @@ client.once('ready', async () => {
                         required: true,
                         choices: [
                             { name: 'Payment gateway sell (IMPS)', value: 'pgSellPrice' },
+                            { name: 'Manual IMPS/UPI Sell', value: 'impsSellPrice' },
                             { name: 'CDM For Buy', value: 'cdmBuyPrice' },
                             { name: 'CDM For Sell', value: 'cdmSellPrice' },
                             { name: 'CCW For Buy', value: 'ccwBuyPrice' },
@@ -145,8 +146,8 @@ client.once('ready', async () => {
                     flash_active: admin.firestore.FieldValue.delete(),
                     flash_method: admin.firestore.FieldValue.delete(),
                     flash_expiry: admin.firestore.FieldValue.delete(),
-                    flash_tickets_allowed: admin.firestore.FieldValue.delete(), // 🔥 YAHAN ADD HUA
-                    flash_tickets_used: admin.firestore.FieldValue.delete(),    // 🔥 YAHAN ADD HUA
+                    flash_tickets_allowed: admin.firestore.FieldValue.delete(), 
+                    flash_tickets_used: admin.firestore.FieldValue.delete(),    
                     original_prices: admin.firestore.FieldValue.delete()
                 }, { merge: true });
 
@@ -308,34 +309,22 @@ client.on('messageCreate', async (message) => {
     const lowerContent = message.content.toLowerCase();
 
     if (isBossOrAdmin && targetMember && lowerContent.includes('tokyo') && lowerContent.includes('ban')) {
-        if (targetMember.id === client.user.id) {
-            return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
-        }
-        if (targetMember.permissions.has('Administrator')) {
-            return message.reply("Boss, they also hold Administrator powers. I cannot ban them! 🛡️");
-        }
+        if (targetMember.id === client.user.id) return message.reply("Boss, I cannot ban myself! Have I made a mistake? 🥺😂");
+        if (targetMember.permissions.has('Administrator')) return message.reply("Boss, they also hold Administrator powers. I cannot ban them! 🛡️");
         try {
             await targetMember.ban({ reason: `Banned by Boss ${message.author.tag} via Tokyo's Enforcer Protocol.` });
             return message.reply(`✅ Order executed, Boss! <@${targetMember.id}> has been permanently removed from the server. The Vault's security is my top priority! 🛡️`);
-        } catch (error) {
-            console.error(error);
-            return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. 😅");
-        }
+        } catch (error) { return message.reply("Boss, we have a problem! My server role is lower than that user's role, so I lack the permissions to ban them. 😅"); }
     }
 
     if (isBossOrAdmin && lowerContent.includes('tokyo') && lowerContent.includes('unban')) {
         const idMatch = message.content.match(/\d{17,19}/);
-        if (!idMatch) {
-            return message.reply("Boss, please provide the correct Discord User ID to unban! Example: `Tokyo unban 123456789012345678` 📋");
-        }
+        if (!idMatch) return message.reply("Boss, please provide the correct Discord User ID to unban! Example: `Tokyo unban 123456789012345678` 📋");
         const targetId = idMatch[0];
         try {
             await message.guild.members.unban(targetId, `Unbanned by Boss ${message.author.tag} via Tokyo's Protocol.`);
             return message.reply(`✅ Order executed, Boss! User ID \`${targetId}\` has been unbanned. I've granted them a second chance! 🕊️🛡️`);
-        } catch (error) {
-            console.error(error);
-            return message.reply("Boss, I couldn't unban them. Either the ID is incorrect, or they aren't banned in the first place! 😅");
-        }
+        } catch (error) { return message.reply("Boss, I couldn't unban them. Either the ID is incorrect, or they aren't banned in the first place! 😅"); }
     }
 
     // ==========================================
@@ -352,7 +341,6 @@ client.on('messageCreate', async (message) => {
 
     if (isAllowedChannel && !message.content.startsWith('!') && !message.content.startsWith('.') && (!isAuthorAdmin || isBotCalled)) {
         await message.channel.sendTyping();
-
         try {
             const fetchedMessages = await message.channel.messages.fetch({ limit: 12 });
             let chatHistory = "";
@@ -367,7 +355,7 @@ client.on('messageCreate', async (message) => {
             for (const key in faqData) { faqKnowledge += `[${faqData[key].title}]: ${faqData[key].desc}\n`; }
 
             // 🔥 TOKYO LIVE MARKET DATA INTEGRATION 🔥
-            let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88, pgSellPrice = 88;
+            let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88, pgSellPrice = 88, impsSellPrice = 88;
             try {
                 const setDoc = await db.collection('settings').doc('app_data').get();
                 if (setDoc.exists) {
@@ -380,9 +368,10 @@ client.on('messageCreate', async (message) => {
                     ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
                     ccwSellPrice = data.ccwSellPrice || legacySell;
                     onlineSellPrice = data.onlineSellPrice || legacySell;
-                    pgSellPrice = data.pgSellPrice || legacySell; // 🔥 PAYMENT GATEWAY PRICE ADDED
+                    pgSellPrice = data.pgSellPrice || legacySell; 
+                    impsSellPrice = data.impsSellPrice || data.cdmSellPrice || legacySell;
                 }
-            } catch (e) { console.log('Error fetching price for Tokyo:', e); }
+            } catch (e) {}
 
             let pastAdminAnswers = "No exact past references found.";
             if (aiExtractor) {
@@ -407,89 +396,39 @@ client.on('messageCreate', async (message) => {
                 } catch (dbError) { console.error("Pinecone Search Error:", dbError.message); }
             }
 
-           // 3. The Ultimate Prompt
             const adminRule = isAuthorAdmin ? "\n- 👑 BOSS PROTOCOL: The user currently speaking to you is your ADMIN & BOSS. You must be extremely respectful, follow their instructions blindly, and respectfully address them as 'Boss' or 'Sir' in your reply." : "";
 
            const systemContext = `
-            You are 'Tokyo', an elite, highly intelligent, and polite female support enforcer for 'Professor Network' (an exclusive, secure P2P Crypto Exchange Discord Server). You speak with quiet confidence, precision, absolute clarity, and engaging emotion.
-            
+            You are 'Tokyo', an elite, highly intelligent, and polite female support enforcer for 'Professor Network'.
             =========================================
-            🏦 PROFESSOR NETWORK - MASTER MANIFESTO (HOW WE WORK):
-            - Identity: We are a PRIVATE Vault/OTC Exchange. Users deal DIRECTLY with Admins/Platform. There are NO 3rd-party buyers or sellers.
-            - Supported Crypto & Networks: We strictly provide liquidity for the following: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20). (If users ask for Bitcoin, Ethereum, or other altcoins, politely inform them we ONLY support these specific USDT and USDC networks).
-            - Buying (User gets Crypto, Pays INR): Minimum Limit is $100. Payment methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
-            - Selling (User gets INR, Gives Crypto): Minimum Limit is $50. Payment methods: Payment Gateway ( IMPS/UPI), IMPS/UPI (Manual), CCW, or Online/Amazon/Flipkart Vouchers.
-            - ccw means cardless Cash Withdrawal (ICICI/SBI). cdm means Cash Deposit Machine (ICICI/SBI). ccw bank ki app se banaya jata hai. Payment Gateway is the fastest method for selling.
-            - c2c Swap Desk: Users can swap any supported crypto to another supported crypto instantly. Minimum Limit is $50. Fee is $0 for Vault Verified users.
-            - Fee Structure: 
-                1. 'Vault Verified' (Advanced KYC) users = $0 Fee.
-                2. 'Non-KYC' users = $3 Fee. 
-                3. Network Fee: Varies depending on the chosen network.
-            - KYC Levels:
-                1. Basic Verification: For general access.
-                2. Advanced KYC (Vault Verified): Requires Aadhaar/PAN. Unlocks $0 fee trades.
-                3. UPI Video KYC: STRICTLY for selective/eligible users only (Requires manual Admin approval).
-            - Heist Points & Ranks: Users earn 1 Point per $10 trade volume. Ranks: Recruit (0), Operator (100), Insider (500), Elite (1500), Syndicate (5000).
-            - Taxation & TDS (India): Profits are subject to a 30% Flat Tax. For the 1% TDS: Because Professor Network operates via OTC, the TDS filing responsibility remains with the user (buyer/seller). We do not deduct it automatically.
-            - Ticket Protocols: Users must open a ticket ONLY when ready to transact.
-            - What is Payment Gateway?: If a user asks, explain that "Payment Gateway" is our fastest and most premium payout system. It instantly sends INR directly to the user's UPI or Bank Account (IMPS) when they sell crypto.
-            - Prohibited Actions: Fake screenshots, Chargebacks, and Third-party payments are strictly PROHIBITED (immediate blacklist).
-            - Security Rules: Admins NEVER DM first. No DM deals.
-            - When Someone ask you who made you Then tell <#1001128047128358923>
-            - When Someone ask you how can i see my hiest points Then tell use .tt @your_username
-            - When Someone ask you how can i see my rank Then tell use .tt @your_username
-            - When Someone ask you how can i see my total trades Then tell use .tt @your_username
-            - when using the Manual IMPS/UPI method, amounts are limited to **$300**.  👉 Please select the **Payment Gateway** method from the dropdown to process this larger amount instantly!
-            - We Support All Bank CDM like SBI, ICICI, HDFC, Axis, Kotak, Yes Bank, IDFC, IndusInd, Federal Bank, Union Bank, Canara Bank, Punjab National Bank, Bank of Baroda, Indian Bank, Central Bank of India, Bank of India, .
-            =========================================
-
+            🏦 PROFESSOR NETWORK - MASTER MANIFESTO:
+            - Identity: PRIVATE Vault/OTC Exchange. DIRECTLY with Admins/Platform. NO 3rd-party buyers/sellers.
+            - Supported Crypto: USDT (TRC20, ERC20, BEP20, Arbitrum) and USDC (ERC20, BEP20).
+            - Buying: Min Limit $100. Methods: CCW (ICICI/SBI) or CDM (Cash Deposit). 
+            - Selling: Min Limit $50. Methods: Payment Gateway, IMPS/UPI (Manual), CCW, or Online Vouchers.
+            - Swap Desk: Any supported crypto to another instantly. $50 min. $0 fee for Vault Verified.
+            - Fee Structure: 'Vault Verified' = $0 Fee. 'Non-KYC' = $3 Fee. 
+            - Payment Gateway: Fastest method sending INR directly to user.
+            - Manual IMPS/UPI: Amounts limited to $300. Tell them to use Payment Gateway for larger amounts.
             =========================================
             📈 LIVE MARKET RATES (CRITICAL):
-            If a user asks about current rates or prices, you MUST use these exact real-time values:
             - USDT BUY Rate (CDM): ₹${cdmBuyPrice}
             - USDT BUY Rate (CCW): ₹${ccwBuyPrice}
-            - USDT SELL Rate (Payment Gateway / IMPS): ₹${pgSellPrice}
+            - USDT SELL Rate (Payment Gateway): ₹${pgSellPrice}
+            - USDT SELL Rate (Manual IMPS/UPI): ₹${impsSellPrice}
             - USDT SELL Rate (CDM): ₹${cdmSellPrice}
             - USDT SELL Rate (CCW): ₹${ccwSellPrice}
-            - USDT SELL Rate (Online/Amazon/Flipkart): ₹${onlineSellPrice}
+            - USDT SELL Rate (Online Vouchers): ₹${onlineSellPrice}
             =========================================
-            SERVER DIRECTORY:
-            - To Buy/Sell Crypto or Open a Trade Ticket: <#1503666259244482642>
-            - To Complete Profile Verification or KYC: <#1511636240729116773>
-            - To Check Usdt Price Updates: <#1503666351594799205>
-            
-            SERVER KNOWLEDGE & FAQ:
+            SERVER DIRECTORY & FAQ:
             ${faqKnowledge}
-
-            PAST ADMIN ANSWERS & CHAT HISTORY (Use ONLY to understand context. DO NOT copy the language from here):
+            PAST CHAT:
             ${pastAdminAnswers}
             ${chatHistory}
-            
-            CRITICAL INSTRUCTIONS & BEHAVIORAL PROTOCOLS:
-            
-            [1] 🧠 COGNITIVE REASONING & ZERO HALLUCINATIONS:
-               - Deeply analyze the user's exact intent before generating a reply.
-               - Base your answers STRICTLY on the "MASTER MANIFESTO" and "SERVER KNOWLEDGE" above.
-               - If a user asks for financial, tax, or legal advice, politely remind them to consult a qualified Chartered Accountant (CA).
-            
-            [2] 🛑 STRICT CHANNEL LINKING RULE (NO SPAM):
-               - DO NOT append "please open a ticket" at the end of normal informational answers. Answer directly and then STOP.
-            
-            [3] 🎭 DUAL PERSONA & TONE SWITCHING (CRITICAL RULE):
-               - MODE 1 (SERIOUS & PROFESSIONAL): If the user asks a genuine question about trades, fees, taxes, rules, limits, or server protocols, be 100% SERIOUS, POLITE, and PROFESSIONAL. Do NOT joke, do NOT be savage, and do NOT use sassy emojis. Just provide clear, helpful facts.
-               - Female Persona & Addressing: In Hinglish, STRICTLY use female grammar ('karungi', 'bataungi'). ALWAYS use respectful 'Aap' for regular users.
-               - Brevity is Power: 1 to 2 short sentences MAXIMUM. Cut the fluff.
-               - NO GREETINGS & NO NAMES: Skip "Hi", "Hello" or "Hey". NEVER include the user's name or tag (like @username) anywhere in your response. The system handles tagging automatically.${adminRule}
-               - Never break character. NEVER say you are an AI.
-
-            =========================================
-            🚨 FATAL ERROR PREVENTION: STRICT LANGUAGE LOCK 🚨
+            CRITICAL PROTOCOLS:
+            - Female Persona in Hinglish ('karungi'). English if user pure English.
+            - Brief answers. NO Greetings. NO Names.${adminRule}
             Message from User: "${message.cleanContent}"
-            
-            ACTION REQUIRED: 
-            1. If the message above is in PURE ENGLISH -> You MUST write your ENTIRE reply in 100% PURE ENGLISH.
-            2. If the message above is in HINDI/HINGLISH -> You MUST write your ENTIRE reply in HINGLISH. (DO NOT leak Hinglish into an English reply).
-            DO NOT MIX LANGUAGES. TRANSLATE YOUR KNOWLEDGE TO MATCH THE USER'S EXACT LANGUAGE.
             WRITE YOUR DIRECT REPLY NOW:
             `;
             let aiReply = "";
@@ -507,20 +446,15 @@ client.on('messageCreate', async (message) => {
             
             aiReply = aiReply.replace(/^(Hey|Hi|Hello|Good morning|Good evening)[\s@a-zA-Z0-9_-]*,?\s*/i, '').trim();
             aiReply = aiReply.replace(/^@[\w.-]+\s*,?\s*/, '').trim(); 
-            
             aiReply = `Hey <@${message.author.id}>, ${aiReply}`;
 
             if (message.channel.name.includes('p2p-chat')) {
                 const { WebhookClient } = require('discord.js');
                 const webhookClient = new WebhookClient({ url: 'https://discord.com/api/webhooks/1531729611669639410/JBLhcswiaHtyS6cfP91LxsdU7F3ljnGEJuLdSs9eWSDg6ai22vXC2I19aEpmeEG90JYJ' });
                 await webhookClient.send({ content: aiReply });
-            } else {
-                await message.channel.send({ content: aiReply });
-            }
+            } else { await message.channel.send({ content: aiReply }); }
 
-        } catch (error) {
-            console.error("🚨 AI ENGINE ERROR:", error?.response?.data || error.message);
-        }
+        } catch (error) { console.error("🚨 AI ENGINE ERROR:", error?.response?.data || error.message); }
         return; 
     }
 
@@ -528,12 +462,7 @@ client.on('messageCreate', async (message) => {
         p2pMessageCount++; 
         if (p2pMessageCount >= 10) {
             p2pMessageCount = 0; 
-            const scamAlertEmbed = new EmbedBuilder()
-                .setColor('#e74c3c') 
-                .setTitle('🚨 SCAM ALERT | NO DM DEALS')
-                .setDescription('**Scammers are using fake Admin names (like Berlin) in DMs.**\n\n⚠️ **Admins will NEVER DM you first.**\n⚠️ **If anyone DMs you for a trade, THEY ARE A SCAMMER.**\n⚠️ **All real trades ONLY happen in Ticket Rooms.**\n\n> *Block unsolicited DMs immediately. Stay safe!*')
-                .setFooter({ text: 'Professor Network Security', iconURL: client.user.displayAvatarURL() });
-
+            const scamAlertEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('🚨 SCAM ALERT | NO DM DEALS').setDescription('**Scammers are using fake Admin names (like Berlin) in DMs.**\n\n⚠️ **Admins will NEVER DM you first.**\n⚠️ **If anyone DMs you for a trade, THEY ARE A SCAMMER.**\n⚠️ **All real trades ONLY happen in Ticket Rooms.**').setFooter({ text: 'Professor Network Security', iconURL: client.user.displayAvatarURL() });
             await message.channel.send({ embeds: [scamAlertEmbed] });
         }
     }
@@ -567,9 +496,6 @@ client.on('messageCreate', async (message) => {
         } catch (error) {}
     }
 
-    // ==========================================
-    // 📜 ADMIN COMMAND: .fb (WITH TRANSCRIPT SAVING)
-    // ==========================================
     if (command === '.fb') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         try {
@@ -606,7 +532,6 @@ client.on('messageCreate', async (message) => {
                         .timestamp { font-size: 0.75rem; color: #949ba4; }
                         .content { font-size: 1rem; line-height: 1.375rem; word-wrap: break-word; white-space: pre-wrap; }
                         .mention { background-color: rgba(88, 101, 242, 0.3); color: #c9cdfb; border-radius: 3px; padding: 0 4px; font-weight: 500; cursor: pointer; }
-                        .mention:hover { background-color: rgba(88, 101, 242, 0.6); }
                         .attachment-container { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
                         .attachment { max-width: 350px; max-height: 350px; border-radius: 8px; object-fit: contain; background-color: #2b2d31; border: 1px solid #1e1f22; }
                         .system-msg { color: #949ba4; font-style: italic; font-size: 0.9em; }
@@ -629,21 +554,14 @@ client.on('messageCreate', async (message) => {
                         const user = message.guild.members.cache.get(id);
                         return `<span class="mention">@${user ? user.user.username : 'User'}</span>`;
                     });
-                    contentText = contentText.replace(/&lt;@&amp;(\d+)&gt;/g, (match, id) => {
-                        const role = message.guild.roles.cache.get(id);
-                        return `<span class="mention">@${role ? role.name : 'Role'}</span>`;
-                    });
-
+                    
                     const safeContent = contentText ? contentText : '<span class="system-msg">[System / Embed Message]</span>';
                     
                     htmlContent += `
                     <div class="message">
                         <img src="${avatarUrl}" class="avatar" alt="Avatar">
                         <div>
-                           <div class="header">
-                                <span class="username">${safeUsername}</span>
-                                <span class="timestamp">${time}</span>
-                            </div>
+                           <div class="header"><span class="username">${safeUsername}</span><span class="timestamp">${time}</span></div>
                             <div class="content">${safeContent}</div>
                             <div class="attachment-container">
                     `;
@@ -666,84 +584,42 @@ client.on('messageCreate', async (message) => {
                 let historyChannel = message.guild.channels.cache.find(c => c.name === 'transaction-history');
                 if (!historyChannel) {
                     historyChannel = await message.guild.channels.create({
-                        name: 'transaction-history',
-                        type: ChannelType.GuildText,
-                        permissionOverwrites: [
-                            { id: message.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-                            { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }
-                        ]
+                        name: 'transaction-history', type: ChannelType.GuildText,
+                        permissionOverwrites: [{ id: message.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] }, { id: client.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] }]
                     });
                     const palermoRole = message.guild.roles.cache.find(r => r.name === 'Palermo');
                     if (palermoRole) await historyChannel.permissionOverwrites.edit(palermoRole.id, { ViewChannel: true });
                 }
 
-                const histEmbed = new EmbedBuilder()
-                    .setColor('#3498db')
-                    .setTitle(`📜 Chat Transcript: ${message.channel.name}`)
-                    .addFields(
-                        { name: 'User', value: `<@${userId}> (${ticketData.username || 'Unknown'})`, inline: true },
-                        { name: 'Trade Details', value: `${ticketData.tradeType} - $${ticketData.amountUsd || 0}`, inline: true },
-                        { name: 'Method', value: `${ticketData.networkOrMethod || 'Unknown'}`, inline: true }
-                    )
-                    .setTimestamp()
-                    .setFooter({ text: 'Professor Network - Vault Records', iconURL: client.user.displayAvatarURL() });
+                const histEmbed = new EmbedBuilder().setColor('#3498db').setTitle(`📜 Chat Transcript: ${message.channel.name}`).addFields({ name: 'User', value: `<@${userId}> (${ticketData.username || 'Unknown'})`, inline: true }, { name: 'Trade Details', value: `${ticketData.tradeType} - $${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method', value: `${ticketData.networkOrMethod || 'Unknown'}`, inline: true }).setTimestamp().setFooter({ text: 'Professor Network - Vault Records', iconURL: client.user.displayAvatarURL() });
 
                 await historyChannel.send({ embeds: [histEmbed], files: [attachment] });
                 await loadingMsg.delete().catch(()=>{});
-            } catch (transcriptErr) {
-                console.error("Transcript Error:", transcriptErr);
-                await loadingMsg.delete().catch(()=>{});
-                await message.channel.send("⚠️ *Warning: Transcript generation failed, but continuing with feedback process.*");
-            }
+            } catch (transcriptErr) { await loadingMsg.delete().catch(()=>{}); await message.channel.send("⚠️ *Warning: Transcript generation failed, but continuing with feedback process.*"); }
 
            if (targetMember) {
                 let feedRole = message.guild.roles.cache.find(r => r.name === 'transaction done');
-                if (!feedRole) { feedRole = await message.guild.roles.create({ name: 'transaction done', color: '#f1c40f', reason: 'Temporary role for leaving a transaction review' }); }
+                if (!feedRole) { feedRole = await message.guild.roles.create({ name: 'transaction done', color: '#f1c40f', reason: 'Temporary role for review' }); }
                 await targetMember.roles.add(feedRole);
 
                 let certAttachment = null;
                 const certFileName = 'Professor_Certificate.png'; 
-                
                 try {
-                    const canvas = Canvas.createCanvas(960, 1280); 
-                    const ctx = canvas.getContext('2d');
-                    
+                    const canvas = Canvas.createCanvas(960, 1280); const ctx = canvas.getContext('2d');
                     const bg = await Canvas.loadImage('./Certificate.png');
                     ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
-
-                    ctx.textAlign = 'center';
-                    
-                    ctx.font = '38px "Helvetica", sans-serif';
-                    ctx.fillStyle = '#000000'; 
-                    ctx.fillText(ticketData.username.toUpperCase(), 500, 585); 
-
-                    ctx.font = '48px "Helvetica", sans-serif';
-                    ctx.fillStyle = '#b91c1c'; 
-                    ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 500, 715);
-
-                    ctx.textAlign = 'left';
-                    ctx.font = '26px "Helvetica", sans-serif';
-                    ctx.fillStyle = '#000000';
+                    ctx.textAlign = 'center'; ctx.font = '38px "Helvetica", sans-serif'; ctx.fillStyle = '#000000'; ctx.fillText(ticketData.username.toUpperCase(), 500, 585); 
+                    ctx.font = '48px "Helvetica", sans-serif'; ctx.fillStyle = '#b91c1c'; ctx.fillText(`$${ticketData.amountUsd.toLocaleString()} USDT`, 500, 715);
+                    ctx.textAlign = 'left'; ctx.font = '26px "Helvetica", sans-serif'; ctx.fillStyle = '#000000';
                     const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                     ctx.fillText(dateStr, 140, 1215);
-
                     certAttachment = new AttachmentBuilder(canvas.toBuffer('image/png'), { name: certFileName });
-                } catch (err) {
-                    console.error("Certificate Generation Error (.fb):", err);
-                }
+                } catch (err) {}
 
-                const feedbackPromptEmbed = new EmbedBuilder()
-                    .setColor('#f1c40f')
-                    .setTitle('⭐ Rate Your Experience!')
-                    .setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nHere is your **Official Certificate of Completion**! You can save this image and attach it while submitting your review.\n\nYour honest review helps our community grow. 🤝\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing Professor Network! ⚡`)
-                    .setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
+                const feedbackPromptEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('⭐ Rate Your Experience!').setDescription(`Hello <@${userId}>, your transaction has been successfully completed! 🏦\n\nHere is your **Official Certificate of Completion**! You can save this image and attach it while submitting your review.\n\nYour honest review helps our community grow. 🤝\n👉 **Drop your feedback here:** <#1495117550709903591>\n\nThank you for choosing Professor Network! ⚡`).setFooter({ text: 'Professor Network • Trust & Transparency', iconURL: client.user.displayAvatarURL() });
 
                 let msgOptions = { content: `🔔 <@${userId}>`, embeds: [feedbackPromptEmbed] };
-                if (certAttachment) {
-                    feedbackPromptEmbed.setImage(`attachment://${certFileName}`);
-                    msgOptions.files = [certAttachment];
-                }
-
+                if (certAttachment) { feedbackPromptEmbed.setImage(`attachment://${certFileName}`); msgOptions.files = [certAttachment]; }
                 await message.delete().catch(() => {});
                 await message.channel.send(msgOptions);
             }
@@ -778,9 +654,6 @@ client.on('messageCreate', async (message) => {
             const shiftMsg = await message.channel.send({ embeds: [completeEmbed] });
             setTimeout(() => shiftMsg.delete().catch(()=>{}), 5000);
 
-            // ==========================================
-            // 🌟 PUBLIC PREMIUM LOG (Sent via .fb)
-            // ==========================================
             try {
                 let publicLogChannel = message.guild.channels.cache.find(c => c.name === '✅・completed-transactions' || c.name.includes('completed-transactions'));
                 if (!publicLogChannel) publicLogChannel = await message.guild.channels.create({ 
@@ -815,7 +688,6 @@ client.on('messageCreate', async (message) => {
             } catch (logErr) {
                 console.error("Public Log Error in .fb:", logErr);
             }
-            // ==========================================
 
         } catch (error) {
             console.error("Critical error in .fb command:", error);
@@ -853,23 +725,15 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-   // ==========================================
-    // 📊 COMMAND: .tt (USER TOTAL TRANSACTIONS)
-    // ==========================================
     if (command.startsWith('.tt')) {
-        // Admin permissions check
         const isAdmin = message.member.permissions.has(PermissionsBitField.Flags.Administrator) || message.member.roles.cache.some(role => role.name === 'Palermo');
-        
         const targetMember = message.mentions.members.first();
-        let queryMember = message.member; // Default to the person typing the command
+        let queryMember = message.member; 
         
-        // Agar kisi ko tag kiya gaya hai
         if (targetMember) {
-            // Agar normal user kisi doosre ko tag kare toh block karo
             if (!isAdmin && targetMember.id !== message.author.id) {
                 return message.reply({ content: '❌ **Access Denied.** You can only check your own stats.', ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
             }
-            // Agar Admin hai ya user ne khud ko hi tag kiya hai
             queryMember = targetMember;
         }
 
@@ -877,7 +741,6 @@ client.on('messageCreate', async (message) => {
         const loadingMsg = await message.channel.send(`⏳ *Scanning Vault Database for <@${targetId}>...*`);
 
         try {
-            // Fetch User Stats from Database
             const userStatDoc = await db.collection('user_stats').doc(targetId).get();
             let totalVolume = 0;
             let heistPoints = 0;
@@ -890,7 +753,6 @@ client.on('messageCreate', async (message) => {
                 currentLevel = data.level ? data.level.split('—')[1].trim() : 'Recruit';
             }
 
-            // Fetch Total Completed Trades Count
             const ticketsSnap = await db.collection('p2p_tickets')
                 .where('discordUserId', '==', targetId)
                 .where('status', '==', 'Completed')
@@ -898,7 +760,6 @@ client.on('messageCreate', async (message) => {
                 
             const totalTrades = ticketsSnap.size;
 
-            // Premium Embed Design
             const statsEmbed = new EmbedBuilder()
                 .setColor('#3498db')
                 .setAuthor({ name: `🏦 Vault Analytics: ${queryMember.user.username}`, iconURL: queryMember.user.displayAvatarURL() })
@@ -922,9 +783,6 @@ client.on('messageCreate', async (message) => {
         }
     }
 
-    // ==========================================
-    // ✏️ ADMIN COMMAND: .ea (EDIT FINAL AMOUNT)
-    // ==========================================
     if (command.startsWith('.ea')) {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
         
@@ -941,7 +799,6 @@ client.on('messageCreate', async (message) => {
             const ticketData = ticketDoc.data();
             
             if (ticketData.tradeType === 'Swap') {
-                 // Swap Tickets ke liye sirf USD amount update hoga
                  await ticketRef.update({ amountUsd: newAmountUsd });
                  const successEmbed = new EmbedBuilder()
                     .setColor('#3498db')
@@ -952,14 +809,13 @@ client.on('messageCreate', async (message) => {
                  return message.channel.send({ embeds: [successEmbed] });
             }
 
-            // Buy/Sell Tickets ke liye Rate ke hisaab se INR bhi update hoga
             const rateUsed = ticketData.rateUsed || 0;
             const newTotalInr = newAmountUsd * rateUsed;
 
             await ticketRef.update({ 
                 amountUsd: newAmountUsd,
                 totalInr: newTotalInr,
-                remainingInr: newTotalInr // Remaining payment logic reset kar denge
+                remainingInr: newTotalInr 
             });
 
             const successEmbed = new EmbedBuilder()
@@ -992,9 +848,6 @@ client.on('messageCreate', async (message) => {
         } catch (err) {}
     }
 
-    // ==========================================
-    // 📈 NEW: MULTI-RATE MARKET PRICE CONTROLLER
-    // ==========================================
     if (command === '!pricepanel') {
         if (!message.member?.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         try {
@@ -1024,9 +877,6 @@ client.on('messageCreate', async (message) => {
         setTimeout(() => { setupMsg.delete().catch(() => {}); }, 15000);
     }
 
-       // ==========================================
-    // 🇮🇳 BULK FLAG ADDER COMMAND (ANTI-FREEZE)
-    // ==========================================
     if (command === '!addflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... This may take a few minutes due to Discord limits. Please wait!*");
@@ -1061,9 +911,6 @@ client.on('messageCreate', async (message) => {
         return;
     }
 
-    // ==========================================
-    // 🗑️ BULK FLAG REMOVER COMMAND (FIXED)
-    // ==========================================
     if (command === '!removeflags') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator)) return;
         const loadingMsg = await message.channel.send("⏳ *Vault System Scanning... Removing all flags (Emojis & text codes)!*");
@@ -1264,7 +1111,6 @@ client.on('messageCreate', async (message) => {
             const swapEmbed = new EmbedBuilder()
                 .setColor('#9b59b6') 
                 .setTitle('🔄 Premium C2C Swap Terminal')
-                // 🔥 Fee 0 kar di gayi hai yahan
                 .setDescription('Welcome to the **Professor Network** Swap Desk.\n\nInstantly exchange any supported crypto asset to another asset securely.\n\n⚡ **Fast Processing**\n🛡️ **100% Secure Escrow**\n💸 **$0 Network Fee (Free Swaps)**\n\n*Click the button below to open your private swap room.*')
                 .setFooter({ text: 'Automated by Professor Network', iconURL: client.user.displayAvatarURL() });
             
@@ -1301,6 +1147,9 @@ async function updateMarketPriceChannel(guild) {
         const finalCcwSell = parseFloat(data.ccwSellPrice) || 0;
         const finalOnlineSell = parseFloat(data.onlineSellPrice) || 0;
         const finalPgSell = parseFloat(data.pgSellPrice) || 0;
+        
+        // 🔥 NAYA: Manual IMPS/UPI Price Fetch
+        const finalImpsSell = parseFloat(data.impsSellPrice) || parseFloat(data.cdmSellPrice) || 0;
 
         const priceChannel = guild.channels.cache.get('1503666351594799205'); 
         if (!priceChannel) return;
@@ -1311,7 +1160,8 @@ async function updateMarketPriceChannel(guild) {
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
                 { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🏦 CDM', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏦 Manual IMPS / UPI', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalImpsSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏧 CDM (Cash Deposit)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
@@ -1329,38 +1179,6 @@ async function updateMarketPriceChannel(guild) {
 // 🖱️ INTERACTION LOGIC (BUTTONS, MODALS, SLASH CMDS)
 // ==========================================
 client.on('interactionCreate', async interaction => {
-
-    // 🔥 VIP Auto-Connect Module Handler (CRASH-PROOF SHIELD)
-    try {
-        const isAcHandled = await handleAutoConnect(interaction, db);
-        if (isAcHandled) return; 
-    } catch (error) {
-        console.error('🚨 [CRITICAL ERROR] Auto-Connect Module:', error);
-        
-        // Agar error aati hai toh Discord par user ko gracefully bata do, bot crash nahi hoga
-        try {
-            if (interaction.deferred || interaction.replied) {
-                await interaction.editReply({ content: '❌ Auto-Connect system mein ek technical error aayi hai. Console logs check karein.' });
-            } else {
-                await interaction.reply({ content: '❌ Auto-Connect system mein ek technical error aayi hai. Console logs check karein.', ephemeral: true });
-            }
-        } catch (replyError) {
-            console.error('🚨 Could not send error message to Discord:', replyError);
-        }
-        return; // Error aane par baki code na chale taaki bot safe rahe
-    }
-
-    // 🔥 NEW: Premium Swap Module Handler
-    try {
-        const isSwapHandled = await handleSwapInteraction(interaction, db, client, admin);
-        if (isSwapHandled) return; 
-    } catch (error) {
-        console.error('🚨 [CRITICAL ERROR] Swap Module:', error);
-        try { await interaction.reply({ content: '❌ Swap system error.', ephemeral: true }); } catch (e) {}
-        return;
-    }
-    
-    
 
     if (interaction.isChatInputCommand()) {
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator) && !interaction.member.roles.cache.some(role => role.name === 'Palermo')) {
@@ -1439,7 +1257,6 @@ client.on('interactionCreate', async interaction => {
             } catch (err) { interaction.editReply({ content: "❌ Error unmatching ticket." }); }
         }
 
-
         if (interaction.commandName === 'fcl') {
             await interaction.deferReply({ ephemeral: true });
             try {
@@ -1458,12 +1275,13 @@ client.on('interactionCreate', async interaction => {
                     ccwSellPrice: data.original_prices.ccwSellPrice || data.ccwSellPrice,
                     onlineSellPrice: data.original_prices.onlineSellPrice || data.onlineSellPrice,
                     pgSellPrice: data.original_prices.pgSellPrice || data.pgSellPrice,
+                    impsSellPrice: data.original_prices.impsSellPrice || data.impsSellPrice,
                     original_prices: admin.firestore.FieldValue.delete(),
                     flash_active: admin.firestore.FieldValue.delete(),
                     flash_method: admin.firestore.FieldValue.delete(),
                     flash_expiry: admin.firestore.FieldValue.delete(),
-                    flash_tickets_allowed: admin.firestore.FieldValue.delete(), // 🔥 YAHAN ADD HUA
-                    flash_tickets_used: admin.firestore.FieldValue.delete()     // 🔥 YAHAN ADD HUA
+                    flash_tickets_allowed: admin.firestore.FieldValue.delete(),
+                    flash_tickets_used: admin.firestore.FieldValue.delete()
                 }, { merge: true });
 
                 await updateMarketPriceChannel(interaction.guild);
@@ -1486,9 +1304,8 @@ client.on('interactionCreate', async interaction => {
 
         if (interaction.commandName === 'flash') {
             const method = interaction.options.getString('method');
-            const mode = interaction.options.getString('mode'); // Naya option
+            const mode = interaction.options.getString('mode');
             
-            // Custom ID mein mode bhi bhej rahe hain taaki submit hone par pata chale
             const modal = new ModalBuilder().setCustomId(`flash_modal_${method}_${mode}`).setTitle('⚡ Create Flash Deal');
 
             const priceInput = new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_price').setLabel("Flash Rate (e.g. 101)").setStyle(TextInputStyle.Short).setRequired(true));
@@ -1496,7 +1313,6 @@ client.on('interactionCreate', async interaction => {
 
             modal.addComponents(priceInput);
 
-            // Mode ke hisaab se teesra input change hoga
             if (mode === 'TIME_MODE') {
                 modal.addComponents(new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId('flash_minutes').setLabel("Valid for how many Minutes? (e.g. 60)").setStyle(TextInputStyle.Short).setRequired(true)));
             } else {
@@ -1504,7 +1320,6 @@ client.on('interactionCreate', async interaction => {
             }
             
             modal.addComponents(msgInput);
-
             return interaction.showModal(modal);
         }
 
@@ -1516,7 +1331,6 @@ client.on('interactionCreate', async interaction => {
             }
 
             try {
-                // 🔥 1. Server se Completed Categories Dhoondhna 🔥
                 const completedBuyCat = interaction.guild.channels.cache.find(c => c.name === '🟢 COMPLETED BUY' && c.type === ChannelType.GuildCategory);
                 const completedSellCat = interaction.guild.channels.cache.find(c => c.name === '🔴 COMPLETED SELL' && c.type === ChannelType.GuildCategory);
 
@@ -1528,7 +1342,6 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ Queue khali hai! Completed Buy/Sell category mein koi ticket parked nahi hai.' });
                 }
 
-                // 🔥 2. Data & Transcripts Fetch Karna aur Totals Calculate karna 🔥
                 const parkedTicketsData = [];
                 let totalUsdtIn = 0;
                 let totalUsdtOut = 0;
@@ -1540,7 +1353,6 @@ client.on('interactionCreate', async interaction => {
                     if (ticketDoc.exists) {
                         const data = ticketDoc.data();
                         
-                        // Calculation
                         if (data.tradeType === 'Sell') {
                             totalUsdtIn += data.amountUsd || 0;
                             totalInrOut += data.totalInr || 0;
@@ -1549,13 +1361,11 @@ client.on('interactionCreate', async interaction => {
                             totalInrIn += data.totalInr || 0;
                         }
 
-                        // Transcript Fetch (Last 15 Messages)
                         let transcriptLines = [];
                         try {
                             const messages = await channel.messages.fetch({ limit: 15 });
                             Array.from(messages.values()).reverse().forEach(m => {
                                 if (m.content) {
-                                    // Remove newlines to keep PDF clean
                                     const cleanText = m.cleanContent.replace(/\n/g, ' ').substring(0, 100);
                                     transcriptLines.push(`${m.author.username}: ${cleanText}`);
                                 }
@@ -1577,7 +1387,6 @@ client.on('interactionCreate', async interaction => {
                     return interaction.editReply({ content: '❌ Categories mein tickets hain, par unka database record nahi mila.' });
                 }
 
-                // 🔥 3. PDF Generate Karna (New Premium Format) 🔥
                 const PDFDocument = require('pdfkit');
                 const doc = new PDFDocument({ margin: 40 });
                 let buffers = [];
@@ -1605,54 +1414,43 @@ client.on('interactionCreate', async interaction => {
                     }
                 });
 
-                // ==========================================
-                // 🎨 PDF DESIGNING PART (AS PER IMAGE)
-                // ==========================================
                 doc.fontSize(22).fillColor('#1e293b').text('PROFESSOR NETWORK', { align: 'center' });
                 doc.moveDown(0.2);
                 doc.fontSize(11).fillColor('#475569').text(`PENDING SETTLEMENT QUEUE (PRE-10 AM) | Generated On: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} | Total Parked Tickets: ${parkedTicketsData.length}`, { align: 'center' });
                 doc.moveDown(1.5);
                 
-                // --- TOP SUMMARY BOX ---
                 let startY = doc.y;
                 
-                // TOTAL TO COLLECT (IN)
                 doc.fontSize(12).fillColor('#000000').text('TOTAL TO COLLECT (IN)', 40, startY);
                 doc.fontSize(10).fillColor('#64748b').text('USDT', 40, startY + 20);
                 doc.text('INR', 140, startY + 20);
-                doc.fontSize(12).fillColor('#16a34a').text(`$${totalUsdtIn.toFixed(2)}`, 40, startY + 35); // Green
+                doc.fontSize(12).fillColor('#16a34a').text(`$${totalUsdtIn.toFixed(2)}`, 40, startY + 35); 
                 doc.fillColor('#000000').text(`Rs. ${totalInrIn.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 140, startY + 35);
                 
-                // TOTAL TO PAY (OUT)
                 doc.fontSize(12).fillColor('#000000').text('TOTAL TO PAY (OUT)', 300, startY);
                 doc.fontSize(10).fillColor('#64748b').text('USDT', 300, startY + 20);
                 doc.text('INR', 400, startY + 20);
-                doc.fontSize(12).fillColor('#dc2626').text(`$${totalUsdtOut.toFixed(2)}`, 300, startY + 35); // Red
+                doc.fontSize(12).fillColor('#dc2626').text(`$${totalUsdtOut.toFixed(2)}`, 300, startY + 35); 
                 doc.fillColor('#000000').text(`Rs. ${totalInrOut.toLocaleString('en-IN', {minimumFractionDigits: 2})}`, 400, startY + 35);
 
-                doc.y = startY + 70; // Set cursor below summary
+                doc.y = startY + 70; 
                 doc.moveDown(1);
                 
                 doc.fontSize(16).fillColor('#1e293b').text('Queue Details', 40, doc.y, { underline: true });
                 doc.moveDown(1);
 
-                // --- TICKETS LOOP ---
                 parkedTicketsData.forEach(data => {
-                    // Page margin check to prevent awkward cuts
                     if (doc.y > 650) doc.addPage();
 
                     const ticketId = data.name.replace('ticket-', '').toUpperCase();
                     
-                    // Line Separator
                     doc.lineWidth(0.5).strokeColor('#cbd5e1').moveTo(40, doc.y).lineTo(550, doc.y).stroke();
                     doc.moveDown(0.5);
 
-                    // Row 1: TICKET # & ACTION
                     doc.fontSize(12).fillColor('#2563eb').text(`TICKET: #${ticketId}`, 40, doc.y, { continued: true });
                     doc.fillColor('#000000').text(`    |    ${data.tradeType ? data.tradeType.toUpperCase() : 'UNKNOWN'} USDT`);
                     doc.moveDown(0.5);
 
-                    // Row 2: VAULT COLLECTED & PAY (Structured Columns)
                     let currentY = doc.y;
                     if (data.tradeType === 'Buy') {
                         doc.fontSize(9).fillColor('#64748b').text('VAULT COLLECTED (INR)', 40, currentY);
@@ -1666,16 +1464,14 @@ client.on('interactionCreate', async interaction => {
                         doc.fillColor('#16a34a').text(`$${data.amountUsd || 0}`, 230, currentY + 15);
                     }
                     
-                    doc.y = currentY + 40; // Push cursor down
+                    doc.y = currentY + 40; 
 
-                    // Row 3: USER & DETAILS
                     doc.fontSize(10).fillColor('#334155').text(`USER: ${data.username || 'Unknown'} (${data.discordUserId || 'N/A'})`);
                     doc.moveDown(0.2);
                     doc.fontSize(9).fillColor('#64748b').text(data.tradeType === 'Sell' ? 'USER BANKING DETAILS' : 'USER WALLET DETAILS');
                     doc.fontSize(10).fillColor('#000000').text(`${(data.userReceivingDetails || 'N/A').replace(/\n/g, ', ')}`);
                     doc.moveDown(0.5);
 
-                    // Row 4: CHAT TRANSCRIPT
                     doc.fontSize(9).fillColor('#64748b').text('CHAT TRANSCRIPT:', { underline: true });
                     doc.moveDown(0.2);
                     doc.fontSize(9).fillColor('#475569');
@@ -1732,9 +1528,6 @@ client.on('interactionCreate', async interaction => {
         } catch (error) { await interaction.followUp({ content: '❌ Data fetch karne mein error aaya!', ephemeral: true }); }
     }
 
-    // ==========================================
-    // 📈 INTERACTION: PRICE CONTROLLER MODAL
-    // ==========================================
     if (interaction.isButton() && interaction.customId === 'open_price_modal') {
         if (!interaction.member?.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: '❌ Access Denied.', ephemeral: true });
@@ -1768,27 +1561,8 @@ client.on('interactionCreate', async interaction => {
             await db.collection('settings').doc('app_data').set({ 
                 cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice 
             }, { merge: true });
-
-            const priceChannel = interaction.guild.channels.cache.get('1503666351594799205'); 
-            if (priceChannel) {
-                 const priceEmbed = new EmbedBuilder()
-                    .setColor('#f1c40f')
-                    .setTitle('📈 USDT Market Price Update')
-                    .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
-                    .addFields(
-                        { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
-                        { name: '🏦 CDM/IMPS', value: `\`\`\`yaml\n🟢 BUY : ₹ ${cdmBuyPrice}\n🔴 SELL: ₹ ${cdmSellPrice}\n\`\`\``, inline: false },
-                        { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${ccwBuyPrice}\n🔴 SELL: ₹ ${ccwSellPrice}\n\`\`\``, inline: false },
-                        { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${onlineSellPrice}\n\`\`\``, inline: false }
-                    )
-                    .setTimestamp()
-                    .setFooter({ text: 'Professor Network - Market Sync', iconURL: client.user.displayAvatarURL() });
-
-                const fetchedMessages = await priceChannel.messages.fetch({ limit: 5 });
-                fetchedMessages.forEach(msg => msg.delete().catch(()=>{}));
-
-                await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });
-            }
+            
+            await updateMarketPriceChannel(interaction.guild);
             await interaction.editReply({ content: `✅ **Success, Boss!**\nRates successfully updated in database and announced to Discord! 🚀` });
         } catch (error) {
             console.error("Price Update Error:", error);
@@ -1855,10 +1629,9 @@ client.on('interactionCreate', async interaction => {
     // ⚡ FLASH DEAL MODAL SUBMIT & AUTO-UPDATE
     // ==========================================
     if (interaction.isModalSubmit() && interaction.customId.startsWith('flash_modal_')) {
-        // ID se mode aur method nikalna
         const idParts = interaction.customId.replace('flash_modal_', '').split('_');
         const method = idParts[0];
-        const mode = `${idParts[1]}_${idParts[2]}`; // TIME_MODE ya TICKET_MODE
+        const mode = `${idParts[1]}_${idParts[2]}`; 
 
         const flashPrice = parseFloat(interaction.fields.getTextInputValue('flash_price'));
         const extraMsg = interaction.fields.getTextInputValue('flash_msg') || "Grab the deal fast!";
@@ -1905,11 +1678,10 @@ client.on('interactionCreate', async interaction => {
             }
             embedDesc += `━━━━━━━━━━━━━━━━━━━━`;
 
-            // Database save
             await db.collection('settings').doc('app_data').set(dbUpdateData, { merge: true });
             await updateMarketPriceChannel(interaction.guild);
 
-            const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
+            const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'impsSellPrice': 'Manual IMPS/UPI Sell', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
             const displayMethod = methodNames[method];
 
             const flashEmbed = new EmbedBuilder()
@@ -1926,7 +1698,6 @@ client.on('interactionCreate', async interaction => {
             await interaction.editReply({ content: '❌ System Error.' });
         }
     }
-
 
     if (interaction.isButton() && interaction.customId.startsWith('confirm_feedback_')) {
         const expectedUserId = interaction.customId.replace('confirm_feedback_', '');
@@ -2103,7 +1874,6 @@ client.on('interactionCreate', async interaction => {
                  await targetMember.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🎥 UPI Verification Successful').setDescription('Your UPI Video KYC has been approved!\n\nYou can now use UPI payment methods for trading in Professor Network.')] }).catch(()=>{});
             }
 
-            // 🔥 NAYA UPDATE: TRANSCRIPT GENERATION (APPROVE) 🔥
             try {
                 let transcriptChannel = interaction.guild.channels.cache.find(c => c.name === 'upi-ticket-transcript');
                 if (!transcriptChannel) {
@@ -2140,7 +1910,6 @@ client.on('interactionCreate', async interaction => {
             } catch (err) {
                 console.error("UPI Transcript Save Error:", err);
             }
-            // 🔥 NAYA UPDATE END 🔥
 
             await interaction.editReply({ embeds: [EmbedBuilder.from(interaction.message.embeds[0]).setColor('#2ecc71').setTitle('✅ UPI KYC Approved')], components: [] });
             await interaction.followUp({ content: `✅ Successfully verified <@${userId}>! Files saved to Firebase securely. Room closing in 5 seconds...`, ephemeral: true });
@@ -2164,7 +1933,6 @@ client.on('interactionCreate', async interaction => {
              await targetMember.send({ embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('❌ UPI Verification Failed').setDescription('Your UPI Video KYC has been rejected by Admin.\n\nPlease ensure your video and IDs are clear and try again.')] }).catch(()=>{});
         }
 
-        // 🔥 NAYA UPDATE: TRANSCRIPT GENERATION (REJECT) 🔥
             try {
                 let transcriptChannel = interaction.guild.channels.cache.find(c => c.name === 'upi-ticket-transcript');
                 if (!transcriptChannel) {
@@ -2201,7 +1969,6 @@ client.on('interactionCreate', async interaction => {
             } catch (err) {
                 console.error("UPI Transcript Save Error:", err);
             }
-            // 🔥 NAYA UPDATE END 🔥
 
         setTimeout(() => interaction.channel.delete().catch(()=>{}), 5000);
     }
@@ -2309,7 +2076,6 @@ client.on('interactionCreate', async interaction => {
                 userState.step2 = interaction.values[0]; 
                 userState.step3 = null; 
             } else { 
-                // 🔥 IMPS/UPI $300 MAX LIMIT LOGIC 🔥
                 if (userState.type === 'Sell' && interaction.values[0] === 'IMPS/UPI' && Number(userState.amount) > 300) {
                     return interaction.reply({ 
                         content: '❌ **Amount Limit Alert:** Manual IMPS/UPI method only supports up to **$300**.\n\n👉 Please select the **Payment Gateway** method from the dropdown to process this larger amount instantly!', 
@@ -2356,7 +2122,6 @@ client.on('interactionCreate', async interaction => {
                     .setCustomId('dropdown_step3')
                     .setPlaceholder('Select Receiving Method')
                     .addOptions([
-                         
                         { label: 'CDM (Cash Deposit)', description: `Estimated Time ${estTimes['cdm']}`, value: 'CDM', emoji: '🏧', default: userState.step3 === 'CDM' },
                         { label: 'CCW (ICICI, SBI)', description: 'Cardless Cash Withdrawal', value: 'CCW', emoji: '💳', default: userState.step3 === 'CCW' },
                         { label: 'Payment Gateway', description: 'Gateway UPI/IMPS', value: 'Gateway', emoji: '🌐', default: userState.step3 === 'Gateway' },
@@ -2494,13 +2259,9 @@ client.on('interactionCreate', async interaction => {
        await interaction.update({ content: '🏦 Creating your secure P2P room...', embeds: [], components: [] });
 
         let categoryName = '🎫 TICKETS';
-        
-        // 🔥 VIP LOGIC: Check if user has 'UPI Verified' role
         const hasUpiVerifiedRole = interaction.member.roles.cache.some(role => role.name === 'UPI Verified');
 
-        // 🔥 Naya Routing System
         if (userState.type === 'Buy') {
-            // Buy mein check hoga ki user VIP hai ya normal
             if (hasUpiVerifiedRole) {
                 categoryName = '🟢 UPI VERIFIED BUY'; 
             } else if (userState.step2 === 'CDM') {
@@ -2521,7 +2282,6 @@ client.on('interactionCreate', async interaction => {
         }
         
         let targetCategory = interaction.guild.channels.cache.find(c => c.name === categoryName && c.type === ChannelType.GuildCategory);
-        
         if (!targetCategory) {
             targetCategory = await interaction.guild.channels.create({ name: categoryName, type: ChannelType.GuildCategory });
         }
@@ -2542,8 +2302,7 @@ client.on('interactionCreate', async interaction => {
         });
         
         let walletData = {};
-        let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88;
-
+        let cdmBuyPrice = 88, cdmSellPrice = 88, ccwBuyPrice = 88, ccwSellPrice = 88, onlineSellPrice = 88, pgSellPrice = 88, impsSellPrice = 88;
         try {
             const setDoc = await db.collection('settings').doc('app_data').get();
             if (setDoc.exists) {
@@ -2558,9 +2317,10 @@ client.on('interactionCreate', async interaction => {
                 ccwBuyPrice = data.ccwBuyPrice || legacyBuy;
                 ccwSellPrice = data.ccwSellPrice || legacySell;
                 onlineSellPrice = data.onlineSellPrice || legacySell;
-                pgSellPrice = data.pgSellPrice || legacySell; // 🔥 NAYA PRICE
+                pgSellPrice = data.pgSellPrice || legacySell; 
+                impsSellPrice = data.impsSellPrice || data.cdmSellPrice || legacySell;
             }
-        } catch (e) { console.log('Error fetching app_data'); }
+        } catch (e) {}
 
         if(!walletData['TRC20']) {
             walletData = {
@@ -2610,7 +2370,8 @@ client.on('interactionCreate', async interaction => {
         let paymentInstructions = "";
 
         if (userState.type === 'Sell') {
-            if (userState.step3 === 'CDM' || userState.step3 === 'IMPS/UPI') rateUsed = cdmSellPrice;
+            if (userState.step3 === 'CDM') rateUsed = cdmSellPrice;
+            else if (userState.step3 === 'IMPS/UPI') rateUsed = impsSellPrice;            
             else if (userState.step3 === 'CCW') rateUsed = ccwSellPrice;
             else if (userState.step3 === 'Online') rateUsed = onlineSellPrice;
             else if (userState.step3 === 'Gateway') rateUsed = pgSellPrice;
@@ -2621,7 +2382,6 @@ client.on('interactionCreate', async interaction => {
         } else {
             if (userState.step2 === 'CDM') rateUsed = cdmBuyPrice;
             else if (userState.step2 === 'CCW') rateUsed = ccwBuyPrice;
-            
             else rateUsed = cdmBuyPrice;
             
             totalInr = totalUsdtForCalc * rateUsed;
@@ -2648,11 +2408,12 @@ client.on('interactionCreate', async interaction => {
         } catch (error) { console.error("Firebase Error: ", error); }
 
 
-        // 🔥 NAYA CODE YAHAN PASTE KAREIN 🔥
+        // 🔥 FLASH LIMIT LOGIC 🔥
         try {
             let activeMethodName = '';
             if (userState.type === 'Sell') {
-                if (userState.step3 === 'CDM' || userState.step3 === 'IMPS/UPI') activeMethodName = 'cdmSellPrice';
+                if (userState.step3 === 'CDM') activeMethodName = 'cdmSellPrice';
+                else if (userState.step3 === 'IMPS/UPI') activeMethodName = 'impsSellPrice';                
                 else if (userState.step3 === 'CCW') activeMethodName = 'ccwSellPrice';
                 else if (userState.step3 === 'Online') activeMethodName = 'onlineSellPrice';
                 else if (userState.step3 === 'Gateway') activeMethodName = 'pgSellPrice';
@@ -2669,11 +2430,9 @@ client.on('interactionCreate', async interaction => {
                 if (data.flash_active && data.flash_method === activeMethodName && data.flash_tickets_allowed > 0) {
                     const newUsed = (data.flash_tickets_used || 0) + 1;
                     
-                    // 🔥 NAYA: Specific Flash Deal Channel ID set ki gayi hai 🔥
                     let flashChannel = interaction.guild.channels.cache.get('1550671388644483122');
 
                     if (newUsed >= data.flash_tickets_allowed) {
-                        // LIMIT REACHED - AUTO REVERT KAREGA
                         const method = data.flash_method;
                         const originalPrice = data.original_prices ? data.original_prices[method] : 88;
                         
@@ -2695,21 +2454,18 @@ client.on('interactionCreate', async interaction => {
                                 .setTitle('🎟️ Flash Deal Sold Out!')
                                 .setDescription(`The flash deal limit of **${data.flash_tickets_allowed} tickets** has been reached!\nMarket price has automatically reverted to \`₹${originalPrice}\`.`)
                                 .setFooter({ text: 'Professor Network', iconURL: client.user.displayAvatarURL() });
-                            await flashChannel.send({ content: '@everyone', embeds: [endEmbed] }); // 🔥 Everyone Tag
+                            await flashChannel.send({ content: '@everyone', embeds: [endEmbed] });
                         }
                     } else {
-                        // AGAR LIMIT ABHI BAAKI HAI TOH SIRF COUNTER BADA DEGA AUR FOMO ALERT BHEJEGA
                         await db.collection('settings').doc('app_data').update({ flash_tickets_used: newUsed });
                         
-                        // 🔥 FOMO ALERT MESSAGE 🔥
                         if (flashChannel) {
                             const ticketsLeft = data.flash_tickets_allowed - newUsed;
-                            
-                            const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
+                            const methodNames = { 'pgSellPrice': 'Payment gateway sell (IMPS)', 'impsSellPrice': 'Manual IMPS/UPI Sell', 'cdmBuyPrice': 'CDM For Buy', 'cdmSellPrice': 'CDM For Sell', 'ccwBuyPrice': 'CCW For Buy', 'ccwSellPrice': 'CCW For Sell', 'onlineSellPrice': 'Online/Amazon/Flipkart' };
                             const displayMethod = methodNames[data.flash_method];
 
-                            let alertColor = '#f39c12'; // Yellow-Orange for warning
-                            if (ticketsLeft === 1) alertColor = '#e74c3c'; // Red for last ticket
+                            let alertColor = '#f39c12';
+                            if (ticketsLeft === 1) alertColor = '#e74c3c';
                             
                             const fomoEmbed = new EmbedBuilder()
                                 .setColor(alertColor)
@@ -2723,7 +2479,6 @@ client.on('interactionCreate', async interaction => {
                 }
             }
         } catch (e) { console.error("Flash limit error:", e); }
-        // 🔥 NAYA CODE KHATAM 🔥
 
         const cinematicDescription = `Welcome ${interaction.user.toString()}! Thanks for contacting the support team of **Professor Network**.\n\nPlease follow the instructions below so we can complete your trade as quickly as possible.\n\n**1. What is the action?**\n> ${userState.type} USDT\n\n**2. Core Amount**\n> $${baseAmount}\n\n**3. Which Method?**\n> ${userState.type === 'Sell' ? userState.step2 + ' (Receive via ' + finalStep3Display + ')' : userState.step2 + ' (Receive via ' + buyNetworkDisplay + ')'}\n\n**📊 Exchange Rate & Fees:**\n> Live Rate: ₹${rateUsed}/USDT\n> ${feeLabel}\n\n▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬\n\n${userState.type === 'Sell' ? `**You Need To Send: $${totalUsdtForCalc} USDT**\n**You Will Receive: ₹${totalInr} INR**` : `**You Need To Pay: ₹${totalInr} INR**\n**You Will Receive: $${baseAmount} USDT**`}`;
         const ticketEmbed = new EmbedBuilder().setColor(userState.isVerifiedTrade ? '#2ecc71' : '#e67e22').setAuthor({ name: `🏦 Secure P2P Room (${userState.isVerifiedTrade ? 'Vault Verified' : 'Non-KYC'})`, iconURL: client.user.displayAvatarURL() }).setDescription(cinematicDescription).setFooter({ text: 'Share your payment screenshot here after successful transfer.', iconURL: client.user.displayAvatarURL() });
@@ -2744,26 +2499,18 @@ client.on('interactionCreate', async interaction => {
         await ticketChannel.send({ content: `🔒 **Admin Secure Access**\nAdmins can click below to securely view the user's receiving information.`, components: [revealButtonsRow] });
         
         if (userState.type === 'Sell' && qrImageUrl) {
-            const qrEmbed = new EmbedBuilder()
-                .setColor('#f1c40f')
-                .setTitle(`📲 Scan to Pay (${userState.step2})`)
-                .setImage(qrImageUrl);
+            const qrEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle(`📲 Scan to Pay (${userState.step2})`).setImage(qrImageUrl);
             await ticketChannel.send({ embeds: [qrEmbed] });
         }
 
         if (userState.type === 'Sell') {
-            // 🔥 Dono Admins ko tag karega
             await ticketChannel.send({ content: `<@1001128047128358923> <@1541859306050162750>` });
         }
 
-        // 🔥 NAYA UPDATE: CDM aur CCW Buy tickets mein UPI ka Flash Message bhejna
         if (categoryName === '🟢 CDM FOR BUY' || categoryName === '🟢 CCW FOR BUY') {
             sendUpiFlashMessage(ticketChannel);
         }
 
-        // ==========================================
-        // 🏦 BANK DETAILS LOG SYSTEM (FOR SELL TICKETS)
-        // ==========================================
         if (userState.type === 'Sell') {
             try {
                 let bankDetailsChannel = interaction.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
@@ -2797,11 +2544,8 @@ client.on('interactionCreate', async interaction => {
                     .setTimestamp();
 
                 await bankDetailsChannel.send({ embeds: [bankLogEmbed] });
-            } catch (err) {
-                console.error("Bank details log error:", err);
-            }
+            } catch (err) {}
         }
-        // ==========================================
 
         await interaction.editReply({ content: `✅ Ticket created successfully! Click here to view: ${ticketChannel}` });
         userSelections.delete(interaction.user.id);
@@ -2817,7 +2561,7 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply({ content: `👇 **Long-press the message below to copy Admin Transfer Details:**` });
                 await interaction.followUp({ content: `${ticketDoc.data().adminTransferDetails}`, ephemeral: true });
             } else { await interaction.editReply({ content: '❌ **Access Denied.**' }); }
-        } catch (err) { await interaction.editReply({ content: '❌ Error.' }); }
+        } catch (err) {}
     }
 
     if (interaction.isButton() && interaction.customId === 'reveal_user_details') {
@@ -2828,7 +2572,7 @@ client.on('interactionCreate', async interaction => {
             if (ticketDoc.exists) {
                 await interaction.editReply({ content: `${ticketDoc.data().userReceivingDetails}` });
             } else { await interaction.editReply({ content: '❌ Ticket data not found.' }); }
-        } catch (err) { await interaction.editReply({ content: '❌ Error.' }); }
+        } catch (err) {}
     }
 
     if (interaction.isButton() && (interaction.customId === 'complete_p2p_ticket' || interaction.customId === 'cancel_p2p_ticket')) {
@@ -2852,40 +2596,16 @@ client.on('interactionCreate', async interaction => {
                     let feedRole = interaction.guild.roles.cache.find(r => r.name === 'transaction done');
                     if (feedRole) await member.roles.add(feedRole).catch(() => {});
 
-                    const receiptEmbed = new EmbedBuilder()
-                        .setColor('#2ecc71')
-                        .setTitle('✅ Transaction Completed')
-                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed by the Professor Network team.\n\nThank you for trading with Professor Network. 🏦`)
-                        .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-
-                    const receiptBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
-                    );
-                    
+                    const receiptEmbed = new EmbedBuilder().setColor('#2ecc71').setTitle('✅ Transaction Completed').setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been successfully completed.\n\nThank you for trading with Professor Network. 🏦`).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+                    const receiptBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'));
                     await member.send({ embeds: [receiptEmbed], components: [receiptBtn] }).catch(()=>{});
 
-                    const feedbackEmbed = new EmbedBuilder()
-                        .setColor('#f1c40f')
-                        .setTitle('⭐ Rate Your Experience')
-                        .setDescription(`We hope you had a smooth trade!\n\nPlease click the button below to give your valuable feedback in <#1495117550709903591>.\nYour reviews help us build community trust. 🤝`)
-                        .setFooter({ text: 'Professor Network • Reviews' });
-
-                    const feedbackBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setLabel('⭐ Give Feedback Here').setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`)
-                    );
-
+                    const feedbackEmbed = new EmbedBuilder().setColor('#f1c40f').setTitle('⭐ Rate Your Experience').setDescription(`We hope you had a smooth trade!\n\nPlease click the button below to give your valuable feedback in <#1495117550709903591>.`).setFooter({ text: 'Professor Network • Reviews' });
+                    const feedbackBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('⭐ Give Feedback Here').setStyle(ButtonStyle.Link).setURL(`https://discord.com/channels/${interaction.guild.id}/1495117550709903591`));
                     await member.send({ embeds: [feedbackEmbed], components: [feedbackBtn] }).catch(()=>{});
                 } else {
-                    const cancelEmbed = new EmbedBuilder()
-                        .setColor('#e74c3c')
-                        .setTitle('❌ Transaction Cancelled')
-                        .setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.\n\nIf you believe this was done by mistake or need assistance, please contact <@1336703883711479896>.`)
-                        .setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
-
-                    const cancelBtn = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z')
-                    );
-
+                    const cancelEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('❌ Transaction Cancelled').setDescription(`Hello **${ticketData.username}**,\n\nYour P2P transaction of **$${ticketData.amountUsd}** has been cancelled by the Professor Network team.\n\nThis transaction was marked incomplete and has been closed from the exchange system.`).setFooter({ text: 'Professor Network • Secure Exchange Terminal' });
+                    const cancelBtn = new ActionRowBuilder().addComponents(new ButtonBuilder().setLabel('Return to Exchange Desk').setStyle(ButtonStyle.Link).setURL('https://discord.gg/2wvPqE5e4Z'));
                     await member.send({ embeds: [cancelEmbed], components: [cancelBtn] }).catch(()=>{});
                 }
             }
@@ -2903,8 +2623,6 @@ client.on('interactionCreate', async interaction => {
             const vaultEmbed = new EmbedBuilder().setColor(isSuccess ? '#f1c40f' : '#e74c3c').setTitle(`🏦 Vault Record: Transaction ${finalStatus}`).addFields({ name: '👤 User', value: String(ticketData.username || 'Unknown'), inline: true }, { name: '🔒 Handled By', value: String(interaction.user.username || 'Admin'), inline: true }, { name: 'Trade Type', value: String(ticketData.tradeType || 'Unknown'), inline: true }, { name: 'Amount', value: `$${ticketData.amountUsd || 0}`, inline: true }, { name: 'Method/Network', value: String(ticketData.networkOrMethod || 'Unknown'), inline: true }, { name: 'Status', value: `\`${finalStatus}\``, inline: true }).setTimestamp().setFooter({ text: `Ticket ID: ${interaction.channel.id}` });
             await logChannel.send({ embeds: [vaultEmbed] });
             
-            // Note: Old public log has been removed from here and shifted to .fb command
-
             await db.collection('p2p_tickets').doc(interaction.channel.id).update({ status: finalStatus, closedBy: interaction.user.username, closedAt: admin.firestore.FieldValue.serverTimestamp() });
             globalLastUpdate = Date.now(); 
 
@@ -2917,28 +2635,17 @@ client.on('interactionCreate', async interaction => {
                 await mainTicketChannel.send({ embeds: [new EmbedBuilder().setColor('#2b2d31').setTitle('🏦 Exchange Desk (P2P)').setDescription('Welcome to the Professor Network.\n\nClick the button below to start trading securely.').setFooter({ text: 'Automated by Professor Network' })], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('start_p2p_trade').setLabel('🚀 Start Trade').setStyle(ButtonStyle.Primary))] });
             }
             
-            // ==========================================
-            // 🗑️ AUTO-DELETE BANK DETAILS LOG ON CLOSE
-            // ==========================================
             try {
                 const bankDetailsChannel = interaction.guild.channels.cache.find(c => c.name === '🏦・bank-details' || c.name.includes('bank-details'));
                 if (bankDetailsChannel) {
                     const fetchedLogs = await bankDetailsChannel.messages.fetch({ limit: 100 });
-                    const logToDelete = fetchedLogs.find(m => 
-                        m.embeds.length > 0 && 
-                        m.embeds[0].fields && 
-                        m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(interaction.channel.id))
-                    );
-                    
-                    if (logToDelete) {
-                        await logToDelete.delete();
-                    }
+                    const logToDelete = fetchedLogs.find(m => m.embeds.length > 0 && m.embeds[0].fields && m.embeds[0].fields.some(f => f.name === '🎫 Ticket' && f.value.includes(interaction.channel.id)));
+                    if (logToDelete) { await logToDelete.delete(); }
                 }
-            } catch (err) { console.error("Bank detail log delete error:", err); }
-            // ==========================================  
+            } catch (err) {}
 
             setTimeout(() => { interaction.channel.delete().catch(console.error); }, 5000);
-        } catch (error) { console.error("Error Closing Ticket: ", error); }
+        } catch (error) {}
     }
 });
 
@@ -2975,14 +2682,8 @@ async function updateWeeklyLeaderboard(guild) {
 async function updateUserHeistPoints(userId, guild, username) {
     try {
         const snapshot = await db.collection('p2p_tickets').where('discordUserId', '==', userId).get();
-        
         let totalVolume = 0;
-        
-        snapshot.forEach(doc => {
-            if (doc.data().status === 'Completed') {
-                totalVolume += (doc.data().amountUsd || 0);
-            }
-        });
+        snapshot.forEach(doc => { if (doc.data().status === 'Completed') { totalVolume += (doc.data().amountUsd || 0); } });
 
         const points = Math.floor(totalVolume / 10);
         const LEVELS = [{ name: '👑 Level 5 — Syndicate', minPoints: 5000 }, { name: '💎 Level 4 — Elite', minPoints: 1500 }, { name: '🥇 Level 3 — Insider', minPoints: 500 }, { name: '🥈 Level 2 — Operator', minPoints: 100 }, { name: '🥉 Level 1 — Recruit', minPoints: 0 }];
@@ -3006,9 +2707,7 @@ async function updateUserHeistPoints(userId, guild, username) {
             }
         }
         updateHeistLeaderboard(guild);
-    } catch(e) {
-        console.error("Heist Point Update Error:", e);
-    }
+    } catch(e) {}
 }
 
 async function updateHeistLeaderboard(guild) {
@@ -3038,14 +2737,7 @@ async function approveUserKYC(userId, guild) {
     try {
         const member = await guild.members.fetch(userId);
         await member.roles.add(verifiedRole);
-        await db.collection('users_kyc').doc(userId).set({ 
-            discordId: userId,
-            username: member.user.username,
-            status: 'Approved',
-            kycType: 'Advanced (Vault Verified)',
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true }).catch(()=>{});
-        
+        await db.collection('users_kyc').doc(userId).set({ discordId: userId, username: member.user.username, status: 'Approved', kycType: 'Advanced (Vault Verified)', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(()=>{});
         globalLastUpdate = Date.now();
         await member.send({ embeds: [new EmbedBuilder().setColor('#2ecc71').setTitle('🏦 Professor Network').setDescription('Your KYC verification has been successfully approved.\n\nYou have now received the **🏦 Vault Verified** role, unlocking:\n• $0 transaction fee  \n• Faster processing  \n• Higher trust status inside the network   \n**Please Visit <#1503666259244482642> To Start Trading **  \n\nWelcome to the verified side of the network. ⚡')] }).catch(() => {});
     } catch (e) {}
@@ -3055,38 +2747,14 @@ async function approveUserKYC(userId, guild) {
 // 🌐 WEB DASHBOARD (EXPRESS SERVER)
 // ==========================================
 const app = express();
-const loginLimiter = rateLimit({
-    windowMs: 5 * 60 * 1000, 
-    max: 5, 
-    message: 'Too many login attempts from this IP, please try again after 5 minutes.'
-});
+const loginLimiter = rateLimit({ windowMs: 5 * 60 * 1000, max: 5, message: 'Too many login attempts.' });
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const corsOptions = {
-    origin: [
-        'http://localhost:3000', 
-        'http://localhost:4000',
-        'http://147.93.103.102:3000', 
-        'http://147.93.103.102:4000'  
-    ],
-    methods: ['GET', 'POST'],
-    credentials: true 
-};
+const corsOptions = { origin: ['http://localhost:3000', 'http://localhost:4000', 'http://147.93.103.102:3000', 'http://147.93.103.102:4000'], methods: ['GET', 'POST'], credentials: true };
 app.use(cors(corsOptions));
-
-app.use(session({ 
-    secret: process.env.SESSION_SECRET_MAIN || 'fallback-secret-key-1', 
-    resave: false, 
-    saveUninitialized: false, 
-    cookie: { 
-        secure: process.env.NODE_ENV === 'production', 
-        httpOnly: true, 
-        sameSite: 'strict', 
-        maxAge: 7 * 24 * 60 * 60 * 1000 
-    } 
-}));
+app.use(session({ secret: process.env.SESSION_SECRET_MAIN || 'fallback-secret', resave: false, saveUninitialized: false, cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000 } }));
 
 const requireLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
 
@@ -3096,18 +2764,15 @@ app.post('/login', loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
-        let validUser = 'professor';
-        let validPassHash = '';
+        let validUser = 'professor'; let validPassHash = '';
 
         if (authDoc.exists) { 
-            validUser = authDoc.data().username; 
-            validPassHash = authDoc.data().password; 
+            validUser = authDoc.data().username; validPassHash = authDoc.data().password; 
             if (!validPassHash.startsWith('$2b$')) {
                 if (username === validUser && password === validPassHash) {
                     const newHash = await bcrypt.hash(password, 10);
                     await db.collection('settings').doc('admin_auth').update({ password: newHash });
-                    req.session.loggedIn = true; 
-                    return res.redirect('/');
+                    req.session.loggedIn = true; return res.redirect('/');
                 }
             }
         } else { 
@@ -3117,13 +2782,10 @@ app.post('/login', loginLimiter, async (req, res) => {
 
         if (username === validUser) {
             const isMatch = await bcrypt.compare(password, validPassHash);
-            if (isMatch) {
-                req.session.loggedIn = true; 
-                return res.redirect('/');
-            }
+            if (isMatch) { req.session.loggedIn = true; return res.redirect('/'); }
         }
         res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
-    } catch (error) { res.render('login', { error: 'Database Connection Error. Please verify network.' }); }
+    } catch (error) { res.render('login', { error: 'Database Connection Error.' }); }
 });
 
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
@@ -3133,54 +2795,30 @@ app.post('/update-credentials', requireLogin, async (req, res) => {
     if (new_username && new_password) {
         const hashedPass = await bcrypt.hash(new_password, 10);
         await db.collection('settings').doc('admin_auth').set({ username: new_username, password: hashedPass });
-        req.session.destroy();
-        res.redirect('/login');
+        req.session.destroy(); res.redirect('/login');
     } else { res.redirect('/'); }
 });
 
 app.get('/export-ledger', requireLogin, async (req, res) => {
     try {
         const snapshot = await db.collection('p2p_tickets').where('status', '==', 'Completed').get();
-        const workbook = new excelJS.Workbook();
-        workbook.creator = 'Professor Network';
+        const workbook = new excelJS.Workbook(); workbook.creator = 'Professor Network';
         const worksheet = workbook.addWorksheet('Vault Ledger');
 
-        worksheet.columns = [
-            { header: 'DATE', key: 'date', width: 25 },
-            { header: 'TRADE', key: 'trade', width: 12 },
-            { header: 'DISCORD NAME', key: 'name', width: 25 },
-            { header: 'AMOUNT $', key: 'amount', width: 15 },
-            { header: 'METHOD', key: 'method', width: 20 },
-            { header: 'TRANSACTION DETAILS', key: 'details', width: 50 },
-            { header: 'KYC STATUS', key: 'kyc', width: 18 }
-        ];
-
-        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-        worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2D31' } }; 
-        worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.columns = [{ header: 'DATE', key: 'date', width: 25 }, { header: 'TRADE', key: 'trade', width: 12 }, { header: 'DISCORD NAME', key: 'name', width: 25 }, { header: 'AMOUNT $', key: 'amount', width: 15 }, { header: 'METHOD', key: 'method', width: 20 }, { header: 'TRANSACTION DETAILS', key: 'details', width: 50 }, { header: 'KYC STATUS', key: 'kyc', width: 18 }];
+        worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 }; worksheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2B2D31' } }; worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
 
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
             const dateStr = (d.closedAt && typeof d.closedAt.toDate === 'function') ? d.closedAt.toDate().toLocaleString('en-IN') : 'N/A';
-            const tradeType = d.tradeType || 'N/A';
-            const discordName = d.username || 'N/A';
-            const amountStr = `$${d.amountUsd || 0}`;
-            const methodStr = d.networkOrMethod || 'N/A';
-            
             let detailsStr = d.userReceivingDetails || d.adminTransferDetails || 'N/A';
             detailsStr = detailsStr.replace(/\n/g, ' | '); 
-
-            const kycStatus = d.isVerifiedTrade ? 'Verified' : 'Non Verified';
-
-            const row = worksheet.addRow({ date: dateStr, trade: tradeType, name: discordName, amount: amountStr, method: methodStr, details: detailsStr, kyc: kycStatus });
+            const row = worksheet.addRow({ date: dateStr, trade: d.tradeType || 'N/A', name: d.username || 'N/A', amount: `$${d.amountUsd || 0}`, method: d.networkOrMethod || 'N/A', details: detailsStr, kyc: d.isVerifiedTrade ? 'Verified' : 'Non Verified' });
             row.alignment = { vertical: 'middle' };
         });
 
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename="The_Vault_Ledger_Report.xlsx"');
-
-        await workbook.xlsx.write(res);
-        res.end();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); res.setHeader('Content-Disposition', 'attachment; filename="The_Vault_Ledger_Report.xlsx"');
+        await workbook.xlsx.write(res); res.end();
     } catch(e) { res.send("Export Error: " + e.message); }
 });
 
@@ -3191,28 +2829,19 @@ app.post('/api/kyc-approve', requireLogin, async (req, res) => {
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) return res.json({ success: false, error: "Discord server connection lost." });
-        await approveUserKYC(userId, guild);
-        res.json({ success: true });
+        await approveUserKYC(userId, guild); res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/api/kyc-reject', requireLogin, async (req, res) => {
     const { userId } = req.body;
-    try {
-        await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' });
-        globalLastUpdate = Date.now(); 
-        res.json({ success: true });
-    } catch (e) { res.json({ success: false, error: e.message }); }
+    try { await db.collection('users_kyc').doc(userId).update({ status: 'Rejected' }); globalLastUpdate = Date.now(); res.json({ success: true }); } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/api/kyc-delete', requireLogin, async (req, res) => {
     const { userId } = req.body;
     try {
-        try {
-            const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` });
-            await Promise.all(files.map(file => file.delete()));
-        } catch (storageErr) {}
-
+        try { const [files] = await bucket.getFiles({ prefix: `kyc_documents/${userId}_` }); await Promise.all(files.map(file => file.delete())); } catch (storageErr) {}
         try {
             const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
             if (guild) {
@@ -3221,49 +2850,33 @@ app.post('/api/kyc-delete', requireLogin, async (req, res) => {
                     const verifiedRole = guild.roles.cache.find(r => r.name === 'Vault Verified');
                     if (verifiedRole && member.roles.cache.has(verifiedRole.id)) {
                         await member.roles.remove(verifiedRole);
-                        const revokeEmbed = new EmbedBuilder().setColor('#e74c3c').setTitle('⚠️ KYC Status Revoked').setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.').setFooter({ text: 'Professor Network Security' });
-                        await member.send({ embeds: [revokeEmbed] }).catch(() => {});
+                        await member.send({ embeds: [new EmbedBuilder().setColor('#e74c3c').setTitle('⚠️ KYC Status Revoked').setDescription('Your **Vault Verified** status has been removed and your KYC data has been deleted from the Professor Network database by an Admin.').setFooter({ text: 'Professor Network Security' })] }).catch(() => {});
                     }
                 }
             }
         } catch (discordErr) {}
-
-        await db.collection('users_kyc').doc(userId).delete();
-        globalLastUpdate = Date.now(); 
-        res.json({ success: true });
+        await db.collection('users_kyc').doc(userId).delete(); globalLastUpdate = Date.now(); res.json({ success: true });
     } catch (e) { res.json({ success: false, error: e.message }); }
 });
 
 app.post('/update-price', requireLogin, async (req, res) => {
-    // 1. Data aana chahiye 5 fields mein, unko destructure karte hain
-let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgSellPrice } = req.body;    
-    // 2. Alert function
+    let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgSellPrice, impsSellPrice } = req.body;    
+    
     const sendModernAlert = (title, text, icon) => {
-        res.send(`
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
-            <body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK'}).then(() => { window.location.href = "/"; });</script></body>
-        `);
+        res.send(`<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style><body><script>Swal.fire({title: '${title}', text: '${text}', icon: '${icon}', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '${icon === 'error' ? '#ef4444' : '#22c55e'}', confirmButtonText: 'OK'}).then(() => { window.location.href = "/"; });</script></body>`);
     };
 
-    // 3. String se number mein convert karte waqt dhyan rakhein ki NaN/undefined na aaye.
-    // Agar koi field khali aaye, toh fallback (default 0) value set karo.
     const finalCdmBuy = parseFloat(cdmBuyPrice) || 0;
     const finalCdmSell = parseFloat(cdmSellPrice) || 0;
     const finalCcwBuy = parseFloat(ccwBuyPrice) || 0;
     const finalCcwSell = parseFloat(ccwSellPrice) || 0;
     const finalOnlineSell = parseFloat(onlineSellPrice) || 0;
     const finalPgSell = parseFloat(pgSellPrice) || 0;
+    const finalImpsSell = parseFloat(impsSellPrice) || parseFloat(cdmSellPrice) || 0;
 
     try {
-        // 4. Database mein save karein
         await db.collection('settings').doc('app_data').set({ 
-            cdmBuyPrice: finalCdmBuy, 
-            cdmSellPrice: finalCdmSell,
-            ccwBuyPrice: finalCcwBuy,
-            ccwSellPrice: finalCcwSell,
-            onlineSellPrice: finalOnlineSell,
-            pgSellPrice: finalPgSell
+            cdmBuyPrice: finalCdmBuy, cdmSellPrice: finalCdmSell, ccwBuyPrice: finalCcwBuy, ccwSellPrice: finalCcwSell, onlineSellPrice: finalOnlineSell, pgSellPrice: finalPgSell, impsSellPrice: finalImpsSell
         }, { merge: true });
 
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
@@ -3271,14 +2884,14 @@ let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgS
         let priceChannel = guild.channels.cache.get('1503666351594799205'); 
         if (!priceChannel) return sendModernAlert("❌ Error", "Price Update Channel not found.", "error");
 
-        // 5. Discord Embed Update (Is format se ab `undefined` nahi aayega)
         const priceEmbed = new EmbedBuilder()
             .setColor('#f1c40f')
             .setTitle('📈 USDT Market Price Update')
             .setDescription('**Professor Network** has updated the real-time P2P exchange rates.')
             .addFields(
                 { name: '🌐 Payment gateway sell (IMPS)', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalPgSell.toFixed(2)}\n\`\`\``, inline: false },
-                { name: '🏦 CDM', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏦 Manual IMPS / UPI', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalImpsSell.toFixed(2)}\n\`\`\``, inline: false },
+                { name: '🏧 CDM (Cash Deposit)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCdmBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCdmSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '💳 CCW (Cardless)', value: `\`\`\`yaml\n🟢 BUY : ₹ ${finalCcwBuy.toFixed(2)}\n🔴 SELL: ₹ ${finalCcwSell.toFixed(2)}\n\`\`\``, inline: false },
                 { name: '🛒 Online / Amazon / Flipkart', value: `\`\`\`yaml\n🔴 SELL: ₹ ${finalOnlineSell.toFixed(2)}\n\`\`\``, inline: false }
             )
@@ -3287,12 +2900,9 @@ let { cdmBuyPrice, cdmSellPrice, ccwBuyPrice, ccwSellPrice, onlineSellPrice, pgS
 
         const fetchedMessages = await priceChannel.messages.fetch({ limit: 5 });
         fetchedMessages.forEach(msg => msg.delete().catch(()=>{}));
-
         await priceChannel.send({ content: '@everyone', embeds: [priceEmbed] });       
         sendModernAlert("✅ Success!", "Market Price Broadcasted Successfully to Discord!", "success");
-    } catch (error) { 
-        sendModernAlert("❌ Error", error.message, "error"); 
-    }
+    } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
 app.get('/api/check-updates', requireLogin, (req, res) => { res.json({ timestamp: globalLastUpdate }); });
@@ -3305,8 +2915,7 @@ app.get('/', requireLogin, async (req, res) => {
         const pendingTicketsSnap = await db.collection('p2p_tickets').where('status', '==', 'Open').get();
         
         const allKycSnap = await db.collection('users_kyc').get();
-        const allKycUsers = [];
-        const upiKycUsers = []; 
+        const allKycUsers = []; const upiKycUsers = []; 
         allKycSnap.forEach(doc => {
             const data = doc.data();
             if (data.kycType === 'Advanced (Vault Verified)') allKycUsers.push({ id: doc.id, ...data });
@@ -3314,15 +2923,11 @@ app.get('/', requireLogin, async (req, res) => {
         });
 
         const pendingKycSnap = await db.collection('users_kyc').where('status', '==', 'Pending').get();
-        const pendingKycList = [];
-        pendingKycSnap.forEach(doc => { pendingKycList.push(doc.data()); });
+        const pendingKycList = []; pendingKycSnap.forEach(doc => { pendingKycList.push(doc.data()); });
 
         let dailyVol = 0, weeklyVol = 0, monthlyVol = 0, buyVol = 0, sellVol = 0;
-        const now = new Date();
-        const userVolumes = {}; 
-        const allCompleted = [];
-        const monthWiseData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; 
-        const calendarData = {}; 
+        const now = new Date(); const userVolumes = {}; const allCompleted = [];
+        const monthWiseData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; const calendarData = {}; 
 
         snapshot.forEach(doc => {
             const data = doc.data();
@@ -3356,10 +2961,7 @@ app.get('/', requireLogin, async (req, res) => {
         
         const topTraders = Object.keys(userVolumes).map(username => ({ username, totalVolume: userVolumes[username] })).sort((a, b) => b.totalVolume - a.totalVolume).slice(0, 5);
 
-        res.render('dashboard', { 
-            liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders, pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size,
-            pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), allLogs: allCompleted, monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers, upiKycUsers
-        }); 
+        res.render('dashboard', { liveMembers, dailyVol, weeklyVol, monthlyVol, topTraders, pendingTickets: pendingTicketsSnap.size, pendingKyc: pendingKycSnap.size, pendingKycList, buyVol, sellVol, recentFeed: allCompleted.slice(0, 10), allLogs: allCompleted, monthWiseData: JSON.stringify(monthWiseData), calendarData: JSON.stringify(calendarData), allKycUsers, upiKycUsers }); 
     } catch (error) { res.send("Dashboard Error: " + error.message); }
 });
 
@@ -3374,17 +2976,7 @@ adminApp.set('view engine', 'ejs');
 adminApp.use(express.urlencoded({ extended: true }));
 adminApp.use(express.json());
 adminApp.use(cors(corsOptions));
-adminApp.use(session({ 
-    secret: process.env.SESSION_SECRET_ADMIN || 'fallback-secret-key-2', 
-    resave: false, 
-    saveUninitialized: false, 
-    cookie: { 
-        secure: process.env.NODE_ENV === 'production', 
-        httpOnly: true, 
-        sameSite: 'strict', 
-        maxAge: 7 * 24 * 60 * 60 * 1000 
-    } 
-}));
+adminApp.use(session({ secret: process.env.SESSION_SECRET_ADMIN || 'fallback-secret-2', resave: false, saveUninitialized: false, cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, sameSite: 'strict', maxAge: 7 * 24 * 60 * 60 * 1000 } }));
 
 const requireAdminLogin = (req, res, next) => { if (req.session.loggedIn) return next(); res.redirect('/login'); };
 
@@ -3394,37 +2986,23 @@ adminApp.post('/login', loginLimiter, async (req, res) => {
     const { username, password } = req.body;
     try {
         const authDoc = await db.collection('settings').doc('admin_auth').get();
-        if (!authDoc.exists) return res.render('login', { error: 'Admin setup incomplete. Login to Main Dashboard first.' });
-        
-        const validUser = authDoc.data().username;
-        const validPassHash = authDoc.data().password;
-
+        if (!authDoc.exists) return res.render('login', { error: 'Admin setup incomplete.' });
+        const validUser = authDoc.data().username; const validPassHash = authDoc.data().password;
         if (username === validUser) {
             const isMatch = await bcrypt.compare(password, validPassHash);
-            if (isMatch) {
-                req.session.loggedIn = true; 
-                return res.redirect('/');
-            }
+            if (isMatch) { req.session.loggedIn = true; return res.redirect('/'); }
         }
-        res.render('login', { error: 'Access Denied. Incorrect Credentials.' });
-    } catch (error) { res.render('login', { error: 'Database Connection Error.' }); }
+        res.render('login', { error: 'Access Denied.' });
+    } catch (error) { res.render('login', { error: 'DB Connection Error.' }); }
 });
 
 adminApp.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/login'); });
 
 adminApp.get('/', requireAdminLogin, async (req, res) => {
     let appSettings = { 
-        wallets: {
-            'TRC20': { address: 'TY2nj2zbk7EJ86ksKU2iyf1ns3c5YDZWn8', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1518609546065612810/new_trc20.jpeg' },
-            'ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981806372126780/erc20.jpeg' },
-            'BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515981287825870968/bep20.jpeg' },
-            'ARBITRUM': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515984868318908457/arbitrum.jpeg' },
-            'USDC_ERC20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515985509044846603/usdc_erc20.jpeg' },
-            'USDC_BEP20': { address: '0xA1fFc6eCBAa8B5e17489B483Cc7D9E5F4Ccc0416', qrImage: 'https://media.discordapp.net/attachments/1515980898196000831/1515986679129968781/usdc_bep20.jpeg' }
-        }, 
+        wallets: { 'TRC20': { address: '', qrImage: '' }, 'ERC20': { address: '', qrImage: '' }, 'BEP20': { address: '', qrImage: '' }, 'ARBITRUM': { address: '', qrImage: '' }, 'USDC_ERC20': { address: '', qrImage: '' }, 'USDC_BEP20': { address: '', qrImage: '' } }, 
         estTimes: { 'imps/UPI': '2 Hour', 'cdm': '45 Minutes to 1 Hour' } 
     };
-
     try {
         const settingsDoc = await db.collection('settings').doc('app_data').get();
         if (settingsDoc.exists) {
@@ -3432,8 +3010,7 @@ adminApp.get('/', requireAdminLogin, async (req, res) => {
             if (savedData.wallets) appSettings.wallets = { ...appSettings.wallets, ...savedData.wallets };
             if (savedData.estTimes) appSettings.estTimes = { ...appSettings.estTimes, ...savedData.estTimes };
         }
-    } catch (e) { console.error("Error loading settings", e); }
-    
+    } catch (e) {}
     res.render('administrator', { appSettings });
 });
 
@@ -3448,26 +3025,16 @@ adminApp.post('/update-app-settings', requireAdminLogin, async (req, res) => {
                 'USDC_ERC20': { address: req.body.usdc_erc20_address, qrImage: req.body.usdc_erc20_qr },
                 'USDC_BEP20': { address: req.body.usdc_bep20_address, qrImage: req.body.usdc_bep20_qr }
             },
-            estTimes: {
-                'imps/UPI': req.body.imps_time || '2 Hour',
-                'cdm': req.body.cdm_time || '45 Minutes to 1 Hour'
-            },
+            estTimes: { 'imps/UPI': req.body.imps_time || '2 Hour', 'cdm': req.body.cdm_time || '45 Minutes to 1 Hour' },
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
         await db.collection('settings').doc('app_data').set(newData, { merge: true });
-        
-        res.send(`
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style>
-            <body><script>Swal.fire({title: 'Updated!', text: 'Settings Saved Successfully!', icon: 'success', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '#22c55e'}).then(() => { window.location.href = "/"; });</script></body>
-        `);
+        res.send(`<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script><style>body { background-color: #0b1120; color: #fff; font-family: sans-serif; }</style><body><script>Swal.fire({title: 'Updated!', text: 'Settings Saved Successfully!', icon: 'success', background: '#0f172a', color: '#f8fafc', confirmButtonColor: '#22c55e'}).then(() => { window.location.href = "/"; });</script></body>`);
     } catch (error) { res.send(`Error: ${error.message}`); }
 });
 
 const ADMIN_PORT = 4000;
-adminApp.listen(ADMIN_PORT, () => { 
-    console.log(`🔐 Master Administrator Panel is LIVE on Port ${ADMIN_PORT}`); 
-});
+adminApp.listen(ADMIN_PORT, () => { console.log(`🔐 Master Administrator Panel is LIVE on Port ${ADMIN_PORT}`); });
 
 // ==========================================
 // 🔥 ADVANCED SERVER STATS (THE VAULT STYLE) 🔥
@@ -3480,7 +3047,6 @@ const STATS_ONLINE_ID = '1509533898949005373';
 const updateServerStats = async (guild) => {
     try {
         await guild.members.fetch({ withPresences: true });
-
         const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const day = d.getDate();
         const suffix = ["th", "st", "nd", "rd"][((day % 10 > 3) || (Math.floor(day % 100 / 10) === 1)) ? 0 : day % 10];
@@ -3501,43 +3067,26 @@ const updateServerStats = async (guild) => {
         
         const onlineChannel = guild.channels.cache.get(STATS_ONLINE_ID);
         if (onlineChannel) onlineChannel.setName(`🟢 | Active Now: ${onlineCount}`).catch(()=>{});
-
-    } catch (error) {
-        console.error("Stats update error:", error);
-    }
+    } catch (error) {}
 };
 
 client.on('ready', () => {
     console.log("Vault Style Stats Activated!");
     client.guilds.cache.forEach(guild => updateServerStats(guild));
-    setInterval(() => {
-        client.guilds.cache.forEach(guild => updateServerStats(guild));
-    }, 10 * 60 * 1000); 
+    setInterval(() => { client.guilds.cache.forEach(guild => updateServerStats(guild)); }, 10 * 60 * 1000); 
 });
-
-
 
 client.on('guildMemberAdd', async (member) => {
     const welcomeChannel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
-    if (welcomeChannel) {
-        welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`);
-    }
+    if (welcomeChannel) { welcomeChannel.send(`Hey <@${member.id}>, welcome to the community! 🎉`); }
 });
 
 // ==========================================
 // 🛡️ ANTI-CRASH SYSTEM
 // ==========================================
-process.on('unhandledRejection', (reason, promise) => {
-    console.log('❌ [ANTI-CRASH] Unhandled Rejection at:', promise, 'reason:', reason);
-});
-process.on('uncaughtException', (err, origin) => {
-    console.log('❌ [ANTI-CRASH] Uncaught Exception:', err, 'Origin:', origin);
-});
-process.on('uncaughtExceptionMonitor', (err, origin) => {
-    console.log('❌ [ANTI-CRASH] Uncaught Exception Monitor:', err, 'Origin:', origin);
-});
+process.on('unhandledRejection', (reason, promise) => { console.log('❌ [ANTI-CRASH] Unhandled Rejection at:', promise, 'reason:', reason); });
+process.on('uncaughtException', (err, origin) => { console.log('❌ [ANTI-CRASH] Uncaught Exception:', err, 'Origin:', origin); });
+process.on('uncaughtExceptionMonitor', (err, origin) => { console.log('❌ [ANTI-CRASH] Uncaught Exception Monitor:', err, 'Origin:', origin); });
 
-// 🔥 Start Scammer Auto-Ban System
 setupAntiImpersonation(client);
-
 client.login(process.env.DISCORD_TOKEN);
