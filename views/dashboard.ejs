@@ -207,7 +207,7 @@
                                      <tr><td colspan="4" class="text-center py-8 text-slate-500 italic">No transactions found</td></tr>
                                 <% } else { %>
                                     <% displayLogs.forEach((trade, index) => { %>
-                                        <tr class="border-b border-slate-800/50 cursor-pointer group" onclick="openTxModal(<%= index %>)">
+                                        <tr class="border-b border-slate-800/50 cursor-pointer group hover:bg-slate-800/30 transition" onclick="handleLiveFeedClick(<%= index %>, '<%= trade.id %>')">
                                             <td class="py-4 px-6 text-gray-200 flex items-center group-hover:text-white transition">
                                                 <div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center mr-3 text-xs font-black text-slate-400 group-hover:bg-red-600 group-hover:text-white transition shrink-0"><%= trade.username.charAt(0).toUpperCase() %></div>
                                                 <div class="flex flex-col">
@@ -382,7 +382,7 @@
                                 </div>
                             </div>
 
-                            <!-- 4. PG (Payment Gateway) -->
+                             <!-- 4. PG (Payment Gateway) -->
                             <div class="bg-slate-900/40 p-5 rounded-xl border border-slate-700/50 shadow-inner">
                                 <h4 class="text-green-400 text-sm font-black uppercase mb-4 tracking-widest border-b border-slate-700 pb-2">💳 PG (Payment Gateway)</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -551,7 +551,7 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No KYC transactions found.</td></tr>
                             <% } else { %>
                                 <% kycLogs.forEach((trade) => { %>
-                                    <tr class="log-row kyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-timestamp="<%= (trade.closedAt && trade.closedAt._seconds) ? (trade.closedAt._seconds * 1000) : 0 %>" onclick="showUserDetails('<%= trade.username %>', '<%= trade.tradeType %>', '<%= trade.networkOrMethod %>', '<%= trade.amountUsd %>', '<%= trade.totalInr %>', `<%= trade.userReceivingDetails || trade.adminTransferDetails || 'No details provided.' %>`)">
+                                    <tr class="log-row kyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-timestamp="<%= (trade.closedAt && trade.closedAt._seconds) ? (trade.closedAt._seconds * 1000) : 0 %>" onclick="handleRowClick('<%= trade.username %>', '<%= trade.tradeType %>', '<%= trade.networkOrMethod %>', '<%= trade.amountUsd %>', '<%= trade.totalInr %>', `<%= trade.userReceivingDetails || trade.adminTransferDetails || 'No details provided.' %>`, '<%= trade.id %>')">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
                                         <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
@@ -574,7 +574,7 @@
                                  <tr><td colspan="5" class="text-center py-8 text-slate-500 italic">No Non-KYC transactions found.</td></tr>
                             <% } else { %>
                                  <% nonKycLogs.forEach((trade) => { %>
-                                    <tr class="log-row nonkyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-fee="<%= trade.fee || 0 %>" data-timestamp="<%= (trade.closedAt && trade.closedAt._seconds) ? (trade.closedAt._seconds * 1000) : 0 %>" onclick="showUserDetails('<%= trade.username %>', '<%= trade.tradeType %>', '<%= trade.networkOrMethod %>', '<%= trade.amountUsd %>', '<%= trade.totalInr %>', `<%= trade.userReceivingDetails || trade.adminTransferDetails || 'No details provided.' %>`)">
+                                    <tr class="log-row nonkyc-row border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" data-action="<%= trade.tradeType %>" data-amount="<%= trade.amountUsd || 0 %>" data-fee="<%= trade.fee || 0 %>" data-timestamp="<%= (trade.closedAt && trade.closedAt._seconds) ? (trade.closedAt._seconds * 1000) : 0 %>" onclick="handleRowClick('<%= trade.username %>', '<%= trade.tradeType %>', '<%= trade.networkOrMethod %>', '<%= trade.amountUsd %>', '<%= trade.totalInr %>', `<%= trade.userReceivingDetails || trade.adminTransferDetails || 'No details provided.' %>`, '<%= trade.id %>')">
                                         <td class="py-4 px-6 text-slate-400 text-xs"><%= (trade.closedAt && trade.closedAt._seconds) ? new Date(trade.closedAt._seconds * 1000).toLocaleString('en-IN') : 'N/A' %></td>
                                         <td class="py-4 px-6 text-gray-200"><div class="font-bold"><%= trade.username %></div></td>
                                         <td class="py-4 px-6"><% if (trade.tradeType === 'Buy') { %><span class="text-green-400 font-black text-xs tracking-wider">BUY</span><% } else { %><span class="text-red-400 font-black text-xs tracking-wider">SELL</span><% } %></td>
@@ -706,6 +706,7 @@
         </div>
     </div>
     
+    <!-- 🔥 PHOTO / MEDIA VIEWER MODAL (NEW) 🔥 -->
     <div id="photoModal" class="fixed inset-0 z-[150] hidden flex items-center justify-center p-4 overflow-y-auto">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity" onclick="closeDocs()"></div>
         <div class="glass-panel relative z-10 w-full max-w-4xl p-5 sm:p-8 border-t-4 border-blue-500 flex flex-col max-h-[90vh]" id="photoModalContent">
@@ -716,6 +717,7 @@
             </div>
             
             <div id="photoContainer" class="flex-1 overflow-y-auto custom-scrollbar space-y-6 pr-2">
+                <!-- JavaScript automatically yahan images, videos aur PDF load karegi -->
             </div>
         </div>
     </div>
@@ -1145,7 +1147,7 @@
             document.getElementById('daily-total-trades').innerText = dailyTrades.length;
             document.getElementById('daily-total-volume').innerText = '$' + totalVol.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-            if (dailyTrades.length === 0) {
+                        if (dailyTrades.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-slate-500 italic"><i class="fa-solid fa-ghost text-3xl mb-3 block opacity-20"></i>No transactions recorded on this day.</td></tr>`;
             } else {
                 tbody.innerHTML = dailyTrades.map(trade => {
@@ -1159,7 +1161,7 @@
                         : `<span class="bg-red-500/10 border border-red-500/20 text-red-400 px-3 py-1.5 rounded-md text-xs font-black tracking-wider"><i class="fa-solid fa-arrow-up mr-1"></i> SELL</span>`;
 
                     return `
-                        <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" onclick="showUserDetails('${trade.username}', '${trade.tradeType}', '${trade.networkOrMethod}', '${trade.amountUsd || 0}', '${trade.totalInr || 0}', \`${trade.userReceivingDetails || trade.adminTransferDetails || 'No details provided.'}\`)">
+                        <tr class="border-b border-slate-800/50 hover:bg-slate-800/30 transition cursor-pointer" onclick="handleRowClick('${trade.username}', '${trade.tradeType}', '${trade.networkOrMethod}', '${trade.amountUsd || 0}', '${trade.totalInr || 0}', \`${trade.userReceivingDetails || trade.adminTransferDetails || 'No details provided.'}\`, '${trade.id}')">
                             <td class="py-4 px-6 text-slate-400 font-mono text-xs">${tradeTime}</td>
                             <td class="py-4 px-6 text-gray-200 flex items-center">
                                 <div class="w-8 h-8 rounded-full bg-slate-700 flex justify-center items-center mr-3 text-xs font-black text-slate-400 shrink-0">${avatarLetter}</div>
@@ -1175,6 +1177,8 @@
                     `;
                 }).join('');
             }
+
+            
             modal.classList.remove('hidden'); setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 10);
         }
 
@@ -1219,34 +1223,101 @@
         });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-    function showUserDetails(username, tradeType, method, usd, inr, details) {
-        let cleanDetails = details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const formattedDetails = cleanDetails.replace(/\n/g, '<br>');
-        let actionColor = tradeType.toUpperCase() === 'SELL' ? '#ef4444' : '#22c55e'; 
+   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function showUserDetails(username, tradeType, method, usd, inr, details) {
+    let cleanDetails = details.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const formattedDetails = cleanDetails.replace(/\n/g, '<br>');
+    let actionColor = tradeType.toUpperCase() === 'SELL' ? '#ef4444' : '#22c55e'; 
 
-        Swal.fire({
-            title: `<div style="font-size: 22px; font-weight: bold; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: -10px;">🏦 User Vault Record</div>`,
-            html: `
-                <div style="text-align: left; font-family: sans-serif; background: #0f172a; padding: 15px; border-radius: 8px; color: #e2e8f0; margin-top: 15px;">
-                    <p style="margin-bottom: 10px; font-size: 15px;"><strong>👤 Client:</strong> <span style="color: #38bdf8; font-weight: bold;">${username}</span></p>
-                    <p style="margin-bottom: 10px; font-size: 15px;"><strong>🔄 Action:</strong> <span style="color: ${actionColor}; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1);">${tradeType.toUpperCase()} USDT</span></p>
-                    <p style="margin-bottom: 15px; font-size: 15px;"><strong>🌐 Method:</strong> <span style="color: #cbd5e1;">${method}</span></p>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 20px; background: #1e293b; padding: 12px; border-radius: 6px; border: 1px solid #334155;">
-                        <div style="font-size: 16px;"><strong>USDT:</strong> <span style="color: #22c55e; font-weight: bold;">$${usd}</span></div>
-                        <div style="font-size: 16px;"><strong>INR:</strong> <span style="color: #f1c40f; font-weight: bold;">₹${inr}</span></div>
-                    </div>
-                    <p style="margin-bottom: 8px; color: #94a3b8; font-size: 12px; text-transform: uppercase;"><strong>Banking / Wallet Details</strong></p>
-                    <div style="background: #1e293b; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 14px; white-space: pre-wrap; border: 1px solid #334155; color: #f8fafc; line-height: 1.5;">${formattedDetails || 'No details provided.'}</div>
+    Swal.fire({
+        title: `<div style="font-size: 22px; font-weight: bold; color: #f8fafc; border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: -10px;">🏦 User Vault Record</div>`,
+        html: `
+            <div style="text-align: left; font-family: sans-serif; background: #0f172a; padding: 15px; border-radius: 8px; color: #e2e8f0; margin-top: 15px;">
+                <p style="margin-bottom: 10px; font-size: 15px;"><strong>👤 Client:</strong> <span style="color: #38bdf8; font-weight: bold;">${username}</span></p>
+                <p style="margin-bottom: 10px; font-size: 15px;"><strong>🔄 Action:</strong> <span style="color: ${actionColor}; font-weight: bold; padding: 2px 6px; border-radius: 4px; background: rgba(255,255,255,0.1);">${tradeType.toUpperCase()} USDT</span></p>
+                <p style="margin-bottom: 15px; font-size: 15px;"><strong>🌐 Method:</strong> <span style="color: #cbd5e1;">${method}</span></p>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; background: #1e293b; padding: 12px; border-radius: 6px; border: 1px solid #334155;">
+                    <div style="font-size: 16px;"><strong>USDT:</strong> <span style="color: #22c55e; font-weight: bold;">$${usd}</span></div>
+                    <div style="font-size: 16px;"><strong>INR:</strong> <span style="color: #f1c40f; font-weight: bold;">₹${inr}</span></div>
                 </div>
-            `,
-            background: '#0f172a',
-            width: '500px',
-            showCloseButton: true,
-            showConfirmButton: false
-        });
+                <p style="margin-bottom: 8px; color: #94a3b8; font-size: 12px; text-transform: uppercase;"><strong>Banking / Wallet Details</strong></p>
+                <div style="background: #1e293b; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 14px; white-space: pre-wrap; border: 1px solid #334155; color: #f8fafc; line-height: 1.5;">${formattedDetails || 'No details provided.'}</div>
+            </div>
+        `,
+        background: '#0f172a',
+        width: '500px',
+        showCloseButton: true,
+        showConfirmButton: false
+    });
+}
+
+// 🔥 DOUBLE CLICK DELETE LOGIC 🔥
+let clickTimer = null;
+
+function handleRowClick(username, tradeType, method, usd, inr, details, ticketId) {
+    if (clickTimer === null) {
+        clickTimer = setTimeout(() => {
+            clickTimer = null;
+            showUserDetails(username, tradeType, method, usd, inr, details);
+        }, 250);
+    } else {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        if(Swal.isVisible()) Swal.close();
+        deleteTradeRecord(ticketId);
     }
-    </script>
+}
+
+function handleLiveFeedClick(index, ticketId) {
+    if (clickTimer === null) {
+        clickTimer = setTimeout(() => {
+            clickTimer = null;
+            openTxModal(index);
+        }, 250);
+    } else {
+        clearTimeout(clickTimer);
+        clickTimer = null;
+        if(Swal.isVisible()) Swal.close();
+        deleteTradeRecord(ticketId);
+    }
+}
+
+function deleteTradeRecord(ticketId) {
+    if(!ticketId || ticketId === 'undefined') {
+        Swal.fire('Error', 'Ticket ID not found. Please restart bot to fetch IDs.', 'error');
+        return;
+    }
+    Swal.fire({
+        title: 'Delete Trade?',
+        text: "⚠️ WARNING: This will permanently remove this transaction from the database. It cannot be recovered!",
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#334155',
+        confirmButtonText: '<i class="fa-solid fa-trash-can mr-2"></i> Yes, Delete it!'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const response = await fetch('/api/delete-trade', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ticketId })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Trade Deleted Securely!', showConfirmButton: false, timer: 2000, background: '#0f172a', color: '#f8fafc' });
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch(e) {
+                Swal.fire('Error', 'Server Connection Failed', 'error');
+            }
+        }
+    });
+}
+</script>
+
 </body>
 </html>

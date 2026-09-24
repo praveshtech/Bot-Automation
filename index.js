@@ -1508,6 +1508,7 @@ client.on('interactionCreate', async interaction => {
 
             snapshot.forEach(doc => {
                 const data = doc.data();
+                
                 const amount = data.amountUsd || 0;
                 const userTag = data.discordUserId ? `<@${data.discordUserId}>` : `@${data.username || 'Unknown'}`;
                 userVolumes[userTag] = (userVolumes[userTag] || 0) + amount;
@@ -2905,6 +2906,21 @@ app.post('/update-price', requireLogin, async (req, res) => {
     } catch (error) { sendModernAlert("❌ Error", error.message, "error"); }
 });
 
+// 🔥 NAYA API: TRADE DELETE KARNE KE LIYE 🔥
+app.post('/api/delete-trade', requireLogin, async (req, res) => {
+    try {
+        const { ticketId } = req.body;
+        if (!ticketId) return res.json({ success: false, error: "Ticket ID Missing" });
+        
+        await db.collection('p2p_tickets').doc(ticketId).delete();
+        globalLastUpdate = Date.now(); 
+        res.json({ success: true });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
+
 app.get('/api/check-updates', requireLogin, (req, res) => { res.json({ timestamp: globalLastUpdate }); });
 
 app.get('/', requireLogin, async (req, res) => {
@@ -2931,6 +2947,7 @@ app.get('/', requireLogin, async (req, res) => {
 
         snapshot.forEach(doc => {
             const data = doc.data();
+            data.id = doc.id;
             const amount = data.amountUsd || 0;
             allCompleted.push(data);
             if (data.tradeType === 'Buy') buyVol += amount;
