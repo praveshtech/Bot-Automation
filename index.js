@@ -568,22 +568,24 @@ client.on('messageCreate', async (message) => {
     }
 
 
-    // ==========================================
+   // ==========================================
     // 🧹 COMMAND: .cl (CLEANUP OLD CHAT / REVIEWS)
     // ==========================================
     if (command === '.cl') {
         if (!message.member.permissions.has(PermissionsBitField.Flags.Administrator) && !message.member.roles.cache.some(role => role.name === 'Palermo')) return;
 
-        // Sirf p2p-chat ya transaction-reviews mein chalne ki condition
         if (!message.channel.name.includes('p2p-chat') && !message.channel.name.includes('transaction-reviews')) {
-            return message.reply({ content: "❌ **Action Denied:** Ye command sirf `p2p-chat` ya `transaction-reviews` channel mein chalegi.", ephemeral: true }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
+            return message.reply({ content: "❌ **Action Denied:** Ye command sirf `p2p-chat` ya `transaction-reviews` channel mein chalegi." }).then(m => setTimeout(() => m.delete().catch(()=>{}), 5000));
         }
 
-        const loadingMsg = await message.channel.send("⏳ **Vault Cleanup Initiated:** Scanning for messages older than 30 days... (Rate limits se bachne ke liye thoda time lag sakta hai)");
+        const loadingMsg = await message.channel.send("⏳ **Vault Cleanup Initiated:** Scanning for messages older than 30 days... (Terminal logs check karein)");
+        console.log(`\n🧹 [CLEANUP START] Scanning channel: ${message.channel.name}`);
 
         try {
-            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); // 30 Days in milliseconds
+            // 30 Days ago in milliseconds
+            const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000); 
             let deletedCount = 0;
+            let scannedCount = 0;
             let hasMoreMessages = true;
             let lastMessageId = null;
 
@@ -596,19 +598,24 @@ client.on('messageCreate', async (message) => {
                     hasMoreMessages = false;
                     break;
                 }
+                
+                scannedCount += fetchedMessages.size;
+                console.log(`🔎 [CLEANUP] Scanned ${scannedCount} messages backwards so far...`);
 
-                // 30 din se purane messages filter karna
                 const messagesToDelete = fetchedMessages.filter(msg => msg.createdTimestamp < thirtyDaysAgo);
 
                 if (messagesToDelete.size > 0) {
+                    console.log(`🗑️ [CLEANUP] Found ${messagesToDelete.size} old messages in this batch. Deleting one-by-one...`);
                     for (const [id, msg] of messagesToDelete) {
                         try {
                             await msg.delete();
                             deletedCount++;
-                            // Discord ki API ko block hone se bachane ke liye 1.5 seconds ka delay
-                            await new Promise(resolve => setTimeout(resolve, 1500));
+                            if (deletedCount % 5 === 0) {
+                                console.log(`✅ [CLEANUP] Successfully deleted ${deletedCount} messages...`);
+                            }
+                            await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s delay to avoid Discord API Ban
                         } catch (delErr) {
-                            console.error("Failed to delete an old message:", delErr);
+                            console.log(`⚠️ [CLEANUP] Could not delete message ${id}:`, delErr.message);
                         }
                     }
                 }
@@ -616,12 +623,14 @@ client.on('messageCreate', async (message) => {
                 lastMessageId = fetchedMessages.last().id;
             }
 
-            await loadingMsg.edit(`✅ **Vault Cleanup Complete!**\nSuccessfully wiped \`${deletedCount}\` messages older than 30 days from this channel.`);
-            setTimeout(() => loadingMsg.delete().catch(()=>{}), 10000); // 10 sec baad ye success message bhi delete ho jayega
-            await message.delete().catch(()=>{}); // Command (.cl) wale message ko delete karna
+            console.log(`🎉 [CLEANUP END] Finished! Total Scanned: \({scannedCount} | Total Deleted:\){deletedCount}\n`);
+            await loadingMsg.edit(`✅ **Vault Cleanup Complete!**\nSuccessfully wiped \`\({deletedCount}\` messages older than 30 days.\n*(Total scanned:\){scannedCount} messages)*`);
+            
+            setTimeout(() => loadingMsg.delete().catch(()=>{}), 10000);
+            await message.delete().catch(()=>{}); 
             
         } catch (err) {
-            console.error("Cleanup command error:", err);
+            console.error("❌ [CLEANUP ERROR]:", err);
             await loadingMsg.edit("❌ **Critical Error:** Cleanup process failed. Check terminal logs.");
         }
         return;
