@@ -1,6 +1,6 @@
 const { EmbedBuilder, PermissionsBitField } = require('discord.js');
 
-const modIds = ['1336703883711479896', '1541859306050162750', '1001128047128358923'];
+const modIds = ['1336703883711479896', '1541859306050162750', '1001128047128358923', '1500483808296828930'];
 
 async function checkAndBanImpersonator(member, client) {
     if (!member || !member.user || member.user.bot) return false;
